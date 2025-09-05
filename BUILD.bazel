@@ -1,0 +1,8 @@
+# Export all files in rv_core_test_plan directory
+
+
+py_library(
+    name = "coretp",
+    srcs = glob(["coretp/**/*.py"]),
+    visibility = ["//visibility:public"],
+)
