@@ -1,7 +1,7 @@
 [tool.black]
 line-length = 200
 workers = 8
-exclude = "/(.git|riscv-dv|riscv-isa-sim|whisper|fpgen|riescue_config|.*_clone|opensrc.*|.*-scripts)/"
+exclude = "/(.git)/"
 
 
 [build-system]
@@ -9,50 +9,39 @@ requires = ["setuptools >= 61.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "riescue"
-version = "0.3.4"
-description = "RISC-V Directed Test Framework and Compliance Suite"
+name = "coretp"
+version = "0.1.0"
+description = "RISC-V Core Test Plan "
 readme = "README.md"
 requires-python = ">= 3.9"
 dependencies = [
+    # Code dependencies
     "dataclasses",
-    "sortedcontainers",
-    "pyyaml",
-    "numpy",
-    "pybind11",
-    "pyvsc",
-    "csrbox",
+    "reportlab", # For PDF export
+    "openpyxl", # For Excel export
+
+    # Documentation
     "sphinx",
     "sphinx-rtd-theme",
+
+    # Lint
     "flake8",
     "black",
-    "intervaltree",
     "coverage",
-    "tabulate",
-    "pyright",
+    "pyright[nodejs]",
 ]
 
 [tool.setuptools.package-dir]
-riescue = "riescue/"
+coretp = "coretp/"
 
 [project.scripts]
-riescued = "riescue.riescued:main"
+coretp-export = "rv_core_test_plan.coretp.coretp_export:main"
 
 [tool.pyright]
 include = [
-    "riescue/lib",
-    "riescue/riescued.py",
-    #"riescue/*.py",
-    #"riescue/dtest_framework",
-    "riescue/dtest_framework/config",
-    "tests/dtest_framework",
+    "coretp",
 
 ]
-extraPaths = ["riescue",]
-exclude = [
-    "tests/compliance",
-    "riescue/lib/csr_manager",
-    "riescue/lib/instr_info",
-]
+extraPaths = ["coretp",]
 pythonVersion = "3.9"
 pythonPlatform = "Linux"
