@@ -21,8 +21,6 @@ dependencies = [
     "openpyxl", # For Excel export
 
     # Documentation
-    "sphinx",
-    "sphinx-rtd-theme",
 
     # Lint
     "flake8",
