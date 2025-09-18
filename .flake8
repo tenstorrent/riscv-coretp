@@ -6,16 +6,8 @@ show-source = True
 tee = True
 output_file = flake8.log
 exclude =
-    riscv-dv
-    riscv-isa-sim
-    whisper
-    fpgen
-    riescue_config
-    *_clone
-    *-scripts
     infra
     .git
-    opensrc*
 
 extend-ignore =
     E203
