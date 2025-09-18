@@ -3,12 +3,12 @@
 
 # Paging test plan
 
-from .scenario_registry import SCENARIO_REGISTRY, paging_scenario
+from ..test_plan_registry import new_test_plan
 
-from . import page_table_walks
-from .paging import paging_test_plan
+paging_scenario = new_test_plan(
+    name="paging",
+    description="Covers paging modes, page table walk, page table walk with faults",
+    tags=["paging", "memory"],
+)
 
-
-PLANS = [
-    paging_test_plan,
-]
+__all__ = ["paging_scenario"]

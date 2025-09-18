@@ -13,8 +13,6 @@ from .env import TestEnv, TestEnvCfg, TestEnvSolver
 from .step import TestStep
 from .step_ir import StepIR
 from .models import TestPlan, TestScenario
-from .parser import PseudoOpFactory
-from .loader import TestPlanLoader
 from .isa import InstructionCatalog, Instruction, Label
 
 __all__ = [
@@ -25,8 +23,6 @@ __all__ = [
     "TestEnvSolver",
     "TestStep",
     "StepIR",
-    "PseudoOpFactory",
-    "TestPlanLoader",
     "TestScenario",
     "InstructionCatalog",
     "Instruction",

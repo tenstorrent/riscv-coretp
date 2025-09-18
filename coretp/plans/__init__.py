@@ -1,10 +1,15 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-# Temporary holding area for test plans, this will eventually need to be a script to source plans from text files.
 
-from .paging import paging_test_plan
-from .sinval import sinval_test_plan
-from .svadu import svadu_test_plan
+from .test_plan_registry import new_test_plan, get_plan, list_plans, query_plans
 
-__all__ = ["paging_test_plan", "sinval_test_plan", "svadu_test_plan"]
+
+# Have to import all plans here to ensure they are registered. Need to include the module itself to ensure it's registered.
+from .paging import page_table_walks
+from .svadu import svadu_scenarios
+from .sinval import sinval_scenarios
+from .zicond import zicond_scenarios
+from .zimop_zcmop import zimop_zcmop_scenarios
+
+__all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]

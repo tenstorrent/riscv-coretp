@@ -1,12 +1,12 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from .scenario_registry import SCENARIO_REGISTRY, svadu_scenario
+from ..test_plan_registry import new_test_plan
 
-from . import svadu_scenarios
-from .svadu import svadu_test_plan
+svadu_scenario = new_test_plan(
+    name="svadu",
+    description="Covers SVADU (Supervisor-mode Access/Dirty Update) scenarios",
+    tags=["svadu", "memory", "paging"],
+)
 
-
-PLANS = [
-    svadu_test_plan,
-]
+__all__ = ["svadu_scenario"]

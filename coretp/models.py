@@ -79,4 +79,4 @@ class TestPlan:
     def __post_init__(self):
         """Check that scenarios were included"""
         if not self.scenarios:
-            raise ValueError("No scenarios were included in the test plan")
+            raise ValueError(f"No scenarios were included in the test plan {self.name}")

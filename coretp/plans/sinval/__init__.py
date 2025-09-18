@@ -1,12 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from .scenario_registry import SCENARIO_REGISTRY, sinval_scenario
+from ..test_plan_registry import new_test_plan
 
-from . import sinval_scenarios
-from .sinval import sinval_test_plan
-
-
-PLANS = [
-    sinval_test_plan,
-]
+sinval_scenario = new_test_plan(
+    name="sinval",
+    description="Covers SVINVAL (Supervisor-mode Invalidate) scenarios",
+    tags=["sinval", "memory", "paging"],
+)

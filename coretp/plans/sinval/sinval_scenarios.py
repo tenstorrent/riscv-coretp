@@ -6,7 +6,7 @@ import random
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
 from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual
-from .scenario_registry import sinval_scenario
+from . import sinval_scenario
 
 
 @sinval_scenario
