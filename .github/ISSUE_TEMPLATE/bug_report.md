@@ -15,10 +15,7 @@ assignees: ''
 - Container: [Yes / No]
 
 **Minimum Reproduction Steps**
-command line to reproduce:
-```
-./riescued.py --foo
-```
+Include any steps needed to reproduce the issue
 
 **Expected behavior**
 Add any other context about the problem here.
