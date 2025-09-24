@@ -23,7 +23,13 @@ class InstructionCatalog:
             self.isa = isa
 
         def matching_instr(i: InstructionDef) -> bool:
-            return i.xlen.compatible_with(self.isa.xlen) and (i.extension & self.isa.extensions) != 0
+            # Both 'i.extension' and 'self.isa.extensions' are flag masks of the flag enum 'Extension'
+            # The '&' operator works like a bitwise AND for flags, used since we want to keep any
+            # instruction where these masks intersect, which denotes at least one extension the
+            # instruction belongs to is in the isa's used extensions (using 'in' would require all 
+            # extensions the instruction belongs to)
+            # 'Extension(0)' is the empty mask for this flag enum, NOT the same as 0 or None
+            return i.xlen.compatible_with(self.isa.xlen) and ((i.extension & self.isa.extensions) != Extension(0))
 
         self._instructions = [i for i in self._instructions if matching_instr(i)]
         self._instruction_lookup = {i.name: i for i in self._instructions}
