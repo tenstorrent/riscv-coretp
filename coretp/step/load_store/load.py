@@ -26,3 +26,4 @@ class Load(MemoryOp):
 
     memory: Optional[Memory] = None
     offset: int = 0
+    op: Optional[str] = None

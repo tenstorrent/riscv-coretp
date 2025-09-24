@@ -5,10 +5,12 @@ from .step import TestStep
 from .memory import Memory, CodePage
 
 from .call import Call
-from .arithmetic import Arithmetic, LoadImmediateStep
+from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
 from .load_store import MemoryOp, Load, Store
 from .csr import CsrWrite, CsrRead
 from .assertion import AssertEqual, AssertNotEqual, AssertException
+from .hart import Hart, HartExit
+from .directive import Directive
 
 __all__ = [
     "TestStep",
@@ -22,9 +24,13 @@ __all__ = [
     "Memory",
     "Arithmetic",
     "LoadImmediateStep",
+    "LoadAddressStep",
     "CsrWrite",
     "CsrRead",
     "AssertEqual",
     "AssertNotEqual",
     "AssertException",
+    "Hart",
+    "HartExit",
+    "Directive",
 ]
