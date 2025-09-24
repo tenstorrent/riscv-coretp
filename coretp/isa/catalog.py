@@ -23,7 +23,7 @@ class InstructionCatalog:
             self.isa = isa
 
         def matching_instr(i: InstructionDef) -> bool:
-            return i.xlen.compatible_with(self.isa.xlen) and i.extension in self.isa.extensions
+            return i.xlen.compatible_with(self.isa.xlen) and (i.extension & self.isa.extensions) != 0
 
         self._instructions = [i for i in self._instructions if matching_instr(i)]
         self._instruction_lookup = {i.name: i for i in self._instructions}

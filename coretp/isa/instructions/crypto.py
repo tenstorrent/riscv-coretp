@@ -1033,9 +1033,10 @@ rori = InstructionDef(
     extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
     xlen=Xlen.XLEN64,
     category=Category.LOGIC,
-    destination=OperandSlot(name="shamtd", type=OperandType.GPR),
+    destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
+        OperandSlot(name="shamtd", type=OperandType.IMM),
     ],
     formatter="rori {rd}, {rs1}, {shamtd}",
 )
@@ -1049,7 +1050,7 @@ roriw = InstructionDef(
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
-        OperandSlot(name="shamtw", type=OperandType.GPR),
+        OperandSlot(name="shamtw", type=OperandType.IMM),
     ],
     formatter="roriw {rd}, {rs1}, {shamtw}",
 )
@@ -1092,7 +1093,7 @@ unzip = InstructionDef(
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
     ],
-    formatter="unzip {rd} {rs1}",
+    formatter="unzip {rd}, {rs1}",
 )
 
 
@@ -1105,7 +1106,7 @@ zip = InstructionDef(
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
     ],
-    formatter="zip {rd} {rs1}",
+    formatter="zip {rd}, {rs1}",
 )
 
 
