@@ -17,6 +17,7 @@ class TestEnv:
     priv: PrivilegeMode = PrivilegeMode.M
     paging_mode: PagingMode = PagingMode.DISABLED
     page_size: frozenset[PageSize] = field(default_factory=lambda: frozenset({PageSize.SIZE_4K}))
+    hart_count: int = 1
     hypervisor: bool = False
 
     def get_max_va_bits(self) -> int:
