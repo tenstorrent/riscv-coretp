@@ -31,6 +31,6 @@ class TestEnvCfg:
         """
 
         return [
-            TestEnv(reg_width=rw, priv=priv, hypervisor=hv, paging_mode=pm, page_size=frozenset(self.page_sizes), hart_count=hc)
-            for rw, priv, hv, pm, hc in product(self.reg_widths, self.priv_modes, self.hypervisor, self.paging_modes, self.min_num_harts)
+            TestEnv(reg_width=rw, priv=priv, hypervisor=hv, paging_mode=pm, page_size=frozenset(self.page_sizes), hart_count=self.min_num_harts)
+            for rw, priv, hv, pm in product(self.reg_widths, self.priv_modes, self.hypervisor, self.paging_modes)
         ]
