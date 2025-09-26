@@ -26,6 +26,7 @@ class Arithmetic(TestStep):
 @dataclass(frozen=True)
 class LoadImmediateStep(Arithmetic):
     imm: Optional[int] = None
+    bits: Optional[int] = None  # max bits allowed for an immediate
 
 
 @dataclass(frozen=True)
