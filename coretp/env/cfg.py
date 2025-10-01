@@ -19,6 +19,7 @@ class TestEnvCfg:
     reg_widths: list[int] = field(default_factory=lambda: [64])
     priv_modes: list[PrivilegeMode] = field(default_factory=lambda: [PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U])
     hypervisor: list[bool] = field(default_factory=lambda: [True, False])
+    needs_interrupts: list[bool] = field(default_factory=lambda: [True, False])
     paging_modes: list[PagingMode] = field(default_factory=lambda: [PagingMode.DISABLED, PagingMode.SV39, PagingMode.SV48, PagingMode.SV57])
     page_sizes: list[PageSize] = field(default_factory=lambda: [PageSize.SIZE_4K, PageSize.SIZE_2M, PageSize.SIZE_1G])
     min_num_harts: int = 1
@@ -31,6 +32,6 @@ class TestEnvCfg:
         """
 
         return [
-            TestEnv(reg_width=rw, priv=priv, hypervisor=hv, paging_mode=pm, page_size=frozenset(self.page_sizes), hart_count=self.min_num_harts)
-            for rw, priv, hv, pm in product(self.reg_widths, self.priv_modes, self.hypervisor, self.paging_modes)
+            TestEnv(reg_width=rw, priv=priv, hypervisor=hv, paging_mode=pm, page_size=frozenset(self.page_sizes), hart_count=self.min_num_harts, needs_interrupts=ni)
+            for rw, priv, hv, pm, ni in product(self.reg_widths, self.priv_modes, self.hypervisor, self.paging_modes, self.needs_interrupts)
         ]
