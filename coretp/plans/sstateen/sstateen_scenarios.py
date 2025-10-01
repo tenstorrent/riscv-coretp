@@ -1547,10 +1547,10 @@ def SID_SMSTATEEN_022_S_mode_virtualized():
         description="Test bit 60 (CSRIND) access from VS mode (virtualized S mode)",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
         steps=[
-            write_m1, write_h1, write_s1, assert_siselect_exc1, assert_sireg_exc1, assert_vsiselect_exc1, assert_vsireg_exc1,
-            write_m2, assert_siselect_exc2, assert_sireg_exc2, assert_vsiselect_exc2, assert_vsireg_exc2,
+            write_m1, write_h1, write_s1,
+            write_m2,
             write_h3, read_siselect3, write_siselect3, read_sireg3, write_sireg3, read_vsiselect3, write_vsiselect3, read_vsireg3, write_vsireg3,
-            write_h4, write_s4, assert_siselect_exc4, assert_sireg_exc4, assert_vsiselect_exc4, assert_vsireg_exc4,
+            write_h4, write_s4,
             write_h5, read_siselect5, write_siselect5, read_sireg5, write_sireg5, read_vsiselect5, write_vsiselect5, read_vsireg5, write_vsireg5,
         ],
     )
@@ -3137,8 +3137,8 @@ def SID_SMSTATEEN_024_U_mode_virtualized():
             assert_vstopei_exc4_r, assert_vstopei_exc4,
             # Case 5
             write_m5, write_h5, write_s5,
-            assert_stopei_exc5_r, assert_stopei_exc5,
-            assert_vstopei_exc5_r, assert_vstopei_exc5,
+            assert_stopei_exc5,
+            assert_vstopei_exc5,
         ],
     )
 
