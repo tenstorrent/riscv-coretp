@@ -28,4 +28,4 @@ class MemAccess(MemoryOp):
 
     memory: Optional[Memory] = None
     offset: int = 0
-    op: Oprtional[str] = None
+    op: Optional[str] = None
