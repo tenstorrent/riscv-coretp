@@ -3083,9 +3083,11 @@ def SID_SMSTATEEN_024_U_mode_virtualized():
     write_s5 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 58))
 
     read_stopei5 = CsrRead(csr_name='stopei')
+    assert_stopei_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopei5])
     write_stopei5 = CsrWrite(csr_name='stopei', value=read_stopei5)
     assert_stopei_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopei5])
     read_vstopei5 = CsrRead(csr_name='vstopei')
+    assert_vstopei_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopei5])
     write_vstopei5 = CsrWrite(csr_name='vstopei', value=read_vstopei5)
     assert_vstopei_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopei5])
 
@@ -3113,8 +3115,8 @@ def SID_SMSTATEEN_024_U_mode_virtualized():
             assert_vstopei_exc4_r, assert_vstopei_exc4,
             # Case 5
             write_m5, write_h5, write_s5,
-            assert_stopei_exc5,
-            assert_vstopei_exc5,
+            assert_stopei_exc5_r, assert_stopei_exc5,
+            assert_vstopei_exc5_r, assert_vstopei_exc5,
         ],
     )
 
