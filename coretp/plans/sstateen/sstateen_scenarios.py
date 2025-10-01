@@ -985,7 +985,7 @@ def SID_SMSTATEEN_021_S_mode_non_virtualized():
             write_m2, read_menvcfg2, write_menvcfg2, read_senvcfg2, write_senvcfg2, assert_henvcfg_exc2,
             write_h3, read_menvcfg3, write_menvcfg3, read_senvcfg3, write_senvcfg3, read_henvcfg3, write_henvcfg3,
             write_h4, write_s4, read_menvcfg4, write_menvcfg4, read_senvcfg4, write_senvcfg4, assert_henvcfg_exc4,
-            write_h5, assert_menvcfg_exc5, read_senvcfg5, write_senvcfg5, read_henvcfg5, write_henvcfg5,
+            write_h5, read_menvcfg5, write_menvcfg5, read_senvcfg5, write_senvcfg5, read_henvcfg5, write_henvcfg5,
         ],
     )
 
