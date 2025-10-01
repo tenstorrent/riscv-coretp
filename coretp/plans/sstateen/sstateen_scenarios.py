@@ -1941,7 +1941,7 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
             read_stopi1, write_stopi1, read_vstopi1, write_vstopi1,
             assert_hvien_exc1_r, assert_hvien_exc1,
             assert_hvictl_exc1_r, assert_hvictl_exc1,
-            assert_hviprio1_exc1_r, assert_hviprio1_exc1
+            assert_hviprio1_exc1_r, assert_hviprio1_exc1,
             assert_hviprio2_exc1_r, assert_hviprio2_exc1,
             # Case 2
             write_m2, write_h2, write_s2,
