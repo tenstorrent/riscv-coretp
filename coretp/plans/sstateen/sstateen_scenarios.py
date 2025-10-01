@@ -1817,13 +1817,13 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
 
     read_hviprio11 = CsrRead(csr_name='hviprio1')
     write_hviprio11 = CsrWrite(csr_name='hviprio1', value=read_hviprio11)
-    assert_hviprio1_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio11])
     assert_hviprio1_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio11])
+    assert_hviprio1_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio11])
 
     read_hviprio21 = CsrRead(csr_name='hviprio2')
+    assert_hviprio2_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio21])
     write_hviprio21 = CsrWrite(csr_name='hviprio2', value=read_hviprio21)
     assert_hviprio2_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio21])
-    assert_hviprio2_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio21])
 
     # Case 2: mstateen[59]=1, hstateen[59]=0, sstateen[59]=0
     # stopi, vstopi: always accessible in S mode
@@ -1838,24 +1838,24 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
     write_vstopi2 = CsrWrite(csr_name='vstopi', value=read_vstopi2)
 
     read_hvien2 = CsrRead(csr_name='hvien')
+    assert_hvien_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien2])
     write_hvien2 = CsrWrite(csr_name='hvien', value=read_hvien2)
     assert_hvien_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hvien2])
-    assert_hvien_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien2])
 
     read_hvictl2 = CsrRead(csr_name='hvictl')
+    assert_hvictl_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvictl2])
     write_hvictl2 = CsrWrite(csr_name='hvictl', value=read_hvictl2)
     assert_hvictl_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hvictl2])
-    assert_hvictl_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvictl2])
 
     read_hviprio12 = CsrRead(csr_name='hviprio1')
+    assert_hviprio1_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio12])
     write_hviprio12 = CsrWrite(csr_name='hviprio1', value=read_hviprio12)
     assert_hviprio1_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio12])
-    assert_hviprio1_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio12])
 
     read_hviprio22 = CsrRead(csr_name='hviprio2')
+    assert_hviprio2_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio22])
     write_hviprio22 = CsrWrite(csr_name='hviprio2', value=read_hviprio22)
     assert_hviprio2_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio22])
-    assert_hviprio2_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio22])
 
     # Case 3: mstateen[59]=1, hstateen[59]=1, sstateen[59]=0
     # All CSRs accessible when both mstateen[59]=1 and hstateen[59]=1
@@ -1890,24 +1890,24 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
     write_vstopi4 = CsrWrite(csr_name='vstopi', value=read_vstopi4)
 
     read_hvien4 = CsrRead(csr_name='hvien')
+    assert_hvien_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien4])
     write_hvien4 = CsrWrite(csr_name='hvien', value=read_hvien4)
     assert_hvien_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hvien4])
-    assert_hvien_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien4])
 
     read_hvictl4 = CsrRead(csr_name='hvictl')
+    assert_hvictl_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvictl4])
     write_hvictl4 = CsrWrite(csr_name='hvictl', value=read_hvictl4)
     assert_hvictl_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hvictl4])
-    assert_hvictl_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvictl4])
 
     read_hviprio14 = CsrRead(csr_name='hviprio1')
+    assert_hviprio1_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio14])
     write_hviprio14 = CsrWrite(csr_name='hviprio1', value=read_hviprio14)
     assert_hviprio1_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio14])
-    assert_hviprio1_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio14])
 
     read_hviprio24 = CsrRead(csr_name='hviprio2')
+    assert_hviprio2_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio24])
     write_hviprio24 = CsrWrite(csr_name='hviprio2', value=read_hviprio24)
     assert_hviprio2_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio24])
-    assert_hviprio2_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hviprio24])
 
     # Case 5: mstateen[59]=1, hstateen[59]=1, sstateen[59]=1
     # All CSRs accessible
@@ -1958,8 +1958,8 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
             # Case 4
             write_m4, write_h4, write_s4,
             read_stopi4, write_stopi4, read_vstopi4, write_vstopi4,
-            assert_hvien_exc4, assert_hvien_exc4_r,
-            assert_hvictl_exc4, assert_hvictl_exc4_r,
+            assert_hvien_exc4_r, assert_hvien_exc4,
+            assert_hvictl_exc4_r, assert_hvictl_exc4,
             assert_hviprio1_exc4_r, assert_hviprio1_exc4,
             assert_hviprio2_exc4_r, assert_hviprio2_exc4,
             # Case 5
