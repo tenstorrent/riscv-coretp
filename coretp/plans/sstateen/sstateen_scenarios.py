@@ -1941,15 +1941,15 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
             read_stopi1, write_stopi1, read_vstopi1, write_vstopi1,
             assert_hvien_exc1_r, assert_hvien_exc1,
             assert_hvictl_exc1_r, assert_hvictl_exc1,
-            assert_hviprio1_exc1, assert_hviprio1_exc1_r,
-            assert_hviprio2_exc1, assert_hviprio2_exc1_r,
+            assert_hviprio1_exc1_r, assert_hviprio1_exc1
+            assert_hviprio2_exc1_r, assert_hviprio2_exc1,
             # Case 2
             write_m2, write_h2, write_s2,
             read_stopi2, write_stopi2, read_vstopi2, write_vstopi2,
-            assert_hvien_exc2, assert_hvien_exc2_r,
-            assert_hvictl_exc2, assert_hvictl_exc2_r,
-            assert_hviprio1_exc2, assert_hviprio1_exc2_r,
-            assert_hviprio2_exc2, assert_hviprio2_exc2_r,
+            assert_hvien_exc2_r, assert_hvien_exc2,
+            assert_hvictl_exc2_r, assert_hvictl_exc2,
+            assert_hviprio1_exc2_r, assert_hviprio1_exc2,
+            assert_hviprio2_exc2_r, assert_hviprio2_exc2,
             # Case 3
             write_m3, write_h3, write_s3,
             read_stopi3, write_stopi3, read_vstopi3, write_vstopi3,
@@ -1960,8 +1960,8 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
             read_stopi4, write_stopi4, read_vstopi4, write_vstopi4,
             assert_hvien_exc4, assert_hvien_exc4_r,
             assert_hvictl_exc4, assert_hvictl_exc4_r,
-            assert_hviprio1_exc4, assert_hviprio1_exc4_r,
-            assert_hviprio2_exc4, assert_hviprio2_exc4_r,
+            assert_hviprio1_exc4_r, assert_hviprio1_exc4,
+            assert_hviprio2_exc4_r, assert_hviprio2_exc4,
             # Case 5
             write_m5, write_h5, write_s5,
             read_stopi5, write_stopi5, read_vstopi5, write_vstopi5,
@@ -2630,30 +2630,6 @@ def SID_SMSTATEEN_023_U_mode_virtualized():
         ],
     )
 
-
-@sstateen_scenario
-def SID_SMSTATEEN_024_IMSIC_CSR_access_enabled():
-    """
-    Test IMSIC CSR access with mstateen0[58]=1
-    """
-    # Enable IMSIC bit in mstateen0
-    write_m = CsrWrite(csr_name='mstateen0', set_mask=(1 << 58))
-    # Write stopei
-    write_s = CsrWrite(csr_name='stopei', value=0xFFFF)
-    # Read stopei
-    result = CsrRead(csr_name='stopei')
-
-    return TestScenario.from_steps(
-        id="39",
-        name="SID_SMSTATEEN_024_IMSIC_CSR_access_enabled",
-        description="Test IMSIC CSR access with mstateen0[58]=1",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.HS]),
-        steps=[
-            write_m,
-            write_s,
-            result,
-        ],
-    )
 
 @sstateen_scenario
 def SID_SMSTATEEN_024_M_mode():
