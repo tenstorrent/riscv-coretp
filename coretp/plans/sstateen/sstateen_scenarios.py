@@ -485,7 +485,7 @@ def SID_SMSTATEEN_014():
         id="13",
         name="SID_SMSTATEEN_014",
         description="sstateen0 implemented bits should be writable in VS mode given that corresponding mstateen and hstateen bits are set",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             write_m,
             write_h,
@@ -556,7 +556,7 @@ def SID_SMSTATEEN_016():
         id="15",
         name="SID_SMSTATEEN_016",
         description="sstateen* bits should be read-only zero in VS mode given that mstateen bits are zero",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             write_m,
             write_h,
@@ -753,7 +753,7 @@ def SID_SMSTATEEN_019():
         id="18", 
         name="SID_SMSTATEEN_019",
         description="sstateen* access in VS mode when mstateen*[63] = 0, hstateen*[63] = 0",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             write_m,
             write_h,
@@ -1135,7 +1135,7 @@ def SID_SMSTATEEN_021_S_mode_virtualized():
         id="23",
         name="SID_SMSTATEEN_021_S_mode_virtualized",
         description="Test bit 62 (ENVCFG) access from VS mode (virtualized S mode)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             write_m1, write_h1, write_s1, assert_menvcfg_exc1, assert_senvcfg_exc1, assert_henvcfg_exc1,
             write_m2, assert_menvcfg_exc2, assert_senvcfg_exc2, assert_henvcfg_exc2,
@@ -1206,7 +1206,7 @@ def SID_SMSTATEEN_021_U_mode_virtualized():
         id="24",
         name="SID_SMSTATEEN_021_U_mode_virtualized",
         description="Test bit 62 (ENVCFG) access from VU mode (virtualized U mode)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
             write_m1, write_h1, write_s1, assert_menvcfg_exc1, assert_henvcfg_exc1, assert_senvcfg_exc1,
             write_m2, assert_menvcfg_exc2, assert_henvcfg_exc2, assert_senvcfg_exc2,
@@ -1545,7 +1545,7 @@ def SID_SMSTATEEN_022_S_mode_virtualized():
         id="28",
         name="SID_SMSTATEEN_022_S_mode_virtualized",
         description="Test bit 60 (CSRIND) access from VS mode (virtualized S mode)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             write_m1, write_h1, write_s1,
             write_m2,
@@ -1626,7 +1626,7 @@ def SID_SMSTATEEN_022_U_mode_virtualized():
         id="29",
         name="SID_SMSTATEEN_022_U_mode_virtualized",
         description="Test bit 60 (CSRIND) access from VU mode (virtualized U mode)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
             write_m1, write_h1, write_s1, assert_siselect_exc1, assert_sireg_exc1, assert_vsiselect_exc1, assert_vsireg_exc1,
             write_m2, assert_siselect_exc2, assert_sireg_exc2, assert_vsiselect_exc2, assert_vsireg_exc2,
@@ -1641,8 +1641,7 @@ def SID_SMSTATEEN_022_U_mode_virtualized():
 def SID_SMSTATEEN_023_M_mode():
     """
     Test AIA CSR access from M mode across all bit combinations.
-    Tests stopi, vstopi, hvien, hvictl, hviprio1, hviprio2.
-    Note: stopi and vstopi are always accessible in M mode.
+    Tests hvien, hvictl, hviprio1, hviprio2.
     hvien, hvictl, hviprio1, hviprio2 require appropriate stateen bits.
     """
     # Case 1: mstateen[59]=0, hstateen[59]=0, sstateen[59]=0
@@ -1652,10 +1651,7 @@ def SID_SMSTATEEN_023_M_mode():
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi1 = CsrRead(csr_name='stopi')
-    write_stopi1 = CsrWrite(csr_name='stopi', value=read_stopi1)
     read_vstopi1 = CsrRead(csr_name='vstopi')
-    write_vstopi1 = CsrWrite(csr_name='vstopi', value=read_vstopi1)
-
     read_hvien1 = CsrRead(csr_name='hvien')
     write_hvien1 = CsrWrite(csr_name='hvien', value=read_hvien1)
 
@@ -1675,9 +1671,7 @@ def SID_SMSTATEEN_023_M_mode():
     write_s2 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi2 = CsrRead(csr_name='stopi')
-    write_stopi2 = CsrWrite(csr_name='stopi', value=read_stopi2)
     read_vstopi2 = CsrRead(csr_name='vstopi')
-    write_vstopi2 = CsrWrite(csr_name='vstopi', value=read_vstopi2)
     read_hvien2 = CsrRead(csr_name='hvien')
     write_hvien2 = CsrWrite(csr_name='hvien', value=read_hvien2)
     read_hvictl2 = CsrRead(csr_name='hvictl')
@@ -1694,9 +1688,7 @@ def SID_SMSTATEEN_023_M_mode():
     write_s3 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi3 = CsrRead(csr_name='stopi')
-    write_stopi3 = CsrWrite(csr_name='stopi', value=read_stopi3)
     read_vstopi3 = CsrRead(csr_name='vstopi')
-    write_vstopi3 = CsrWrite(csr_name='vstopi', value=read_vstopi3)  
     read_hvien3 = CsrRead(csr_name='hvien')
     write_hvien3 = CsrWrite(csr_name='hvien', value=read_hvien3)
     read_hvictl3 = CsrRead(csr_name='hvictl')
@@ -1713,11 +1705,7 @@ def SID_SMSTATEEN_023_M_mode():
     write_s4 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi4 = CsrRead(csr_name='stopi')
-    write_stopi4 = CsrWrite(csr_name='stopi', value=read_stopi4)
-
     read_vstopi4 = CsrRead(csr_name='vstopi')
-    write_vstopi4 = CsrWrite(csr_name='vstopi', value=read_vstopi4)
-
     read_hvien4 = CsrRead(csr_name='hvien')
     write_hvien4 = CsrWrite(csr_name='hvien', value=read_hvien4)
 
@@ -1737,9 +1725,7 @@ def SID_SMSTATEEN_023_M_mode():
     write_s5 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 59))
 
     read_stopi5 = CsrRead(csr_name='stopi')
-    write_stopi5 = CsrWrite(csr_name='stopi', value=read_stopi5)
     read_vstopi5 = CsrRead(csr_name='vstopi')
-    write_vstopi5 = CsrWrite(csr_name='vstopi', value=read_vstopi5)
     read_hvien5 = CsrRead(csr_name='hvien')
     write_hvien5 = CsrWrite(csr_name='hvien', value=read_hvien5)
     read_hvictl5 = CsrRead(csr_name='hvictl')
@@ -1757,27 +1743,27 @@ def SID_SMSTATEEN_023_M_mode():
         steps=[
             # Case 1
             write_m1, write_h1, write_s1,
-            read_stopi1, write_stopi1, read_vstopi1, write_vstopi1,
+            read_stopi1, read_vstopi1,
             read_hvien1, write_hvien1, read_hvictl1, write_hvictl1,
             read_hviprio11, write_hviprio11, read_hviprio21, write_hviprio21,
             # Case 2
             write_m2, write_h2, write_s2,
-            read_stopi2, write_stopi2, read_vstopi2, write_vstopi2,
+            read_stopi2, read_vstopi2,
             read_hvien2, write_hvien2, read_hvictl2, write_hvictl2,
             read_hviprio12, write_hviprio12, read_hviprio22, write_hviprio22,
             # Case 3
             write_m3, write_h3, write_s3,
-            read_stopi3, write_stopi3, read_vstopi3, write_vstopi3,
+            read_stopi3, read_vstopi3,
             read_hvien3, write_hvien3, read_hvictl3, write_hvictl3,
             read_hviprio13, write_hviprio13, read_hviprio23, write_hviprio23,
             # Case 4
             write_m4, write_h4, write_s4,
-            read_stopi4, write_stopi4, read_vstopi4, write_vstopi4,
+            read_stopi4, read_vstopi4,
             read_hvien4, write_hvien4, read_hvictl4, write_hvictl4,
             read_hviprio14, write_hviprio14, read_hviprio24, write_hviprio24,
             # Case 5
             write_m5, write_h5, write_s5,
-            read_stopi5, write_stopi5, read_vstopi5, write_vstopi5,
+            read_stopi5, read_vstopi5,
             read_hvien5, write_hvien5, read_hvictl5, write_hvictl5,
             read_hviprio15, write_hviprio15, read_hviprio25, write_hviprio25,
         ],
@@ -1788,23 +1774,17 @@ def SID_SMSTATEEN_023_M_mode():
 def SID_SMSTATEEN_023_S_mode_non_virtualized():
     """
     Test AIA CSR access from S mode (non-virtualized) across all bit combinations.
-    Tests stopi, vstopi, hvien, hvictl, hviprio1, hviprio2.
-    Note: stopi and vstopi are ALWAYS accessible in S mode regardless of stateen bits.
+    Tests hvien, hvictl, hviprio1, hviprio2.
     hvien, hvictl, hviprio1, hviprio2 require mstateen[59]=1 AND hstateen[59]=1.
     """
     # Case 1: mstateen[59]=0, hstateen[59]=0, sstateen[59]=0
-    # stopi, vstopi: always accessible in S mode
     # hvien, hvictl, hviprio1, hviprio2: illegal when mstateen[59]=0
     write_m1 = CsrWrite(csr_name='mstateen0', clear_mask=(1 << 59))
     write_h1 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 59))
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi1 = CsrRead(csr_name='stopi')
-    write_stopi1 = CsrWrite(csr_name='stopi', value=read_stopi1)
-
     read_vstopi1 = CsrRead(csr_name='vstopi')
-    write_vstopi1 = CsrWrite(csr_name='vstopi', value=read_vstopi1)
-
     read_hvien1 = CsrRead(csr_name='hvien')
     assert_hvien_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien1])
     write_hvien1 = CsrWrite(csr_name='hvien', value=read_hvien1)
@@ -1826,17 +1806,13 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
     assert_hviprio2_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio21])
 
     # Case 2: mstateen[59]=1, hstateen[59]=0, sstateen[59]=0
-    # stopi, vstopi: always accessible in S mode
     # hvien, hvictl, hviprio1, hviprio2: illegal when hstateen[59]=0
     write_m2 = CsrWrite(csr_name='mstateen0', set_mask=(1 << 59))
     write_h2 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 59))
     write_s2 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi2 = CsrRead(csr_name='stopi')
-    write_stopi2 = CsrWrite(csr_name='stopi', value=read_stopi2)
     read_vstopi2 = CsrRead(csr_name='vstopi')
-    write_vstopi2 = CsrWrite(csr_name='vstopi', value=read_vstopi2)
-
     read_hvien2 = CsrRead(csr_name='hvien')
     assert_hvien_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien2])
     write_hvien2 = CsrWrite(csr_name='hvien', value=read_hvien2)
@@ -1864,9 +1840,7 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
     write_s3 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi3 = CsrRead(csr_name='stopi')
-    write_stopi3 = CsrWrite(csr_name='stopi', value=read_stopi3)
     read_vstopi3 = CsrRead(csr_name='vstopi')
-    write_vstopi3 = CsrWrite(csr_name='vstopi', value=read_vstopi3)
     read_hvien3 = CsrRead(csr_name='hvien')
     write_hvien3 = CsrWrite(csr_name='hvien', value=read_hvien3)
     read_hvictl3 = CsrRead(csr_name='hvictl')
@@ -1877,18 +1851,13 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
     write_hviprio23 = CsrWrite(csr_name='hviprio2', value=read_hviprio23)
 
     # Case 4: mstateen[59]=0, hstateen[59]=1, sstateen[59]=0
-    # stopi, vstopi: always accessible in S mode
     # hvien, hvictl, hviprio1, hviprio2: illegal when mstateen[59]=0
     write_m4 = CsrWrite(csr_name='mstateen0', clear_mask=(1 << 59))
     write_h4 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 59))
     write_s4 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi4 = CsrRead(csr_name='stopi')
-    write_stopi4 = CsrWrite(csr_name='stopi', value=read_stopi4)
-
     read_vstopi4 = CsrRead(csr_name='vstopi')
-    write_vstopi4 = CsrWrite(csr_name='vstopi', value=read_vstopi4)
-
     read_hvien4 = CsrRead(csr_name='hvien')
     assert_hvien_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien4])
     write_hvien4 = CsrWrite(csr_name='hvien', value=read_hvien4)
@@ -1916,10 +1885,7 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
     write_s5 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 59))
 
     read_stopi5 = CsrRead(csr_name='stopi')
-    write_stopi5 = CsrWrite(csr_name='stopi', value=read_stopi5)
-
     read_vstopi5 = CsrRead(csr_name='vstopi')
-    write_vstopi5 = CsrWrite(csr_name='vstopi', value=read_vstopi5)
 
     read_hvien5 = CsrRead(csr_name='hvien')
     write_hvien5 = CsrWrite(csr_name='hvien', value=read_hvien5)
@@ -1938,33 +1904,33 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
         steps=[
             # Case 1
             write_m1, write_h1, write_s1,
-            read_stopi1, write_stopi1, read_vstopi1, write_vstopi1,
+            read_stopi1, read_vstopi1,
             assert_hvien_exc1_r, assert_hvien_exc1,
             assert_hvictl_exc1_r, assert_hvictl_exc1,
             assert_hviprio1_exc1_r, assert_hviprio1_exc1,
             assert_hviprio2_exc1_r, assert_hviprio2_exc1,
             # Case 2
             write_m2, write_h2, write_s2,
-            read_stopi2, write_stopi2, read_vstopi2, write_vstopi2,
+            read_stopi2, read_vstopi2,
             assert_hvien_exc2_r, assert_hvien_exc2,
             assert_hvictl_exc2_r, assert_hvictl_exc2,
             assert_hviprio1_exc2_r, assert_hviprio1_exc2,
             assert_hviprio2_exc2_r, assert_hviprio2_exc2,
             # Case 3
             write_m3, write_h3, write_s3,
-            read_stopi3, write_stopi3, read_vstopi3, write_vstopi3,
+            read_stopi3, read_vstopi3,
             read_hvien3, write_hvien3, read_hvictl3, write_hvictl3,
             read_hviprio13, write_hviprio13, read_hviprio23, write_hviprio23,
             # Case 4
             write_m4, write_h4, write_s4,
-            read_stopi4, write_stopi4, read_vstopi4, write_vstopi4,
+            read_stopi4, read_vstopi4,
             assert_hvien_exc4_r, assert_hvien_exc4,
             assert_hvictl_exc4_r, assert_hvictl_exc4,
             assert_hviprio1_exc4_r, assert_hviprio1_exc4,
             assert_hviprio2_exc4_r, assert_hviprio2_exc4,
             # Case 5
             write_m5, write_h5, write_s5,
-            read_stopi5, write_stopi5, read_vstopi5, write_vstopi5,
+            read_stopi5, read_vstopi5,
             read_hvien5, write_hvien5, read_hvictl5, write_hvictl5,
             read_hviprio15, write_hviprio15, read_hviprio25, write_hviprio25,
         ],
@@ -1975,7 +1941,7 @@ def SID_SMSTATEEN_023_S_mode_non_virtualized():
 def SID_SMSTATEEN_023_U_mode_non_virtualized():
     """
     Test AIA CSR access from U mode (non-virtualized) across all bit combinations.
-    All CSRs should raise illegal instruction exceptions regardless of bit settings.
+    All hvien, hvictl, hviprio1, hviprio2 CSRs should raise illegal instruction exceptions regardless of bit settings.
     """
     # Case 1: mstateen[59]=0, hstateen[59]=0, sstateen[59]=0
     write_m1 = CsrWrite(csr_name='mstateen0', clear_mask=(1 << 59))
@@ -1984,13 +1950,9 @@ def SID_SMSTATEEN_023_U_mode_non_virtualized():
 
     read_stopi1 = CsrRead(csr_name='stopi')
     assert_stopi_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi1])
-    write_stopi1 = CsrWrite(csr_name='stopi', value=read_stopi1)
-    assert_stopi_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi1])
 
     read_vstopi1 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi1])
-    write_vstopi1 = CsrWrite(csr_name='vstopi', value=read_vstopi1)
-    assert_vstopi_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi1])
 
     read_hvien1 = CsrRead(csr_name='hvien')
     assert_hvien_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien1])
@@ -2019,13 +1981,8 @@ def SID_SMSTATEEN_023_U_mode_non_virtualized():
 
     read_stopi2 = CsrRead(csr_name='stopi')
     assert_stopi_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi2])
-    write_stopi2 = CsrWrite(csr_name='stopi', value=read_stopi2)
-    assert_stopi_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi2])
-
     read_vstopi2 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi2])
-    write_vstopi2 = CsrWrite(csr_name='vstopi', value=read_vstopi2)
-    assert_vstopi_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi2])
 
     read_hvien2 = CsrRead(csr_name='hvien')
     assert_hvien_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien2])
@@ -2054,13 +2011,8 @@ def SID_SMSTATEEN_023_U_mode_non_virtualized():
 
     read_stopi3 = CsrRead(csr_name='stopi')
     assert_stopi_exc3_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi3])
-    write_stopi3 = CsrWrite(csr_name='stopi', value=read_stopi3)
-    assert_stopi_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi3])
-
     read_vstopi3 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc3_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi3])
-    write_vstopi3 = CsrWrite(csr_name='vstopi', value=read_vstopi3)
-    assert_vstopi_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi3])
 
     read_hvien3 = CsrRead(csr_name='hvien')
     assert_hvien_exc3_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien3])
@@ -2089,13 +2041,9 @@ def SID_SMSTATEEN_023_U_mode_non_virtualized():
 
     read_stopi4 = CsrRead(csr_name='stopi')
     assert_stopi_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi4])
-    write_stopi4 = CsrWrite(csr_name='stopi', value=read_stopi4)
-    assert_stopi_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi4])
-
     read_vstopi4 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi4])
-    write_vstopi4 = CsrWrite(csr_name='vstopi', value=read_vstopi4)
-    assert_vstopi_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi4])
+
 
     read_hvien4 = CsrRead(csr_name='hvien')
     assert_hvien_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien4])
@@ -2122,15 +2070,11 @@ def SID_SMSTATEEN_023_U_mode_non_virtualized():
     write_h5 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 59))
     write_s5 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 59))
 
+
     read_stopi5 = CsrRead(csr_name='stopi')
     assert_stopi_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi5])
-    write_stopi5 = CsrWrite(csr_name='stopi', value=read_stopi5)
-    assert_stopi_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi5])
-
     read_vstopi5 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi5])
-    write_vstopi5 = CsrWrite(csr_name='vstopi', value=read_vstopi5)
-    assert_vstopi_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi5])
 
     read_hvien5 = CsrRead(csr_name='hvien')
     assert_hvien_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien5])
@@ -2160,40 +2104,40 @@ def SID_SMSTATEEN_023_U_mode_non_virtualized():
         steps=[
             # Case 1
             write_m1, write_h1, write_s1,
-            assert_stopi_exc1_r, assert_stopi_exc1,
-            assert_vstopi_exc1_r, assert_vstopi_exc1,
+            assert_stopi_exc1_r,
+            assert_vstopi_exc1_r,
             assert_hvien_exc1_r, assert_hvien_exc1,
             assert_hvictl_exc1_r, assert_hvictl_exc1,
             assert_hviprio1_exc1_r, assert_hviprio1_exc1,
             assert_hviprio2_exc1_r, assert_hviprio2_exc1,
             # Case 2
             write_m2, write_h2, write_s2,
-            assert_stopi_exc2_r, assert_stopi_exc2,
-            assert_vstopi_exc2_r, assert_vstopi_exc2,
+            assert_stopi_exc2_r,
+            assert_vstopi_exc2_r
             assert_hvien_exc2_r, assert_hvien_exc2,
             assert_hvictl_exc2_r, assert_hvictl_exc2,
             assert_hviprio1_exc2_r, assert_hviprio1_exc2,
             assert_hviprio2_exc2_r, assert_hviprio2_exc2,
             # Case 3
             write_m3, write_h3, write_s3,
-            assert_stopi_exc3_r, assert_stopi_exc3,
-            assert_vstopi_exc3_r, assert_vstopi_exc3,
+            assert_stopi_exc3_r,
+            assert_vstopi_exc3_r,
             assert_hvien_exc3_r, assert_hvien_exc3,
             assert_hvictl_exc3_r, assert_hvictl_exc3,
             assert_hviprio1_exc3_r, assert_hviprio1_exc3,
             assert_hviprio2_exc3_r, assert_hviprio2_exc3,
             # Case 4
             write_m4, write_h4, write_s4,
-            assert_stopi_exc4_r, assert_stopi_exc4,
-            assert_vstopi_exc4_r, assert_vstopi_exc4,
+            assert_stopi_exc4_r,
+            assert_vstopi_exc4_r,
             assert_hvien_exc4_r, assert_hvien_exc4,
             assert_hvictl_exc4_r, assert_hvictl_exc4,
             assert_hviprio1_exc4_r, assert_hviprio1_exc4,
             assert_hviprio2_exc4_r, assert_hviprio2_exc4,
             # Case 5
             write_m5, write_h5, write_s5,
-            assert_stopi_exc5_r, assert_stopi_exc5,
-            assert_vstopi_exc5_r, assert_vstopi_exc5,
+            assert_stopi_exc5_r,
+            assert_vstopi_exc5_r,
             assert_hvien_exc5_r, assert_hvien_exc5,
             assert_hvictl_exc5_r, assert_hvictl_exc5,
             assert_hviprio1_exc5_r, assert_hviprio1_exc5,
@@ -2215,16 +2159,9 @@ def SID_SMSTATEEN_023_S_mode_virtualized():
     write_h1 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 59))
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
+
     read_stopi1 = CsrRead(csr_name='stopi')
-    assert_stopi_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi1])
-    write_stopi1 = CsrWrite(csr_name='stopi', value=read_stopi1)
-    assert_stopi_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi1])
-
     read_vstopi1 = CsrRead(csr_name='vstopi')
-    assert_vstopi_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi1])
-    write_vstopi1 = CsrWrite(csr_name='vstopi', value=read_vstopi1)
-    assert_vstopi_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi1])
-
     read_hvien1 = CsrRead(csr_name='hvien')
     assert_hvien_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien1])
     write_hvien1 = CsrWrite(csr_name='hvien', value=read_hvien1)
@@ -2246,22 +2183,14 @@ def SID_SMSTATEEN_023_S_mode_virtualized():
     assert_hviprio2_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_hviprio21])
 
     # Case 2: mstateen[59]=1, hstateen[59]=0, sstateen[59]=0
-    # stopi, vstopi: virtual exception when hstateen[59]=0
     # hvien, hvictl, hviprio1, hviprio2: virtual exception
     write_m2 = CsrWrite(csr_name='mstateen0', set_mask=(1 << 59))
     write_h2 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 59))
     write_s2 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
+
     read_stopi2 = CsrRead(csr_name='stopi')
-    assert_stopi_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi2])
-    write_stopi2 = CsrWrite(csr_name='stopi', value=read_stopi2)
-    assert_stopi_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi2])
-
     read_vstopi2 = CsrRead(csr_name='vstopi')
-    assert_vstopi_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi2])
-    write_vstopi2 = CsrWrite(csr_name='vstopi', value=read_vstopi2)
-    assert_vstopi_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi2])
-
     read_hvien2 = CsrRead(csr_name='hvien')
     assert_hvien_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien2])
     write_hvien2 = CsrWrite(csr_name='hvien', value=read_hvien2)
@@ -2289,9 +2218,7 @@ def SID_SMSTATEEN_023_S_mode_virtualized():
     write_s3 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
     read_stopi3 = CsrRead(csr_name='stopi')
-    write_stopi3 = CsrWrite(csr_name='stopi', value=read_stopi3)
     read_vstopi3 = CsrRead(csr_name='vstopi')
-    write_vstopi3 = CsrWrite(csr_name='vstopi', value=read_vstopi3)
     read_hvien3 = CsrRead(csr_name='hvien')
     write_hvien3 = CsrWrite(csr_name='hvien', value=read_hvien3)
     read_hvictl3 = CsrRead(csr_name='hvictl')
@@ -2307,16 +2234,9 @@ def SID_SMSTATEEN_023_S_mode_virtualized():
     write_h4 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 59))
     write_s4 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
+
     read_stopi4 = CsrRead(csr_name='stopi')
-    assert_stopi_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi4])
-    write_stopi4 = CsrWrite(csr_name='stopi', value=read_stopi4)
-    assert_stopi_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi4])
-
     read_vstopi4 = CsrRead(csr_name='vstopi')
-    assert_vstopi_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi4])
-    write_vstopi4 = CsrWrite(csr_name='vstopi', value=read_vstopi4)
-    assert_vstopi_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi4])
-
     read_hvien4 = CsrRead(csr_name='hvien')
     assert_hvien_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien4])
     write_hvien4 = CsrWrite(csr_name='hvien', value=read_hvien4)
@@ -2344,9 +2264,7 @@ def SID_SMSTATEEN_023_S_mode_virtualized():
     write_s5 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 59))
 
     read_stopi5 = CsrRead(csr_name='stopi')
-    write_stopi5 = CsrWrite(csr_name='stopi', value=read_stopi5)
     read_vstopi5 = CsrRead(csr_name='vstopi')
-    write_vstopi5 = CsrWrite(csr_name='vstopi', value=read_vstopi5)
     read_hvien5 = CsrRead(csr_name='hvien')
     write_hvien5 = CsrWrite(csr_name='hvien', value=read_hvien5)
     read_hvictl5 = CsrRead(csr_name='hvictl')
@@ -2360,40 +2278,37 @@ def SID_SMSTATEEN_023_S_mode_virtualized():
         id="41",
         name="SID_SMSTATEEN_023_S_mode_virtualized",
         description="Test AIA CSR access from VS mode across all bit combinations",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             # Case 1
             write_m1, write_h1, write_s1,
-            assert_stopi_exc1_r, assert_stopi_exc1,
-            assert_vstopi_exc1_r, assert_vstopi_exc1,
+            read_stopi1, read_vstopi1,
             assert_hvien_exc1_r, assert_hvien_exc1,
             assert_hvictl_exc1_r, assert_hvictl_exc1,
             assert_hviprio1_exc1_r, assert_hviprio1_exc1,
             assert_hviprio2_exc1_r, assert_hviprio2_exc1,
             # Case 2
             write_m2, write_h2, write_s2,
-            assert_stopi_exc2_r, assert_stopi_exc2,
-            assert_vstopi_exc2_r, assert_vstopi_exc2,
+            read_stopi2, read_vstopi2,
             assert_hvien_exc2_r, assert_hvien_exc2,
             assert_hvictl_exc2_r, assert_hvictl_exc2,
             assert_hviprio1_exc2_r, assert_hviprio1_exc2,
             assert_hviprio2_exc2_r, assert_hviprio2_exc2,
             # Case 3
             write_m3, write_h3, write_s3,
-            read_stopi3, write_stopi3, read_vstopi3, write_vstopi3,
+            read_stopi3, read_vstopi3,
             read_hvien3, write_hvien3, read_hvictl3, write_hvictl3,
             read_hviprio13, write_hviprio13, read_hviprio23, write_hviprio23,
             # Case 4
             write_m4, write_h4, write_s4,
-            assert_stopi_exc4_r, assert_stopi_exc4,
-            assert_vstopi_exc4_r, assert_vstopi_exc4,
+            read_stopi4, read_vstopi4,
             assert_hvien_exc4_r, assert_hvien_exc4,
             assert_hvictl_exc4_r, assert_hvictl_exc4,
             assert_hviprio1_exc4_r, assert_hviprio1_exc4,
             assert_hviprio2_exc4_r, assert_hviprio2_exc4,
             # Case 5
             write_m5, write_h5, write_s5,
-            read_stopi5, write_stopi5, read_vstopi5, write_vstopi5,
+            read_stopi5, read_vstopi5,
             read_hvien5, write_hvien5, read_hvictl5, write_hvictl5,
             read_hviprio15, write_hviprio15, read_hviprio25, write_hviprio25,
         ],
@@ -2411,16 +2326,14 @@ def SID_SMSTATEEN_023_U_mode_virtualized():
     write_h1 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 59))
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
+
     read_stopi1 = CsrRead(csr_name='stopi')
     assert_stopi_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi1])
-    write_stopi1 = CsrWrite(csr_name='stopi', value=read_stopi1)
-    assert_stopi_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi1])
-
     read_vstopi1 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi1])
-    write_vstopi1 = CsrWrite(csr_name='vstopi', value=read_vstopi1)
-    assert_vstopi_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi1])
 
+    read_stopi1 = CsrRead(csr_name='stopi')
+    read_vstopi1 = CsrRead(csr_name='vstopi')
     read_hvien1 = CsrRead(csr_name='hvien')
     assert_hvien_exc1_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien1])
     write_hvien1 = CsrWrite(csr_name='hvien', value=read_hvien1)
@@ -2446,15 +2359,11 @@ def SID_SMSTATEEN_023_U_mode_virtualized():
     write_h2 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 59))
     write_s2 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
+
     read_stopi2 = CsrRead(csr_name='stopi')
     assert_stopi_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi2])
-    write_stopi2 = CsrWrite(csr_name='stopi', value=read_stopi2)
-    assert_stopi_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi2])
-
     read_vstopi2 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi2])
-    write_vstopi2 = CsrWrite(csr_name='vstopi', value=read_vstopi2)
-    assert_vstopi_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi2])
 
     read_hvien2 = CsrRead(csr_name='hvien')
     assert_hvien_exc2_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien2])
@@ -2481,15 +2390,11 @@ def SID_SMSTATEEN_023_U_mode_virtualized():
     write_h3 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 59))
     write_s3 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
+
     read_stopi3 = CsrRead(csr_name='stopi')
     assert_stopi_exc3_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi3])
-    write_stopi3 = CsrWrite(csr_name='stopi', value=read_stopi3)
-    assert_stopi_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi3])
-
     read_vstopi3 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc3_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi3])
-    write_vstopi3 = CsrWrite(csr_name='vstopi', value=read_vstopi3)
-    assert_vstopi_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi3])
 
     read_hvien3 = CsrRead(csr_name='hvien')
     assert_hvien_exc3_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien3])
@@ -2516,15 +2421,11 @@ def SID_SMSTATEEN_023_U_mode_virtualized():
     write_h4 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 59))
     write_s4 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 59))
 
+
     read_stopi4 = CsrRead(csr_name='stopi')
     assert_stopi_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi4])
-    write_stopi4 = CsrWrite(csr_name='stopi', value=read_stopi4)
-    assert_stopi_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi4])
-
     read_vstopi4 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi4])
-    write_vstopi4 = CsrWrite(csr_name='vstopi', value=read_vstopi4)
-    assert_vstopi_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi4])
 
     read_hvien4 = CsrRead(csr_name='hvien')
     assert_hvien_exc4_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien4])
@@ -2551,15 +2452,11 @@ def SID_SMSTATEEN_023_U_mode_virtualized():
     write_h5 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 59))
     write_s5 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 59))
 
+
     read_stopi5 = CsrRead(csr_name='stopi')
     assert_stopi_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_stopi5])
-    write_stopi5 = CsrWrite(csr_name='stopi', value=read_stopi5)
-    assert_stopi_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_stopi5])
-
     read_vstopi5 = CsrRead(csr_name='vstopi')
     assert_vstopi_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vstopi5])
-    write_vstopi5 = CsrWrite(csr_name='vstopi', value=read_vstopi5)
-    assert_vstopi_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_vstopi5])
 
     read_hvien5 = CsrRead(csr_name='hvien')
     assert_hvien_exc5_r = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_hvien5])
@@ -2585,45 +2482,45 @@ def SID_SMSTATEEN_023_U_mode_virtualized():
         id="42",
         name="SID_SMSTATEEN_023_U_mode_virtualized",
         description="Test AIA CSR access from VU mode - all illegal",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
             # Case 1
             write_m1, write_h1, write_s1,
-            assert_stopi_exc1_r, assert_stopi_exc1,
-            assert_vstopi_exc1_r, assert_vstopi_exc1,
             assert_hvien_exc1_r, assert_hvien_exc1,
+            assert_stopi_exc1_r,
+            assert_vstopi_exc1_r,
             assert_hvictl_exc1_r, assert_hvictl_exc1,
             assert_hviprio1_exc1_r, assert_hviprio1_exc1,
             assert_hviprio2_exc1_r, assert_hviprio2_exc1,
             # Case 2
             write_m2, write_h2, write_s2,
-            assert_stopi_exc2_r, assert_stopi_exc2,
-            assert_vstopi_exc2_r, assert_vstopi_exc2,
             assert_hvien_exc2_r, assert_hvien_exc2,
+            assert_stopi_exc2_r,
+            assert_vstopi_exc2_r,
             assert_hvictl_exc2_r, assert_hvictl_exc2,
             assert_hviprio1_exc2_r, assert_hviprio1_exc2,
             assert_hviprio2_exc2_r, assert_hviprio2_exc2,
             # Case 3
             write_m3, write_h3, write_s3,
-            assert_stopi_exc3_r, assert_stopi_exc3,
-            assert_vstopi_exc3_r, assert_vstopi_exc3,
             assert_hvien_exc3_r, assert_hvien_exc3,
+            assert_stopi_exc3_r,
+            assert_vstopi_exc3_r,
             assert_hvictl_exc3_r, assert_hvictl_exc3,
             assert_hviprio1_exc3_r, assert_hviprio1_exc3,
             assert_hviprio2_exc3_r, assert_hviprio2_exc3,
             # Case 4
             write_m4, write_h4, write_s4,
-            assert_stopi_exc4_r, assert_stopi_exc4,
-            assert_vstopi_exc4_r, assert_vstopi_exc4,
             assert_hvien_exc4_r, assert_hvien_exc4,
+            assert_stopi_exc4_r,
+            assert_vstopi_exc4_r,
             assert_hvictl_exc4_r, assert_hvictl_exc4,
             assert_hviprio1_exc4_r, assert_hviprio1_exc4,
             assert_hviprio2_exc4_r, assert_hviprio2_exc4,
             # Case 5
             write_m5, write_h5, write_s5,
-            assert_stopi_exc5_r, assert_stopi_exc5,
-            assert_vstopi_exc5_r, assert_vstopi_exc5,
             assert_hvien_exc5_r, assert_hvien_exc5,
+            assert_stopi_exc5_r,
+            assert_vstopi_exc5_r,
             assert_hvictl_exc5_r, assert_hvictl_exc5,
             assert_hviprio1_exc5_r, assert_hviprio1_exc5,
             assert_hviprio2_exc5_r, assert_hviprio2_exc5,
@@ -2985,7 +2882,7 @@ def SID_SMSTATEEN_024_S_mode_virtualized():
         id="36",
         name="SID_SMSTATEEN_024_S_mode_virtualized",
         description="Test IMSIC CSR access from VS mode across all bit combinations",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             # Case 1
             write_m1, write_h1, write_s1,
@@ -3095,7 +2992,7 @@ def SID_SMSTATEEN_024_U_mode_virtualized():
         id="37",
         name="SID_SMSTATEEN_024_U_mode_virtualized",
         description="Test IMSIC CSR access from VU mode across all bit combinations",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
             # Case 1
             write_m1, write_h1, write_s1,
@@ -3250,7 +3147,7 @@ def SID_SMSTATEEN_027_VS():
         id="40",
         name="SID_SMSTATEEN_027_sstateen_value_retention_VS_mode",
         description="sstateen value retention in VS mode when hstateen bit transitions",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=[
             write_m1,
             write_h1,
