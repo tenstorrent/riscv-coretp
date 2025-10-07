@@ -2113,7 +2113,7 @@ def SID_SMSTATEEN_023_U_mode_non_virtualized():
             # Case 2
             write_m2, write_h2, write_s2,
             assert_stopi_exc2_r,
-            assert_vstopi_exc2_r
+            assert_vstopi_exc2_r,
             assert_hvien_exc2_r, assert_hvien_exc2,
             assert_hvictl_exc2_r, assert_hvictl_exc2,
             assert_hviprio1_exc2_r, assert_hviprio1_exc2,
