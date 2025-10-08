@@ -884,9 +884,9 @@ def SID_EXCEP_04_2_1_MUX_SELECT_0():
     selector = LoadImmediateStep(imm=0)  # 0 = select input0, non-zero = select input1
 
     # If selector == 0: use input0, else use 0
-    selected_input0 = Arithmetic(op="czero.eqz", src1=input0, src2=selector)
+    selected_input0 = Arithmetic(op="czero.nez", src1=input0, src2=selector)
     # If selector != 0: use input1, else use 0
-    selected_input1 = Arithmetic(op="czero.nez", src1=input1, src2=selector)
+    selected_input1 = Arithmetic(op="czero.eqz", src1=input1, src2=selector)
 
     # Combine the selections (only one will be non-zero)
     mux_output = Arithmetic(op="or", src1=selected_input0, src2=selected_input1)
@@ -924,13 +924,13 @@ def SID_EXCEP_04_2_1_MUX_SELECT_1():
     input1 = LoadImmediateStep(imm=0xBEEF)
     selector = LoadImmediateStep(imm=1)  # non-zero = select input1, 0 = select input0
 
-    # If selector == 0: use input0, else use 0
-    selected_input0 = Arithmetic(op="czero.eqz", src1=input0, src2=selector)
     # If selector != 0: use input1, else use 0
-    selected_input1 = Arithmetic(op="czero.nez", src1=input1, src2=selector)
+    selected_input1 = Arithmetic(op="czero.nez", src1=input0, src2=selector)
+    # If selector == 0: use input0, else use 0
+    selected_input0 = Arithmetic(op="czero.eqz", src1=input1, src2=selector)
 
     # Combine the selections (only one will be non-zero)
-    mux_output = Arithmetic(op="or", src1=selected_input0, src2=selected_input1)
+    mux_output = Arithmetic(op="or", src1=selected_input1, src2=selected_input0)
 
     # Expected result: since selector=1 (non-zero), should get input1=0xBEEF
     expected = LoadImmediateStep(imm=0xBEEF)
@@ -945,8 +945,8 @@ def SID_EXCEP_04_2_1_MUX_SELECT_1():
             input0,
             input1,
             selector,
-            selected_input0,
-            selected_input1,
+            selected_input0,  # Swapped order
+            selected_input1,  # Swapped order
             mux_output,
             expected,
             assert_equal,
