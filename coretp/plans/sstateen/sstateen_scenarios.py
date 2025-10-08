@@ -187,12 +187,12 @@ def SID_SMSTATEEN_006():
     hstateen0 implemented bits should be writable in M and HS mode given that corresponding mstateen bits are set
     """
     # Write mstateen0 with all implemented bits set
-    write_m = CsrWrite(csr_name='mstateen0', value=0xD8FC000000000001)
+    write_m = CsrWrite(csr_name='mstateen0', value=0xD800000000000001)
     # Write hstateen0 with all bits
     write_h = CsrWrite(csr_name='hstateen0', value=0xFFFFFFFFFFFFFFFF)
     # Read and verify writable bits
     result = CsrRead(csr_name='hstateen0')
-    check_val = LoadImmediateStep(imm=0xD8FC000000000001)
+    check_val = LoadImmediateStep(imm=0xD800000000000001)
     result_masked = Arithmetic(op="and", src1=result, src2=check_val)
     assert_equal = AssertEqual(src1=result_masked, src2=check_val)
 
@@ -200,7 +200,7 @@ def SID_SMSTATEEN_006():
         id="6",
         name="SID_SMSTATEEN_006",
         description="hstateen0 implemented bits should be writable in HS mode given that corresponding mstateen bits are set",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], hypervisor=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], hypervisor=[True]),
         steps=[
             write_m,
             write_h,
@@ -218,7 +218,7 @@ def SID_SMSTATEEN_007_008():
     hstateen* bits should be read-only zero in M and HS mode given that corresponding mstateen bits are zero
     """
     # Write mstateen0 to zero
-    write_m = CsrWrite(csr_name='mstateen0', value=0x037FFFFFFFFF00FE)
+    write_m = CsrWrite(csr_name='mstateen0', value=0x27FFFFFFFFFFFFFE)
     # Try to write hstateen0
     write_h = CsrWrite(csr_name='hstateen0', value=0xFFFFFFFFFFFFFFFF)
     # Read and verify it's zero
@@ -226,17 +226,17 @@ def SID_SMSTATEEN_007_008():
     zero = LoadImmediateStep(imm=0)
     assert_equal = AssertEqual(src1=result, src2=zero)
 
-    write_unimp = CsrWrite(csr_name='mstateen1', value=0xFFFFFFFFFFFFFFFF)
+    write_unimp = CsrWrite(csr_name='mstateen1', value=0x7FFFFFFFFFFFFFFF)
     write_unimp_h = CsrWrite(csr_name='hstateen1', value=0xFFFFFFFFFFFFFFFF)
     result_unimp = CsrRead(csr_name='hstateen1')
     assert_unimp = AssertEqual(src1=result_unimp, src2=zero)
 
-    write_unimp_2 = CsrWrite(csr_name='mstateen2', value=0xFFFFFFFFFFFFFFFF)
+    write_unimp_2 = CsrWrite(csr_name='mstateen2', value=0x7FFFFFFFFFFFFFFF)
     write_unimp_h_2 = CsrWrite(csr_name='hstateen2', value=0xFFFFFFFFFFFFFFFF)
     result_unimp_2 = CsrRead(csr_name='hstateen2')
     assert_unimp_2 = AssertEqual(src1=result_unimp_2, src2=zero)
 
-    write_unimp_3 = CsrWrite(csr_name='mstateen3', value=0xFFFFFFFFFFFFFFFF)
+    write_unimp_3 = CsrWrite(csr_name='mstateen3', value=0x7FFFFFFFFFFFFFFF)
     write_unimp_h_3 = CsrWrite(csr_name='hstateen3', value=0xFFFFFFFFFFFFFFFF)
     result_unimp_3 = CsrRead(csr_name='hstateen3')
     assert_unimp_3 = AssertEqual(src1=result_unimp_3, src2=zero)
@@ -245,7 +245,7 @@ def SID_SMSTATEEN_007_008():
         id="7",
         name="SID_SMSTATEEN_007_008",
         description="hstateen* bits should be read-only zero in HS mode given that corresponding mstateen bits are zero",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], hypervisor=True),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], hypervisor=[True]),
         steps=[
             write_m,
             write_h,
