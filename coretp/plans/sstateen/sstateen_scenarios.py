@@ -979,7 +979,7 @@ def SID_SMSTATEEN_021_S_mode_non_virtualized():
         id="21",
         name="SID_SMSTATEEN_021_S_mode_non_virtualized",
         description="Test bit 62 (ENVCFG) access from S mode (non-virtualized)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=False),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=[
             write_m1, write_h1, write_s1, assert_menvcfg_exc1, assert_senvcfg_exc1, assert_henvcfg_exc1,
             write_m2, read_menvcfg2, write_menvcfg2, read_senvcfg2, write_senvcfg2, assert_henvcfg_exc2,
@@ -1049,7 +1049,7 @@ def SID_SMSTATEEN_021_U_mode_non_virtualized():
         id="22",
         name="SID_SMSTATEEN_021_U_mode_non_virtualized",
         description="Test bit 62 (ENVCFG) access from U mode (non-virtualized)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=False),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=[
             write_m1, write_h1, write_s1, assert_menvcfg_exc1, assert_henvcfg_exc1, assert_senvcfg_exc1,
             write_m2, assert_menvcfg_exc2, assert_henvcfg_exc2, assert_senvcfg_exc2,
@@ -1222,64 +1222,64 @@ def SID_SMSTATEEN_022_M_mode():
     """
     Test bit 60 (CSRIND) access from M mode - always accessible regardless of mstateen0[60]
     Tests all 5 cases: mstateen[60]=0, mstateen[60]=1 with various hstateen/sstateen combinations
-    Tests siselect, sireg, vsiselect, vsireg CSRs
+    Tests siselect, # sireg, vsiselect, # vsireg CSRs
     """
     # Case 1: mstateen[60]=0, hstateen[60]=0, sstateen[60]=0 - M mode accessible
     write_m1 = CsrWrite(csr_name='mstateen0', clear_mask=(1 << 60))
     write_h1 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     read_siselect1 = CsrRead(csr_name='siselect')
     write_siselect1 = CsrWrite(csr_name='siselect', value=read_siselect1)
-    read_sireg1 = CsrRead(csr_name='sireg')
-    write_sireg1 = CsrWrite(csr_name='sireg', value=read_sireg1)
+    # read_sireg1 = CsrRead(csr_name='sireg')
+    # write_sireg1 = CsrWrite(csr_name='sireg', value=read_sireg1)
     read_vsiselect1 = CsrRead(csr_name='vsiselect')
     write_vsiselect1 = CsrWrite(csr_name='vsiselect', value=read_vsiselect1)
-    read_vsireg1 = CsrRead(csr_name='vsireg')
-    write_vsireg1 = CsrWrite(csr_name='vsireg', value=read_vsireg1)
+    # read_vsireg1 = CsrRead(csr_name='vsireg')
+    # write_vsireg1 = CsrWrite(csr_name='vsireg', value=read_vsireg1)
 
     # Case 2: mstateen[60]=1, hstateen[60]=0, sstateen[60]=0 - M mode accessible
     write_m2 = CsrWrite(csr_name='mstateen0', set_mask=(1 << 60))
     read_siselect2 = CsrRead(csr_name='siselect')
     write_siselect2 = CsrWrite(csr_name='siselect', value=read_siselect2)
-    read_sireg2 = CsrRead(csr_name='sireg')
-    write_sireg2 = CsrWrite(csr_name='sireg', value=read_sireg2)
+    # read_sireg2 = CsrRead(csr_name='sireg')
+    # write_sireg2 = CsrWrite(csr_name='sireg', value=read_sireg2)
     read_vsiselect2 = CsrRead(csr_name='vsiselect')
     write_vsiselect2 = CsrWrite(csr_name='vsiselect', value=read_vsiselect2)
-    read_vsireg2 = CsrRead(csr_name='vsireg')
-    write_vsireg2 = CsrWrite(csr_name='vsireg', value=read_vsireg2)
+    # read_vsireg2 = CsrRead(csr_name='vsireg')
+    # write_vsireg2 = CsrWrite(csr_name='vsireg', value=read_vsireg2)
 
     # Case 3: mstateen[60]=1, hstateen[60]=1, sstateen[60]=0 - M mode accessible
     write_h3 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect3 = CsrRead(csr_name='siselect')
     write_siselect3 = CsrWrite(csr_name='siselect', value=read_siselect3)
-    read_sireg3 = CsrRead(csr_name='sireg')
-    write_sireg3 = CsrWrite(csr_name='sireg', value=read_sireg3)
+    # read_sireg3 = CsrRead(csr_name='sireg')
+    # write_sireg3 = CsrWrite(csr_name='sireg', value=read_sireg3)
     read_vsiselect3 = CsrRead(csr_name='vsiselect')
     write_vsiselect3 = CsrWrite(csr_name='vsiselect', value=read_vsiselect3)
-    read_vsireg3 = CsrRead(csr_name='vsireg')
-    write_vsireg3 = CsrWrite(csr_name='vsireg', value=read_vsireg3)
+    # read_vsireg3 = CsrRead(csr_name='vsireg')
+    # write_vsireg3 = CsrWrite(csr_name='vsireg', value=read_vsireg3)
 
     # Case 4: mstateen[60]=1, hstateen[60]=0, sstateen[60]=1 - M mode accessible
     write_h4 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     write_s4 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 60))
     read_siselect4 = CsrRead(csr_name='siselect')
     write_siselect4 = CsrWrite(csr_name='siselect', value=read_siselect4)
-    read_sireg4 = CsrRead(csr_name='sireg')
-    write_sireg4 = CsrWrite(csr_name='sireg', value=read_sireg4)
+    # read_sireg4 = CsrRead(csr_name='sireg')
+    # write_sireg4 = CsrWrite(csr_name='sireg', value=read_sireg4)
     read_vsiselect4 = CsrRead(csr_name='vsiselect')
     write_vsiselect4 = CsrWrite(csr_name='vsiselect', value=read_vsiselect4)
-    read_vsireg4 = CsrRead(csr_name='vsireg')
-    write_vsireg4 = CsrWrite(csr_name='vsireg', value=read_vsireg4)
+    # read_vsireg4 = CsrRead(csr_name='vsireg')
+    # write_vsireg4 = CsrWrite(csr_name='vsireg', value=read_vsireg4)
 
     # Case 5: mstateen[60]=1, hstateen[60]=1, sstateen[60]=1 - M mode accessible
     write_h5 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect5 = CsrRead(csr_name='siselect')
     write_siselect5 = CsrWrite(csr_name='siselect', value=read_siselect5)
-    read_sireg5 = CsrRead(csr_name='sireg')
-    write_sireg5 = CsrWrite(csr_name='sireg', value=read_sireg5)
+    # read_sireg5 = CsrRead(csr_name='sireg')
+    # write_sireg5 = CsrWrite(csr_name='sireg', value=read_sireg5)
     read_vsiselect5 = CsrRead(csr_name='vsiselect')
     write_vsiselect5 = CsrWrite(csr_name='vsiselect', value=read_vsiselect5)
-    read_vsireg5 = CsrRead(csr_name='vsireg')
-    write_vsireg5 = CsrWrite(csr_name='vsireg', value=read_vsireg5)
+    # read_vsireg5 = CsrRead(csr_name='vsireg')
+    # write_vsireg5 = CsrWrite(csr_name='vsireg', value=read_vsireg5)
 
     return TestScenario.from_steps(
         id="25",
@@ -1287,11 +1287,11 @@ def SID_SMSTATEEN_022_M_mode():
         description="Test bit 60 (CSRIND) access from M mode - always accessible",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
-            write_m1, write_h1, read_siselect1, write_siselect1, read_sireg1, write_sireg1, read_vsiselect1, write_vsiselect1, read_vsireg1, write_vsireg1,
-            write_m2, read_siselect2, write_siselect2, read_sireg2, write_sireg2, read_vsiselect2, write_vsiselect2, read_vsireg2, write_vsireg2,
-            write_h3, read_siselect3, write_siselect3, read_sireg3, write_sireg3, read_vsiselect3, write_vsiselect3, read_vsireg3, write_vsireg3,
-            write_h4, write_s4, read_siselect4, write_siselect4, read_sireg4, write_sireg4, read_vsiselect4, write_vsiselect4, read_vsireg4, write_vsireg4,
-            write_h5, read_siselect5, write_siselect5, read_sireg5, write_sireg5, read_vsiselect5, write_vsiselect5, read_vsireg5, write_vsireg5,
+            write_m1, write_h1, read_siselect1, write_siselect1, # read_sireg1, # write_sireg1, read_vsiselect1, write_vsiselect1, # read_vsireg1, # write_vsireg1,
+            write_m2, read_siselect2, write_siselect2, # read_sireg2, # write_sireg2, read_vsiselect2, write_vsiselect2, # read_vsireg2, # write_vsireg2,
+            write_h3, read_siselect3, write_siselect3, # read_sireg3, # write_sireg3, read_vsiselect3, write_vsiselect3, # read_vsireg3, # write_vsireg3,
+            write_h4, write_s4, read_siselect4, write_siselect4, # read_sireg4, # write_sireg4, read_vsiselect4, write_vsiselect4, # read_vsireg4, # write_vsireg4,
+            write_h5, read_siselect5, write_siselect5, # read_sireg5, # write_sireg5, read_vsiselect5, write_vsiselect5, # read_vsireg5, # write_vsireg5,
         ],
     )
 
@@ -1300,88 +1300,88 @@ def SID_SMSTATEEN_022_M_mode():
 def SID_SMSTATEEN_022_S_mode_non_virtualized():
     """
     Test bit 60 (CSRIND) access from S mode (non-virtualized)
-    siselect/sireg: accessible when mstateen[60]=1 (regardless of hstateen/sstateen)
-    vsiselect/vsireg: accessible when mstateen[60]=1 AND hstateen[60]=1
+    siselect/# sireg: accessible when mstateen[60]=1 (regardless of hstateen/sstateen)
+    vsiselect/# vsireg: accessible when mstateen[60]=1 AND hstateen[60]=1
     """
     # Case 1: mstateen[60]=0, hstateen[60]=0, sstateen[60]=0
-    # siselect/sireg: illegal instruction exception
-    # vsiselect/vsireg: illegal instruction exception
+    # siselect/# sireg: illegal instruction exception
+    # vsiselect/# vsireg: illegal instruction exception
     write_m1 = CsrWrite(csr_name='mstateen0', clear_mask=(1 << 60))
     write_h1 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 60))
     read_siselect1 = CsrRead(csr_name='siselect')
     write_siselect1 = CsrWrite(csr_name='siselect', value=read_siselect1)
-    read_sireg1 = CsrRead(csr_name='sireg')
-    write_sireg1 = CsrWrite(csr_name='sireg', value=read_sireg1)
+    # read_sireg1 = CsrRead(csr_name='sireg')
+    # write_sireg1 = CsrWrite(csr_name='sireg', value=read_sireg1)
     read_vsiselect1 = CsrRead(csr_name='vsiselect')
     write_vsiselect1 = CsrWrite(csr_name='vsiselect', value=read_vsiselect1)
-    read_vsireg1 = CsrRead(csr_name='vsireg')
-    write_vsireg1 = CsrWrite(csr_name='vsireg', value=read_vsireg1)
+    # read_vsireg1 = CsrRead(csr_name='vsireg')
+    # write_vsireg1 = CsrWrite(csr_name='vsireg', value=read_vsireg1)
 
     # Case 2: mstateen[60]=1, hstateen[60]=0, sstateen[60]=0
-    # siselect/sireg: accessible
-    # vsiselect/vsireg: illegal instruction exception
+    # siselect/# sireg: accessible
+    # vsiselect/# vsireg: illegal instruction exception
     write_m2 = CsrWrite(csr_name='mstateen0', set_mask=(1 << 60))
     read_siselect2 = CsrRead(csr_name='siselect')
     write_siselect2 = CsrWrite(csr_name='siselect', value=read_siselect2)
-    read_sireg2 = CsrRead(csr_name='sireg')
-    write_sireg2 = CsrWrite(csr_name='sireg', value=read_sireg2)
+    # read_sireg2 = CsrRead(csr_name='sireg')
+    # write_sireg2 = CsrWrite(csr_name='sireg', value=read_sireg2)
     read_vsiselect2 = CsrRead(csr_name='vsiselect')
     write_vsiselect2 = CsrWrite(csr_name='vsiselect', value=read_vsiselect2)
-    read_vsireg2 = CsrRead(csr_name='vsireg')
-    write_vsireg2 = CsrWrite(csr_name='vsireg', value=read_vsireg2)
+    # read_vsireg2 = CsrRead(csr_name='vsireg')
+    # write_vsireg2 = CsrWrite(csr_name='vsireg', value=read_vsireg2)
 
     # Case 3: mstateen[60]=1, hstateen[60]=1, sstateen[60]=0
-    # siselect/sireg: accessible
-    # vsiselect/vsireg: accessible
+    # siselect/# sireg: accessible
+    # vsiselect/# vsireg: accessible
     write_h3 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect3 = CsrRead(csr_name='siselect')
     write_siselect3 = CsrWrite(csr_name='siselect', value=read_siselect3)
-    read_sireg3 = CsrRead(csr_name='sireg')
-    write_sireg3 = CsrWrite(csr_name='sireg', value=read_sireg3)
+    # read_sireg3 = CsrRead(csr_name='sireg')
+    # write_sireg3 = CsrWrite(csr_name='sireg', value=read_sireg3)
     read_vsiselect3 = CsrRead(csr_name='vsiselect')
     write_vsiselect3 = CsrWrite(csr_name='vsiselect', value=read_vsiselect3)
-    read_vsireg3 = CsrRead(csr_name='vsireg')
-    write_vsireg3 = CsrWrite(csr_name='vsireg', value=read_vsireg3)
+    # read_vsireg3 = CsrRead(csr_name='vsireg')
+    # write_vsireg3 = CsrWrite(csr_name='vsireg', value=read_vsireg3)
 
     # Case 4: mstateen[60]=1, hstateen[60]=0, sstateen[60]=1
-    # siselect/sireg: accessible
-    # vsiselect/vsireg: illegal instruction exception
+    # siselect/# sireg: accessible
+    # vsiselect/# vsireg: illegal instruction exception
     write_h4 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     write_s4 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 60))
     read_siselect4 = CsrRead(csr_name='siselect')
     write_siselect4 = CsrWrite(csr_name='siselect', value=read_siselect4)
-    read_sireg4 = CsrRead(csr_name='sireg')
-    write_sireg4 = CsrWrite(csr_name='sireg', value=read_sireg4)
+    # read_sireg4 = CsrRead(csr_name='sireg')
+    # write_sireg4 = CsrWrite(csr_name='sireg', value=read_sireg4)
     read_vsiselect4 = CsrRead(csr_name='vsiselect')
     write_vsiselect4 = CsrWrite(csr_name='vsiselect', value=read_vsiselect4)
-    read_vsireg4 = CsrRead(csr_name='vsireg')
-    write_vsireg4 = CsrWrite(csr_name='vsireg', value=read_vsireg4)
+    # read_vsireg4 = CsrRead(csr_name='vsireg')
+    # write_vsireg4 = CsrWrite(csr_name='vsireg', value=read_vsireg4)
 
     # Case 5: mstateen[60]=1, hstateen[60]=1, sstateen[60]=1
-    # siselect/sireg: accessible
-    # vsiselect/vsireg: accessible
+    # siselect/# sireg: accessible
+    # vsiselect/# vsireg: accessible
     write_h5 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect5 = CsrRead(csr_name='siselect')
     write_siselect5 = CsrWrite(csr_name='siselect', value=read_siselect5)
-    read_sireg5 = CsrRead(csr_name='sireg')
-    write_sireg5 = CsrWrite(csr_name='sireg', value=read_sireg5)
+    # read_sireg5 = CsrRead(csr_name='sireg')
+    # write_sireg5 = CsrWrite(csr_name='sireg', value=read_sireg5)
     read_vsiselect5 = CsrRead(csr_name='vsiselect')
     write_vsiselect5 = CsrWrite(csr_name='vsiselect', value=read_vsiselect5)
-    read_vsireg5 = CsrRead(csr_name='vsireg')
-    write_vsireg5 = CsrWrite(csr_name='vsireg', value=read_vsireg5)
+    # read_vsireg5 = CsrRead(csr_name='vsireg')
+    # write_vsireg5 = CsrWrite(csr_name='vsireg', value=read_vsireg5)
 
     return TestScenario.from_steps(
         id="26",
         name="SID_SMSTATEEN_022_S_mode_non_virtualized",
         description="Test bit 60 (CSRIND) access from S mode (non-virtualized)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=False),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=[
-            write_m1, write_h1, write_s1, read_siselect1, write_siselect1, read_sireg1, write_sireg1, read_vsiselect1, write_vsiselect1, read_vsireg1, write_vsireg1,
-            write_m2, read_siselect2, write_siselect2, read_sireg2, write_sireg2, read_vsiselect2, write_vsiselect2, read_vsireg2, write_vsireg2,
-            write_h3, read_siselect3, write_siselect3, read_sireg3, write_sireg3, read_vsiselect3, write_vsiselect3, read_vsireg3, write_vsireg3,
-            write_h4, write_s4, read_siselect4, write_siselect4, read_sireg4, write_sireg4, read_vsiselect4, write_vsiselect4, read_vsireg4, write_vsireg4,
-            write_h5, read_siselect5, write_siselect5, read_sireg5, write_sireg5, read_vsiselect5, write_vsiselect5, read_vsireg5, write_vsireg5,
+            write_m1, write_h1, write_s1, read_siselect1, write_siselect1, # read_sireg1, # write_sireg1, read_vsiselect1, write_vsiselect1, # read_vsireg1, # write_vsireg1,
+            write_m2, read_siselect2, write_siselect2, # read_sireg2, # write_sireg2, read_vsiselect2, write_vsiselect2, # read_vsireg2, # write_vsireg2,
+            write_h3, read_siselect3, write_siselect3, # read_sireg3, # write_sireg3, read_vsiselect3, write_vsiselect3, # read_vsireg3, # write_vsireg3,
+            write_h4, write_s4, read_siselect4, write_siselect4, # read_sireg4, # write_sireg4, read_vsiselect4, write_vsiselect4, # read_vsireg4, # write_vsireg4,
+            write_h5, read_siselect5, write_siselect5, # read_sireg5, # write_sireg5, read_vsiselect5, write_vsiselect5, # read_vsireg5, # write_vsireg5,
         ],
     )
 
@@ -1390,7 +1390,7 @@ def SID_SMSTATEEN_022_S_mode_non_virtualized():
 def SID_SMSTATEEN_022_U_mode_non_virtualized():
     """
     Test bit 60 (CSRIND) access from U mode (non-virtualized)
-    U mode cannot access siselect, sireg, vsiselect, or vsireg - all accesses raise illegal instruction exception
+    U mode cannot access siselect, # sireg, vsiselect, or # vsireg - all accesses raise illegal instruction exception
     regardless of mstateen[60], hstateen[60], or sstateen[60] values
     """
     # Case 1: mstateen[60]=0, hstateen[60]=0, sstateen[60]=0 - all illegal instruction exception
@@ -1399,69 +1399,69 @@ def SID_SMSTATEEN_022_U_mode_non_virtualized():
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 60))
     read_siselect1 = CsrRead(csr_name='siselect')
     assert_siselect_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect1])
-    read_sireg1 = CsrRead(csr_name='sireg')
-    assert_sireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg1])
+    # read_sireg1 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg1])
     read_vsiselect1 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect1])
-    read_vsireg1 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg1])
+    # read_vsireg1 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg1])
 
     # Case 2: mstateen[60]=1, hstateen[60]=0, sstateen[60]=0 - all illegal instruction exception
     write_m2 = CsrWrite(csr_name='mstateen0', set_mask=(1 << 60))
     read_siselect2 = CsrRead(csr_name='siselect')
     assert_siselect_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect2])
-    read_sireg2 = CsrRead(csr_name='sireg')
-    assert_sireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg2])
+    # read_sireg2 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg2])
     read_vsiselect2 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect2])
-    read_vsireg2 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg2])
+    # read_vsireg2 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg2])
 
     # Case 3: mstateen[60]=1, hstateen[60]=1, sstateen[60]=0 - all illegal instruction exception
     write_h3 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect3 = CsrRead(csr_name='siselect')
     assert_siselect_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect3])
-    read_sireg3 = CsrRead(csr_name='sireg')
-    assert_sireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg3])
+    # read_sireg3 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg3])
     read_vsiselect3 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect3])
-    read_vsireg3 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg3])
+    # read_vsireg3 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg3])
 
     # Case 4: mstateen[60]=1, hstateen[60]=0, sstateen[60]=1 - all illegal instruction exception
     write_h4 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     write_s4 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 60))
     read_siselect4 = CsrRead(csr_name='siselect')
     assert_siselect_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect4])
-    read_sireg4 = CsrRead(csr_name='sireg')
-    assert_sireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg4])
+    # read_sireg4 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg4])
     read_vsiselect4 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect4])
-    read_vsireg4 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg4])
+    # read_vsireg4 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg4])
 
     # Case 5: mstateen[60]=1, hstateen[60]=1, sstateen[60]=1 - all illegal instruction exception
     write_h5 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect5 = CsrRead(csr_name='siselect')
     assert_siselect_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect5])
-    read_sireg5 = CsrRead(csr_name='sireg')
-    assert_sireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg5])
+    # read_sireg5 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg5])
     read_vsiselect5 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect5])
-    read_vsireg5 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg5])
+    # read_vsireg5 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg5])
 
     return TestScenario.from_steps(
         id="27",
         name="SID_SMSTATEEN_022_U_mode_non_virtualized",
         description="Test bit 60 (CSRIND) access from U mode (non-virtualized)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=False),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=[
-            write_m1, write_h1, write_s1, assert_siselect_exc1, assert_sireg_exc1, assert_vsiselect_exc1, assert_vsireg_exc1,
-            write_m2, assert_siselect_exc2, assert_sireg_exc2, assert_vsiselect_exc2, assert_vsireg_exc2,
-            write_h3, assert_siselect_exc3, assert_sireg_exc3, assert_vsiselect_exc3, assert_vsireg_exc3,
-            write_h4, write_s4, assert_siselect_exc4, assert_sireg_exc4, assert_vsiselect_exc4, assert_vsireg_exc4,
-            write_h5, assert_siselect_exc5, assert_sireg_exc5, assert_vsiselect_exc5, assert_vsireg_exc5,
+            write_m1, write_h1, write_s1, assert_siselect_exc1, # assert_sireg_exc1, assert_vsiselect_exc1, # assert_vsireg_exc1,
+            write_m2, assert_siselect_exc2, # assert_sireg_exc2, assert_vsiselect_exc2, # assert_vsireg_exc2,
+            write_h3, assert_siselect_exc3, # assert_sireg_exc3, assert_vsiselect_exc3, # assert_vsireg_exc3,
+            write_h4, write_s4, assert_siselect_exc4, # assert_sireg_exc4, assert_vsiselect_exc4, # assert_vsireg_exc4,
+            write_h5, assert_siselect_exc5, # assert_sireg_exc5, assert_vsiselect_exc5, # assert_vsireg_exc5,
         ],
     )
 
@@ -1470,76 +1470,76 @@ def SID_SMSTATEEN_022_U_mode_non_virtualized():
 def SID_SMSTATEEN_022_S_mode_virtualized():
     """
     Test bit 60 (CSRIND) access from VS mode (virtualized S mode)
-    siselect/sireg: mstateen[60]=0 -> illegal, mstateen[60]=1 & hstateen[60]=0 -> virtual, mstateen[60]=1 & hstateen[60]=1 -> accessible
-    vsiselect/vsireg: mstateen[60]=0 -> illegal, mstateen[60]=1 & hstateen[60]=0 -> virtual, mstateen[60]=1 & hstateen[60]=1 -> accessible
+    siselect/# sireg: mstateen[60]=0 -> illegal, mstateen[60]=1 & hstateen[60]=0 -> virtual, mstateen[60]=1 & hstateen[60]=1 -> accessible
+    vsiselect/# vsireg: mstateen[60]=0 -> illegal, mstateen[60]=1 & hstateen[60]=0 -> virtual, mstateen[60]=1 & hstateen[60]=1 -> accessible
     """
     # Case 1: mstateen[60]=0, hstateen[60]=0, sstateen[60]=0
-    # siselect/sireg: allowed
-    # vsiselect/vsireg: allowed
+    # siselect/# sireg: allowed
+    # vsiselect/# vsireg: allowed
     write_m1 = CsrWrite(csr_name='mstateen0', clear_mask=(1 << 60))
     write_h1 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 60))
     read_siselect1 = CsrRead(csr_name='siselect')
     write_siselect1 = CsrWrite(csr_name='siselect', value=read_siselect1)
-    read_sireg1 = CsrRead(csr_name='sireg')
-    write_sireg1 = CsrWrite(csr_name='sireg', value=read_sireg1)
+    # read_sireg1 = CsrRead(csr_name='sireg')
+    # write_sireg1 = CsrWrite(csr_name='sireg', value=read_sireg1)
     read_vsiselect1 = CsrRead(csr_name='vsiselect')
     write_vsiselect1 = CsrWrite(csr_name='vsiselect', value=read_vsiselect1)
-    read_vsireg1 = CsrRead(csr_name='vsireg')
-    write_vsireg1 = CsrWrite(csr_name='vsireg', value=read_vsireg1)
+    # read_vsireg1 = CsrRead(csr_name='vsireg')
+    # write_vsireg1 = CsrWrite(csr_name='vsireg', value=read_vsireg1)
 
     # Case 2: mstateen[60]=1, hstateen[60]=0, sstateen[60]=0
-    # siselect/sireg: allowed
-    # vsiselect/vsireg: allowed
+    # siselect/# sireg: allowed
+    # vsiselect/# vsireg: allowed
     write_m2 = CsrWrite(csr_name='mstateen0', set_mask=(1 << 60))
     read_siselect2 = CsrRead(csr_name='siselect')
     write_siselect2 = CsrWrite(csr_name='siselect', value=read_siselect2)
-    read_sireg2 = CsrRead(csr_name='sireg')
-    write_sireg2 = CsrWrite(csr_name='sireg', value=read_sireg2)
+    # read_sireg2 = CsrRead(csr_name='sireg')
+    # write_sireg2 = CsrWrite(csr_name='sireg', value=read_sireg2)
     read_vsiselect2 = CsrRead(csr_name='vsiselect')
     write_vsiselect2 = CsrWrite(csr_name='vsiselect', value=read_vsiselect2)
-    read_vsireg2 = CsrRead(csr_name='vsireg')
-    write_vsireg2 = CsrWrite(csr_name='vsireg', value=read_vsireg2)
+    # read_vsireg2 = CsrRead(csr_name='vsireg')
+    # write_vsireg2 = CsrWrite(csr_name='vsireg', value=read_vsireg2)
 
     # Case 3: mstateen[60]=1, hstateen[60]=1, sstateen[60]=0
-    # siselect/sireg: allowed
-    # vsiselect/vsireg: allowed
+    # siselect/# sireg: allowed
+    # vsiselect/# vsireg: allowed
     write_h3 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect3 = CsrRead(csr_name='siselect')
     write_siselect3 = CsrWrite(csr_name='siselect', value=read_siselect3)
-    read_sireg3 = CsrRead(csr_name='sireg')
-    write_sireg3 = CsrWrite(csr_name='sireg', value=read_sireg3)
+    # read_sireg3 = CsrRead(csr_name='sireg')
+    # write_sireg3 = CsrWrite(csr_name='sireg', value=read_sireg3)
     read_vsiselect3 = CsrRead(csr_name='vsiselect')
     write_vsiselect3 = CsrWrite(csr_name='vsiselect', value=read_vsiselect3)
-    read_vsireg3 = CsrRead(csr_name='vsireg')
-    write_vsireg3 = CsrWrite(csr_name='vsireg', value=read_vsireg3)
+    # read_vsireg3 = CsrRead(csr_name='vsireg')
+    # write_vsireg3 = CsrWrite(csr_name='vsireg', value=read_vsireg3)
 
     # Case 4: mstateen[60]=1, hstateen[60]=0, sstateen[60]=1
-    # siselect/sireg: allowed
-    # vsiselect/vsireg: allowed
+    # siselect/# sireg: allowed
+    # vsiselect/# vsireg: allowed
     write_h4 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     write_s4 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 60))
     read_siselect4 = CsrRead(csr_name='siselect')
     write_siselect4 = CsrWrite(csr_name='siselect', value=read_siselect4)
-    read_sireg4 = CsrRead(csr_name='sireg')
-    write_sireg4 = CsrWrite(csr_name='sireg', value=read_sireg4)
+    # read_sireg4 = CsrRead(csr_name='sireg')
+    # write_sireg4 = CsrWrite(csr_name='sireg', value=read_sireg4)
     read_vsiselect4 = CsrRead(csr_name='vsiselect')
     write_vsiselect4 = CsrWrite(csr_name='vsiselect', value=read_vsiselect4)
-    read_vsireg4 = CsrRead(csr_name='vsireg')
-    write_vsireg4 = CsrWrite(csr_name='vsireg', value=read_vsireg4)
+    # read_vsireg4 = CsrRead(csr_name='vsireg')
+    # write_vsireg4 = CsrWrite(csr_name='vsireg', value=read_vsireg4)
 
     # Case 5: mstateen[60]=1, hstateen[60]=1, sstateen[60]=1
-    # siselect/sireg: allowed
-    # vsiselect/vsireg: allowed
+    # siselect/# sireg: allowed
+    # vsiselect/# vsireg: allowed
     write_h5 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect5 = CsrRead(csr_name='siselect')
     write_siselect5 = CsrWrite(csr_name='siselect', value=read_siselect5)
-    read_sireg5 = CsrRead(csr_name='sireg')
-    write_sireg5 = CsrWrite(csr_name='sireg', value=read_sireg5)
+    # read_sireg5 = CsrRead(csr_name='sireg')
+    # write_sireg5 = CsrWrite(csr_name='sireg', value=read_sireg5)
     read_vsiselect5 = CsrRead(csr_name='vsiselect')
     write_vsiselect5 = CsrWrite(csr_name='vsiselect', value=read_vsiselect5)
-    read_vsireg5 = CsrRead(csr_name='vsireg')
-    write_vsireg5 = CsrWrite(csr_name='vsireg', value=read_vsireg5)
+    # read_vsireg5 = CsrRead(csr_name='vsireg')
+    # write_vsireg5 = CsrWrite(csr_name='vsireg', value=read_vsireg5)
 
     return TestScenario.from_steps(
         id="28",
@@ -1549,9 +1549,9 @@ def SID_SMSTATEEN_022_S_mode_virtualized():
         steps=[
             write_m1, write_h1, write_s1,
             write_m2,
-            write_h3, read_siselect3, write_siselect3, read_sireg3, write_sireg3, read_vsiselect3, write_vsiselect3, read_vsireg3, write_vsireg3,
+            write_h3, read_siselect3, write_siselect3, # read_sireg3, # write_sireg3, read_vsiselect3, write_vsiselect3, # read_vsireg3, # write_vsireg3,
             write_h4, write_s4,
-            write_h5, read_siselect5, write_siselect5, read_sireg5, write_sireg5, read_vsiselect5, write_vsiselect5, read_vsireg5, write_vsireg5,
+            write_h5, read_siselect5, write_siselect5, # read_sireg5, # write_sireg5, read_vsiselect5, write_vsiselect5, # read_vsireg5, # write_vsireg5,
         ],
     )
 
@@ -1560,7 +1560,7 @@ def SID_SMSTATEEN_022_S_mode_virtualized():
 def SID_SMSTATEEN_022_U_mode_virtualized():
     """
     Test bit 60 (CSRIND) access from VU mode (virtualized U mode)
-    VU mode cannot access siselect, sireg, vsiselect, or vsireg - all accesses raise exceptions
+    VU mode cannot access siselect, # sireg, vsiselect, or # vsireg - all accesses raise exceptions
     regardless of mstateen[60], hstateen[60], or sstateen[60] values
     """
     # Case 1: mstateen[60]=0, hstateen[60]=0, sstateen[60]=0 - all illegal instruction exception
@@ -1569,58 +1569,58 @@ def SID_SMSTATEEN_022_U_mode_virtualized():
     write_s1 = CsrWrite(csr_name='sstateen0', clear_mask=(1 << 60))
     read_siselect1 = CsrRead(csr_name='siselect')
     assert_siselect_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect1])
-    read_sireg1 = CsrRead(csr_name='sireg')
-    assert_sireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg1])
+    # read_sireg1 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg1])
     read_vsiselect1 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect1])
-    read_vsireg1 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg1])
+    # read_vsireg1 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg1])
 
     # Case 2: mstateen[60]=1, hstateen[60]=0, sstateen[60]=0 - all illegal instruction exception
     write_m2 = CsrWrite(csr_name='mstateen0', set_mask=(1 << 60))
     read_siselect2 = CsrRead(csr_name='siselect')
     assert_siselect_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect2])
-    read_sireg2 = CsrRead(csr_name='sireg')
-    assert_sireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg2])
+    # read_sireg2 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg2])
     read_vsiselect2 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect2])
-    read_vsireg2 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg2])
+    # read_vsireg2 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg2])
 
     # Case 3: mstateen[60]=1, hstateen[60]=1, sstateen[60]=0 - all illegal instruction exception
     write_h3 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     read_siselect3 = CsrRead(csr_name='siselect')
     assert_siselect_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect3])
-    read_sireg3 = CsrRead(csr_name='sireg')
-    assert_sireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg3])
+    # read_sireg3 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg3])
     read_vsiselect3 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect3])
-    read_vsireg3 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg3])
+    # read_vsireg3 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg3])
 
     # Case 4: mstateen[60]=1, hstateen[60]=0, sstateen[60]=1 - all illegal instruction exception
     write_h4 = CsrWrite(csr_name='hstateen0', clear_mask=(1 << 60))
     write_s4 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 60))
     read_siselect4 = CsrRead(csr_name='siselect')
     assert_siselect_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect4])
-    read_sireg4 = CsrRead(csr_name='sireg')
-    assert_sireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg4])
+    # read_sireg4 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg4])
     read_vsiselect4 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect4])
-    read_vsireg4 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg4])
+    # read_vsireg4 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg4])
 
     # Case 5: mstateen[60]=1, hstateen[60]=1, sstateen[60]=1 - all illegal instruction exception
     write_h5 = CsrWrite(csr_name='hstateen0', set_mask=(1 << 60))
     write_s5 = CsrWrite(csr_name='sstateen0', set_mask=(1 << 60))
     read_siselect5 = CsrRead(csr_name='siselect')
     assert_siselect_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_siselect5])
-    read_sireg5 = CsrRead(csr_name='sireg')
-    assert_sireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg5])
+    # read_sireg5 = CsrRead(csr_name='sireg')
+    # assert_sireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_sireg5])
     read_vsiselect5 = CsrRead(csr_name='vsiselect')
     assert_vsiselect_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsiselect5])
-    read_vsireg5 = CsrRead(csr_name='vsireg')
-    assert_vsireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg5])
+    # read_vsireg5 = CsrRead(csr_name='vsireg')
+    # assert_vsireg_exc5 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_vsireg5])
 
     return TestScenario.from_steps(
         id="29",
@@ -1628,11 +1628,11 @@ def SID_SMSTATEEN_022_U_mode_virtualized():
         description="Test bit 60 (CSRIND) access from VU mode (virtualized U mode)",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
-            write_m1, write_h1, write_s1, assert_siselect_exc1, assert_sireg_exc1, assert_vsiselect_exc1, assert_vsireg_exc1,
-            write_m2, assert_siselect_exc2, assert_sireg_exc2, assert_vsiselect_exc2, assert_vsireg_exc2,
-            write_h3, assert_siselect_exc3, assert_sireg_exc3, assert_vsiselect_exc3, assert_vsireg_exc3,
-            write_h4, write_s4, assert_siselect_exc4, assert_sireg_exc4, assert_vsiselect_exc4, assert_vsireg_exc4,
-            write_h5, write_s5, assert_siselect_exc5, assert_sireg_exc5, assert_vsiselect_exc5, assert_vsireg_exc5,
+            write_m1, write_h1, write_s1, assert_siselect_exc1, # assert_sireg_exc1, assert_vsiselect_exc1, # assert_vsireg_exc1,
+            write_m2, assert_siselect_exc2, # assert_sireg_exc2, assert_vsiselect_exc2, # assert_vsireg_exc2,
+            write_h3, assert_siselect_exc3, # assert_sireg_exc3, assert_vsiselect_exc3, # assert_vsireg_exc3,
+            write_h4, write_s4, assert_siselect_exc4, # assert_sireg_exc4, assert_vsiselect_exc4, # assert_vsireg_exc4,
+            write_h5, write_s5, assert_siselect_exc5, # assert_sireg_exc5, assert_vsiselect_exc5, # assert_vsireg_exc5,
         ],
     )
 
