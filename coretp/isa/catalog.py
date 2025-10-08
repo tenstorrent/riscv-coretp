@@ -9,6 +9,30 @@ from coretp.isa.operands import Operand, operand_is_register
 from .instruction import Instruction, InstructionDef
 from .instructions import ALL_INSTRS
 
+# extensions implied by other extension.
+IMPLIED_EXTENSIONS = {
+    Extension.G: Extension.I | Extension.M | Extension.A | Extension.F | Extension.D | Extension.ZICSR | Extension.ZIFENCEI,
+    Extension.ZKT: Extension.ZKR | Extension.ZKN | Extension.ZKS,
+    Extension.ZK: Extension.ZKR | Extension.ZKN | Extension.ZKS,
+    Extension.ZKN: Extension.ZBKB | Extension.ZBKC | Extension.ZBKX | Extension.ZKNE | Extension.ZKND | Extension.ZKNH,
+    Extension.ZKS: Extension.ZBKB | Extension.ZBKC | Extension.ZBKX | Extension.ZKSED | Extension.ZKSH,
+    Extension.ZVE32F: Extension.ZVE32X,
+    Extension.ZVE64F: Extension.ZVE64D | Extension.ZVE64X,
+    Extension.ZBC: Extension.ZBKC,
+    Extension.ZBB: Extension.ZBKB,
+}
+
+
+def expand_implied_extensions(mask: Extension) -> Extension:
+    changed = True
+    while changed:
+        changed = False
+        for k, v in IMPLIED_EXTENSIONS.items():
+            if mask & k and not mask & v:
+                mask |= v
+                changed = True
+    return mask
+
 
 class InstructionCatalog:
     """
@@ -21,15 +45,16 @@ class InstructionCatalog:
             self.isa = RvArch.from_str(isa)
         else:
             self.isa = isa
+        self.isa.extensions = expand_implied_extensions(self.isa.extensions)
 
         def matching_instr(i: InstructionDef) -> bool:
             # Both 'i.extension' and 'self.isa.extensions' are flag masks of the flag enum 'Extension'
             # The '&' operator works like a bitwise AND for flags, used since we want to keep any
             # instruction where these masks intersect, which denotes at least one extension the
-            # instruction belongs to is in the isa's used extensions (using 'in' would require all 
+            # instruction belongs to is in the isa's used extensions (using 'in' would require all
             # extensions the instruction belongs to)
             # 'Extension(0)' is the empty mask for this flag enum, NOT the same as 0 or None
-            return i.xlen.compatible_with(self.isa.xlen) and ((i.extension & self.isa.extensions) != Extension(0))
+            return i.xlen.compatible_with(self.isa.xlen) and (i.extension & ~self.isa.extensions) == Extension(0)  # every bit in required is present in provided
 
         self._instructions = [i for i in self._instructions if matching_instr(i)]
         self._instruction_lookup = {i.name: i for i in self._instructions}
@@ -81,7 +106,10 @@ class InstructionCatalog:
         if source_type is not None:
             predicates.append(lambda i: any(s.type == source_type for s in i.source))
         if exclude_extensions is not None:
-            predicates.append(lambda i: i.extension not in exclude_extensions)
+            predicates.append(lambda i: not (i.extension & exclude_extensions))
+            for i in self._instructions:
+                if i.extension & exclude_extensions:
+                    print(f"instruction {i.name} has extension {i.extension} which is in exclude_extensions {exclude_extensions}")
         if xlen is not None:
             predicates.append(lambda i: i.xlen == xlen)
 

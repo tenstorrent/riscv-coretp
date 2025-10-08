@@ -8,7 +8,7 @@ from coretp.rv_enums import OperandType
 
 andn = InstructionDef(
     name="andn",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN32,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
@@ -22,7 +22,7 @@ andn = InstructionDef(
 
 orn = InstructionDef(
     name="orn",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN32,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
@@ -36,7 +36,7 @@ orn = InstructionDef(
 
 rol = InstructionDef(
     name="rol",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN32,
     category=Category.LOGIC,
     destination=OperandSlot("rd", OperandType.GPR),
@@ -50,7 +50,7 @@ rol = InstructionDef(
 
 ror = InstructionDef(
     name="ror",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN32,
     category=Category.LOGIC,
     destination=OperandSlot("rd", OperandType.GPR),
@@ -64,7 +64,7 @@ ror = InstructionDef(
 
 xnor = InstructionDef(
     name="xnor",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN32,
     category=Category.LOGIC,
     destination=OperandSlot("rd", OperandType.GPR),
@@ -78,7 +78,7 @@ xnor = InstructionDef(
 
 brev8 = InstructionDef(
     name="brev8",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN32,
     category=Category.CONTROL,
     destination=OperandSlot("rd", OperandType.GPR),
@@ -119,7 +119,7 @@ packh = InstructionDef(
 
 clmul = InstructionDef(
     name="clmul",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKC | Extension.ZBC,
+    extension=Extension.ZBKC,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=OperandSlot("rd", OperandType.GPR),
@@ -133,7 +133,7 @@ clmul = InstructionDef(
 
 clmulh = InstructionDef(
     name="clmulh",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKC | Extension.ZBC,
+    extension=Extension.ZBKC,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=OperandSlot("rd", OperandType.GPR),
@@ -990,7 +990,7 @@ aes64ks2 = InstructionDef(
 
 rev8 = InstructionDef(
     name="rev8",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN64,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
@@ -1003,7 +1003,7 @@ rev8 = InstructionDef(
 
 rev8_rv32 = InstructionDef(
     name="rev8.rv32",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB | Extension.ZBB,
     xlen=Xlen.XLEN32,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
@@ -1016,7 +1016,7 @@ rev8_rv32 = InstructionDef(
 
 rolw = InstructionDef(
     name="rolw",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN64,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
@@ -1030,7 +1030,7 @@ rolw = InstructionDef(
 
 rori = InstructionDef(
     name="rori",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN64,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
@@ -1044,7 +1044,7 @@ rori = InstructionDef(
 
 roriw = InstructionDef(
     name="roriw",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN64,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
@@ -1058,7 +1058,7 @@ roriw = InstructionDef(
 
 rorw = InstructionDef(
     name="rorw",
-    extension=Extension.ZKS | Extension.ZKN | Extension.ZK | Extension.ZBKB | Extension.ZBB,
+    extension=Extension.ZBKB,
     xlen=Xlen.XLEN64,
     category=Category.LOGIC,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
