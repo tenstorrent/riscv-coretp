@@ -23,7 +23,7 @@ class TestEnvCfg:
     page_sizes: list[PageSize] = field(default_factory=lambda: [PageSize.SIZE_4K, PageSize.SIZE_2M, PageSize.SIZE_1G])
     min_num_harts: int = 1
     virtualized: list[bool] = field(default_factory=lambda: [True, False])
-    
+
     def generate_all_cfgs(self) -> list[TestEnv]:
         """
         Generate all possible combinations of TestEnvCfg objects.
