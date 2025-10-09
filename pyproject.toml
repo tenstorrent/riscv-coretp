@@ -16,7 +16,6 @@ readme = "README.md"
 requires-python = ">= 3.9"
 dependencies = [
     # Code dependencies
-    "dataclasses",
     "reportlab", # For PDF export
     "openpyxl", # For Excel export
 
