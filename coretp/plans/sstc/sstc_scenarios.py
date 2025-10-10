@@ -470,13 +470,14 @@ def SID_SSTC_06():
 
     # Read henvcfg and verify STCE bit is 0
     henvcfg_read = CsrRead(csr_name="henvcfg")
-    henvcfg_masked = Arithmetic(op="andi", src1=henvcfg_read, src2=(1<<63))
+    top = LoadImmediateStep(imm=(1<<63))
+    henvcfg_masked = Arithmetic(op="and", src1=henvcfg_read, src2=top)
     zero = LoadImmediateStep(imm=0)
     assert_equal = AssertEqual(src1=henvcfg_masked, src2=zero)
 
     unset_henvcfg_set = CsrWrite(csr_name="henvcfg", clear_mask=(1<<63))
     henvcfg_read_2 = CsrRead(csr_name="henvcfg")
-    henvcfg_masked_2 = Arithmetic(op="andi", src1=henvcfg_read_2, src2=(1<<63))
+    henvcfg_masked_2 = Arithmetic(op="and", src1=henvcfg_read_2, src2=top)
     zero_2 = LoadImmediateStep(imm=0)
     assert_equal_2 = AssertEqual(src1=henvcfg_masked_2, src2=zero_2)
 
