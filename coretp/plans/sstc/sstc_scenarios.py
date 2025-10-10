@@ -490,6 +490,7 @@ def SID_SSTC_06():
             menvcfg_clear,
             henvcfg_set,
             henvcfg_read,
+            top,
             henvcfg_masked,
             zero,
             assert_equal,
