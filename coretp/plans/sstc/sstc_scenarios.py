@@ -3,16 +3,7 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PrivilegeMode, ExceptionCause
-from coretp.step import (
-    TestStep,
-    CsrWrite,
-    CsrRead,
-    AssertException,
-    AssertEqual,
-    LoadImmediateStep,
-    Arithmetic,
-    Directive
-)
+from coretp.step import TestStep, CsrWrite, CsrRead, AssertException, AssertEqual, LoadImmediateStep, Arithmetic, Directive
 
 from . import sstc_scenario
 
@@ -42,7 +33,7 @@ def SID_SSTC_01():
     # set scounteren.tm = 1
     scounteren_set = CsrWrite(csr_name="scounteren", set_mask=0x2)
 
-     # Try accessing time CSR - should cause illegal instruction exception
+    # Try accessing time CSR - should cause illegal instruction exception
     time_read_2 = CsrRead(csr_name="time")
     assert_time_exception_2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[time_read_2])
 
@@ -57,7 +48,7 @@ def SID_SSTC_01():
     # set hcounteren.tm = 1
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
 
-     # Try accessing time CSR - should cause illegal instruction exception
+    # Try accessing time CSR - should cause illegal instruction exception
     time_read_3 = CsrRead(csr_name="time")
     assert_time_exception_3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[time_read_3])
 
@@ -69,12 +60,10 @@ def SID_SSTC_01():
     vstimecmp_read_3 = CsrRead(csr_name="vstimecmp")
     assert_vstimecmp_exception_3 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[vstimecmp_read_3])
 
-
     # unset scounteren.tm = 0
     scounteren_clear = CsrWrite(csr_name="scounteren", clear_mask=0x2)
 
-
-     # Try accessing time CSR - should cause illegal instruction exception
+    # Try accessing time CSR - should cause illegal instruction exception
     time_read_4 = CsrRead(csr_name="time")
     assert_time_exception_4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[time_read_4])
 
@@ -85,7 +74,6 @@ def SID_SSTC_01():
     # Try accessing vstimecmp CSR - should cause illegal instruction exception
     vstimecmp_read_4 = CsrRead(csr_name="vstimecmp")
     assert_vstimecmp_exception_4 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[vstimecmp_read_4])
-
 
     return TestScenario.from_steps(
         id="1",
@@ -139,8 +127,6 @@ def SID_SSTC_02_M_HS():
     # Try accessing time - should be ok
     time_read_2 = CsrRead(csr_name="time")
 
-
-
     return TestScenario.from_steps(
         id="2",
         name="SID_SSTC_02_M_HS",
@@ -156,6 +142,7 @@ def SID_SSTC_02_M_HS():
             time_read_2,
         ],
     )
+
 
 @sstc_scenario
 def SID_SSTC_02_HU():
@@ -189,8 +176,6 @@ def SID_SSTC_02_HU():
     time_read_2 = CsrRead(csr_name="time")
     assert_time_exception_2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[time_read_2])
 
-
-
     return TestScenario.from_steps(
         id="3",
         name="SID_SSTC_02_HU",
@@ -206,6 +191,7 @@ def SID_SSTC_02_HU():
             assert_time_exception_2,
         ],
     )
+
 
 @sstc_scenario
 def SID_SSTC_02_V():
@@ -238,8 +224,6 @@ def SID_SSTC_02_V():
     # Try accessing time - should cause virtual instruction exception
     time_read_2 = CsrRead(csr_name="time")
     assert_time_exception_2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[time_read_2])
-
-
 
     return TestScenario.from_steps(
         id="4",
@@ -278,7 +262,7 @@ def SID_SSTC_03_U():
     time_read_1 = CsrRead(csr_name="time")
     assert_time_1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[time_read_1])
 
-     # Set scounteren.tm=0
+    # Set scounteren.tm=0
     scounteren_set = CsrWrite(csr_name="scounteren", set_mask=0x2)
 
     # Try accessing time in U mode - should cause illegal instruction exception
@@ -300,6 +284,7 @@ def SID_SSTC_03_U():
         ],
     )
 
+
 @sstc_scenario
 def SID_SSTC_03_NON_U():
     """
@@ -318,7 +303,7 @@ def SID_SSTC_03_NON_U():
 
     # Try accessing time in VU mode - should cause virtual instruction exception
     time_read_1 = CsrRead(csr_name="time")
-     # Set scounteren.tm=0
+    # Set scounteren.tm=0
     scounteren_set = CsrWrite(csr_name="scounteren", set_mask=0x2)
 
     # Try accessing time in U mode - should cause illegal instruction exception
@@ -340,7 +325,6 @@ def SID_SSTC_03_NON_U():
     )
 
 
-
 @sstc_scenario
 def SID_SSTC_04_NON_M():
     """
@@ -348,13 +332,13 @@ def SID_SSTC_04_NON_M():
     Access to stimecmp csr is blocked in all modes except M, illegal instruction exception is expected.
     """
     # Set menvcfg.STCE=0
-    menvcfg_clear = CsrWrite(csr_name="menvcfg", clear_mask=(1<<63))
+    menvcfg_clear = CsrWrite(csr_name="menvcfg", clear_mask=(1 << 63))
 
     # Try accessing stimecmp - should cause illegal instruction exception
     stimecmp_read_1 = CsrRead(csr_name="stimecmp")
     assert_stimecmp_exception_1 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[stimecmp_read_1])
 
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1<<63))
+    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     stimecmp_read_2 = CsrRead(csr_name="stimecmp")
     assert_stimecmp_exception_2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[stimecmp_read_2])
 
@@ -371,6 +355,7 @@ def SID_SSTC_04_NON_M():
         ],
     )
 
+
 @sstc_scenario
 def SID_SSTC_04_M():
     """
@@ -378,12 +363,12 @@ def SID_SSTC_04_M():
     Access to stimecmp csr is blocked in all modes except M, illegal instruction exception is expected.
     """
     # Set menvcfg.STCE=0
-    menvcfg_clear = CsrWrite(csr_name="menvcfg", clear_mask=(1<<63))
+    menvcfg_clear = CsrWrite(csr_name="menvcfg", clear_mask=(1 << 63))
 
     # Try accessing stimecmp - should cause illegal instruction exception
     stimecmp_read_1 = CsrRead(csr_name="stimecmp")
 
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1<<63))
+    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     stimecmp_read_2 = CsrRead(csr_name="stimecmp")
 
     return TestScenario.from_steps(
@@ -407,10 +392,10 @@ def SID_SSTC_05_VS_VU():
     Access to vstimecmp csr is blocked in VS mode, virtual instruction exception is expected.
     """
     # Set menvcfg.STCE=1
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1<<63))
+    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
 
     # Set henvcfg.STCE=0
-    henvcfg_clear = CsrWrite(csr_name="henvcfg", clear_mask=(1<<63))
+    henvcfg_clear = CsrWrite(csr_name="henvcfg", clear_mask=(1 << 63))
 
     # Try accessing vstimecmp - should cause virtual instruction exception
     stimecmp_read = CsrRead(csr_name="stimecmp")
@@ -428,6 +413,7 @@ def SID_SSTC_05_VS_VU():
         ],
     )
 
+
 @sstc_scenario
 def SID_SSTC_05_M_HS():
     """
@@ -435,10 +421,10 @@ def SID_SSTC_05_M_HS():
     Access to vstimecmp csr is blocked in VS mode, virtual instruction exception is expected.
     """
     # Set menvcfg.STCE=1
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1<<63))
+    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
 
     # Set henvcfg.STCE=0
-    henvcfg_clear = CsrWrite(csr_name="henvcfg", clear_mask=(1<<63))
+    henvcfg_clear = CsrWrite(csr_name="henvcfg", clear_mask=(1 << 63))
 
     # Try accessing vstimecmp - should cause virtual instruction exception
     stimecmp_read = CsrRead(csr_name="stimecmp")
@@ -463,19 +449,19 @@ def SID_SSTC_06():
     henvcfg.STCE is always 0 if menvcfg.STCE==0 (read-only zero).
     """
     # Set menvcfg.STCE=0
-    menvcfg_clear = CsrWrite(csr_name="menvcfg", clear_mask=(1<<63))
+    menvcfg_clear = CsrWrite(csr_name="menvcfg", clear_mask=(1 << 63))
 
     # Try to set henvcfg.STCE=1
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1<<63))
+    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
 
     # Read henvcfg and verify STCE bit is 0
     henvcfg_read = CsrRead(csr_name="henvcfg")
-    top = LoadImmediateStep(imm=(1<<63))
+    top = LoadImmediateStep(imm=(1 << 63))
     henvcfg_masked = Arithmetic(op="and", src1=henvcfg_read, src2=top)
     zero = LoadImmediateStep(imm=0)
     assert_equal = AssertEqual(src1=henvcfg_masked, src2=zero)
 
-    unset_henvcfg_set = CsrWrite(csr_name="henvcfg", clear_mask=(1<<63))
+    unset_henvcfg_set = CsrWrite(csr_name="henvcfg", clear_mask=(1 << 63))
     henvcfg_read_2 = CsrRead(csr_name="henvcfg")
     henvcfg_masked_2 = Arithmetic(op="and", src1=henvcfg_read_2, src2=top)
     zero_2 = LoadImmediateStep(imm=0)
@@ -508,6 +494,7 @@ def SID_SSTC_06():
 #     # Unable to be implemented
 #     return
 
+
 @sstc_scenario
 def SID_SSTC_08():
     """
@@ -515,17 +502,17 @@ def SID_SSTC_08():
     mip.stip is not writeable in M mode if menvcfg.STCE == 1.
     """
     # Set menvcfg.STCE=1
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1<<63))
+    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
 
     # unset hevncfg.STCE
-    henvcfg_clear = CsrWrite(csr_name="henvcfg", clear_mask=(1<<63))
-    
+    henvcfg_clear = CsrWrite(csr_name="henvcfg", clear_mask=(1 << 63))
+
     # Try to write to mip.stip
-    mip_write = CsrWrite(csr_name="mip", set_mask=(1<<5))
+    mip_write = CsrWrite(csr_name="mip", set_mask=(1 << 5))
 
     # read mip and verify stip is not set
     mip_read = CsrRead(csr_name="mip")
-    mip_masked = Arithmetic(op="andi", src1=mip_read, src2=(1<<5))
+    mip_masked = Arithmetic(op="andi", src1=mip_read, src2=(1 << 5))
     zero = LoadImmediateStep(imm=0)
     assert_equal = AssertEqual(src1=mip_masked, src2=zero)
 
