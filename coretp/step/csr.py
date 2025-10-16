@@ -26,12 +26,15 @@ class CsrWrite(TestStep):
     :type clear_mask: TestStep or int
     :param value: Source step to use as value for write.
     :type value: TestStep or int
+    :param direct_write: Do the write without jumping to a different privilege mode. - ie, do CSRW directly
+    :type direct_write: bool
     """
 
     csr_name: str = ""
     set_mask: StepOrInt = None
     clear_mask: StepOrInt = None
     value: StepOrInt = None
+    direct_write: bool = False
 
     def __post_init__(self):
         if sum([x is not None for x in [self.set_mask, self.clear_mask, self.value]]) > 1:
@@ -48,6 +51,10 @@ class CsrRead(TestStep):
 
     :param csr_name: Name or hex address of the CSR to write to
     :type csr_name: str
+
+    :param direct_read: Do the read without jumping to a different privilege mode. - ie, do CSRR directly
+    :type direct_read: bool
     """
 
     csr_name: str = ""
+    direct_read: bool = False
