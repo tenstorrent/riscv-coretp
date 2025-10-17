@@ -40,7 +40,7 @@ def SID_XCOUNTEREN_01_U():
 
     # Test each CSR in U mode - all should succeed
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
     return TestScenario.from_steps(
         id="1",
@@ -65,7 +65,7 @@ def SID_XCOUNTEREN_01_S():
 
     # Test each CSR in S mode - all should succeed
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
     return TestScenario.from_steps(
         id="2",
@@ -90,7 +90,7 @@ def SID_XCOUNTEREN_01_M():
 
     # Test each CSR in M mode - all should succeed
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
     return TestScenario.from_steps(
         id="3",
@@ -120,7 +120,7 @@ def SID_XCOUNTEREN_02_U():
 
     # Test each CSR in U mode - all should fail
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        read_u = CsrRead(csr_name=csr_name)
+        read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
 
     return TestScenario.from_steps(
@@ -146,7 +146,7 @@ def SID_XCOUNTEREN_02_S():
 
     # Test each CSR in S mode - all should succeed
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
     return TestScenario.from_steps(
         id="5",
@@ -201,7 +201,7 @@ def SID_XCOUNTEREN_03_U():
 
     # Test each CSR in U mode - all should fail
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        read_u = CsrRead(csr_name=csr_name)
+        read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
 
     return TestScenario.from_steps(
@@ -227,7 +227,7 @@ def SID_XCOUNTEREN_03_S():
 
     # Test each CSR in S mode - all should fail
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        read_s = CsrRead(csr_name=csr_name)
+        read_s = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_s]))
 
     return TestScenario.from_steps(
@@ -283,7 +283,7 @@ def SID_XCOUNTEREN_04_U():
 
     # Test each CSR in U mode - all should fail
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        read_u = CsrRead(csr_name=csr_name)
+        read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
 
     return TestScenario.from_steps(
@@ -309,7 +309,7 @@ def SID_XCOUNTEREN_04_S():
 
     # Test each CSR in S mode - all should fail
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        read_s = CsrRead(csr_name=csr_name)
+        read_s = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_s]))
 
     return TestScenario.from_steps(
@@ -335,7 +335,7 @@ def SID_XCOUNTEREN_04_M():
 
     # Test each CSR in M mode - all should succeed
     for _, (_, csr_name) in COUNTER_FIELDS.items():
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
     return TestScenario.from_steps(
         id="12",
@@ -369,13 +369,13 @@ def SID_XCOUNTEREN_05_U():
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
         # Test the enabled CSR in U mode - should fail
-        read_u = CsrRead(csr_name=csr_name)
+        read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
 
         # Test other CSRs in U mode - should also fail
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                other_read_u = CsrRead(csr_name=other_csr_name)
+                other_read_u = CsrRead(csr_name=other_csr_name, direct_read=True)
                 steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[other_read_u]))
 
     return TestScenario.from_steps(
@@ -405,12 +405,12 @@ def SID_XCOUNTEREN_05_S():
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
         # Test the enabled CSR in S mode - should succeed
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
         # Test other CSRs in S mode - should fail
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                other_read_s = CsrRead(csr_name=other_csr_name)
+                other_read_s = CsrRead(csr_name=other_csr_name, direct_read=True)
                 steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[other_read_s]))
 
     return TestScenario.from_steps(
@@ -438,12 +438,12 @@ def SID_XCOUNTEREN_05_M():
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
         # Test the enabled CSR in M mode - should succeed
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
         # Test other CSRs in M mode - should also succeed
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                steps.append(CsrRead(csr_name=other_csr_name))
+                steps.append(CsrRead(csr_name=other_csr_name, direct_read=True))
 
     return TestScenario.from_steps(
         id="15",
@@ -477,12 +477,12 @@ def SID_XCOUNTEREN_06_U():
         steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
         # Test the enabled CSR in U mode - should succeed
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
         # Test other CSRs in U mode - should fail
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                other_read_u = CsrRead(csr_name=other_csr_name)
+                other_read_u = CsrRead(csr_name=other_csr_name, direct_read=True))
                 steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[other_read_u]))
 
     return TestScenario.from_steps(
@@ -511,12 +511,12 @@ def SID_XCOUNTEREN_06_S():
         steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
         # Test the enabled CSR in S mode - should succeed
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
         # Test other CSRs in S mode - should fail
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                other_read_s = CsrRead(csr_name=other_csr_name)
+                other_read_s = CsrRead(csr_name=other_csr_name, direct_read=True))
                 steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[other_read_s]))
 
     return TestScenario.from_steps(
@@ -544,12 +544,12 @@ def SID_XCOUNTEREN_06_M():
         steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
         # Test the enabled CSR in M mode - should succeed
-        steps.append(CsrRead(csr_name=csr_name))
+        steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
         # Test other CSRs in M mode - should also succeed
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                steps.append(CsrRead(csr_name=other_csr_name))
+                steps.append(CsrRead(csr_name=other_csr_name, direct_read=True))
 
     return TestScenario.from_steps(
         id="18",
