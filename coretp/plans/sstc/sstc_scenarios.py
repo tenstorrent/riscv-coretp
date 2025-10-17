@@ -507,14 +507,27 @@ def SID_SSTC_08():
     # unset hevncfg.STCE
     henvcfg_clear = CsrWrite(csr_name="henvcfg", clear_mask=(1 << 63))
 
+    # read mip and verify stip is not set
+    mip_read_1 = CsrRead(csr_name="mip")
+    mip_masked_1 = Arithmetic(op="andi", src1=mip_read_1, src2=(1 << 5))
+
     # Try to write to mip.stip
     mip_write = CsrWrite(csr_name="mip", set_mask=(1 << 5))
 
     # read mip and verify stip is not set
-    mip_read = CsrRead(csr_name="mip")
-    mip_masked = Arithmetic(op="andi", src1=mip_read, src2=(1 << 5))
-    zero = LoadImmediateStep(imm=0)
-    assert_equal = AssertEqual(src1=mip_masked, src2=zero)
+    mip_read_2 = CsrRead(csr_name="mip")
+    mip_masked_2 = Arithmetic(op="andi", src1=mip_read_2, src2=(1 << 5))
+
+    # Try to write to mip.stip
+    mip_clear = CsrWrite(csr_name="mip", clear_mask=(1 << 5))
+
+    # read mip and verify stip is not set
+    mip_read_3 = CsrRead(csr_name="mip")
+    mip_masked_3 = Arithmetic(op="andi", src1=mip_read_2, src2=(1 << 5))
+
+    assert_equal_1 = AssertEqual(src1=mip_masked_3, src2=mip_masked_1)
+    assert_equal_2 = AssertEqual(src1=mip_masked_3, src2=mip_masked_2)
+    assert_equal_3 = AssertEqual(src1=mip_masked_2, src2=mip_masked_1)
 
     return TestScenario.from_steps(
         id="12",
@@ -524,11 +537,17 @@ def SID_SSTC_08():
         steps=[
             menvcfg_set,
             henvcfg_clear,
+            mip_read_1,
+            mip_masked_1,
             mip_write,
-            mip_read,
-            mip_masked,
-            zero,
-            assert_equal,
+            mip_read_2,
+            mip_masked_2,
+            mip_clear,
+            mip_read_3,
+            mip_masked_3,
+            assert_equal_1,
+            assert_equal_2,
+            assert_equal_3,
         ],
     )
 
