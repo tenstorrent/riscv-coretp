@@ -360,14 +360,13 @@ def SID_XCOUNTEREN_05_U():
     All other CSRs should also be blocked in U-mode
     """
     steps = []
-    all_bits = 0xFFFFFFFF
+    steps.append(CsrWrite(csr_name="scounteren", value=0))
 
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
         # Set only this field in mcounteren, clear all others
-        steps.append(CsrWrite(csr_name="mcounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
-        steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_bits))
+        steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
         # Test the enabled CSR in U mode - should fail
         read_u = CsrRead(csr_name=csr_name)
@@ -396,14 +395,14 @@ def SID_XCOUNTEREN_05_S():
     All other CSRs should be blocked in S-mode
     """
     steps = []
-    all_bits = 0xFFFFFFFF
+
+    steps.append(CsrWrite(csr_name="scounteren", value=0))
 
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
         # Set only this field in mcounteren, clear all others
-        steps.append(CsrWrite(csr_name="mcounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
-        steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_bits))
+        steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
         # Test the enabled CSR in S mode - should succeed
         steps.append(CsrRead(csr_name=csr_name))
@@ -430,14 +429,13 @@ def SID_XCOUNTEREN_05_M():
     All CSRs should be accessible in M-mode regardless of enable bits
     """
     steps = []
-    all_bits = 0xFFFFFFFF
+    steps.append(CsrWrite(csr_name="scounteren", value=0))
 
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
         # Set only this field in mcounteren, clear all others
-        steps.append(CsrWrite(csr_name="mcounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
-        steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_bits))
+        steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
         # Test the enabled CSR in M mode - should succeed
         steps.append(CsrRead(csr_name=csr_name))
@@ -470,14 +468,13 @@ def SID_XCOUNTEREN_06_U():
     All other CSRs should be blocked in U-mode
     """
     steps = []
-    all_bits = 0xFFFFFFFF
 
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
         # Set only this field in both registers, clear all others
-        steps.append(CsrWrite(csr_name="mcounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
-        steps.append(CsrWrite(csr_name="scounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
+        steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
+        steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
         # Test the enabled CSR in U mode - should succeed
         steps.append(CsrRead(csr_name=csr_name))
@@ -505,14 +502,13 @@ def SID_XCOUNTEREN_06_S():
     All other CSRs should be blocked in S-mode
     """
     steps = []
-    all_bits = 0xFFFFFFFF
 
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
         # Set only this field in both registers, clear all others
-        steps.append(CsrWrite(csr_name="mcounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
-        steps.append(CsrWrite(csr_name="scounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
+        steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
+        steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
         # Test the enabled CSR in S mode - should succeed
         steps.append(CsrRead(csr_name=csr_name))
@@ -539,14 +535,13 @@ def SID_XCOUNTEREN_06_M():
     All CSRs should be accessible in M-mode regardless of enable bits
     """
     steps = []
-    all_bits = 0xFFFFFFFF
 
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
         # Set only this field in both registers, clear all others
-        steps.append(CsrWrite(csr_name="mcounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
-        steps.append(CsrWrite(csr_name="scounteren", set_mask=field_bit, clear_mask=all_bits & ~field_bit))
+        steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
+        steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
         # Test the enabled CSR in M mode - should succeed
         steps.append(CsrRead(csr_name=csr_name))
