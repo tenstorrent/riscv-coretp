@@ -529,7 +529,6 @@ def SID_SSTC_08():
     assert_equal_2 = AssertEqual(src1=mip_masked_3, src2=mip_masked_2)
     assert_equal_3 = AssertEqual(src1=mip_masked_2, src2=mip_masked_1)
 
-
     return TestScenario.from_steps(
         id="12",
         name="SID_SSTC_08",
