@@ -523,7 +523,7 @@ def SID_SSTC_08():
 
     # read mip and verify stip is not set
     mip_read_3 = CsrRead(csr_name="mip")
-    mip_masked_3 = Arithmetic(op="andi", src1=mip_read_2, src2=(1 << 5))
+    mip_masked_3 = Arithmetic(op="andi", src1=mip_read_3, src2=(1 << 5))
 
     assert_equal_1 = AssertEqual(src1=mip_masked_3, src2=mip_masked_1)
     assert_equal_2 = AssertEqual(src1=mip_masked_3, src2=mip_masked_2)
