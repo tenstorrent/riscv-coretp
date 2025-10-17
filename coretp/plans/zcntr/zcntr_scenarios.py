@@ -482,7 +482,7 @@ def SID_XCOUNTEREN_06_U():
         # Test other CSRs in U mode - should fail
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                other_read_u = CsrRead(csr_name=other_csr_name, direct_read=True))
+                other_read_u = CsrRead(csr_name=other_csr_name, direct_read=True)
                 steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[other_read_u]))
 
     return TestScenario.from_steps(
@@ -516,7 +516,7 @@ def SID_XCOUNTEREN_06_S():
         # Test other CSRs in S mode - should fail
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
-                other_read_s = CsrRead(csr_name=other_csr_name, direct_read=True))
+                other_read_s = CsrRead(csr_name=other_csr_name, direct_read=True)
                 steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[other_read_s]))
 
     return TestScenario.from_steps(
