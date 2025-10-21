@@ -4,24 +4,26 @@
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
 from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, LoadImmediateStep, AssertEqual, CsrRead
-import random # FIXME: use the random seed from the test plan runner if possible
+import random  # FIXME: use the random seed from the test plan runner if possible
 
 from . import zkt_scenario
 
 # ZKT configuration
-ZKT_CHAIN_LENGTH = 100          # number of times to repeat an instruction for each loop
+ZKT_CHAIN_LENGTH = 100  # number of times to repeat an instruction for each loop
 
 
 def env_m():
     return TestEnvCfg(priv_modes=[PrivilegeMode.M])
 
+
 # Helpers to reduce duplication across arithmetic-immediate scenarios
 
+
 def _ai_chain(op: str, seed: TestStep, n: int) -> list[TestStep]:
-    '''
+    """
     Build a chain of n instructions of given op
     op is expected to be an arithmetic instruction with an immediate operand
-    '''
+    """
     steps: list[TestStep] = []
     prev: TestStep = seed
     for _ in range(n):
@@ -30,11 +32,12 @@ def _ai_chain(op: str, seed: TestStep, n: int) -> list[TestStep]:
         prev = nxt
     return steps
 
+
 def _ar_chain(op: str, seed: TestStep, n: int) -> list[TestStep]:
-    '''
+    """
     Build a chain of n instructions of given op
     op is expected to be an arithmetic register-register instruction
-    '''
+    """
     steps: list[TestStep] = []
     prev: TestStep = seed
     for i in range(n):
@@ -47,7 +50,7 @@ def _ar_chain(op: str, seed: TestStep, n: int) -> list[TestStep]:
 
 
 def _build_arithmetic_test_steps(chain_builder, op: str) -> list[TestStep]:
-    '''
+    """
     Build a list of test steps for a given arithmetic instruction and given chain builder
     chain_builder is expected to be a function that takes an op, a seed, and a number of instructions to build
     op is the arithmetic instruction to use in the chain
@@ -55,7 +58,7 @@ def _build_arithmetic_test_steps(chain_builder, op: str) -> list[TestStep]:
         3 total loops, each measure appropriate CSRs, repeat the instruction n times, measure CSRs again
         1st loop results are unused, only meant to warm up the uarch environment
         2nd and 3rd loop results are asserted to be equal, implying cycles/instret proportional to # of instructions
-    '''
+    """
     steps: list[TestStep] = []
 
     # Loop 0: warm-up
@@ -91,7 +94,7 @@ def _build_arithmetic_test_steps(chain_builder, op: str) -> list[TestStep]:
     tb_l2 = CsrRead(csr_name="time")
     cb_l2 = CsrRead(csr_name="cycle")
     ib_l2 = CsrRead(csr_name="instret")
-    chain2 = chain_builder(op, l2_init, ZKT_CHAIN_LENGTH) 
+    chain2 = chain_builder(op, l2_init, ZKT_CHAIN_LENGTH)
     ta_l2 = CsrRead(csr_name="time")
     ca_l2 = CsrRead(csr_name="cycle")
     ia_l2 = CsrRead(csr_name="instret")
@@ -108,7 +111,9 @@ def _build_arithmetic_test_steps(chain_builder, op: str) -> list[TestStep]:
 
     return steps
 
+
 # Specialized chain builders for other arithmetic categories
+
 
 def _mul_chain(op: str, seed: TestStep, n: int) -> list[TestStep]:
     steps: list[TestStep] = []
@@ -135,6 +140,7 @@ def _zc_chain(op: str, cond_value: int, n: int) -> list[TestStep]:
         rr = Arithmetic(op=op, src1=val, src2=cond)
         steps += [val, cond, rr]
     return steps
+
 
 @zkt_scenario
 def SID_ZKT_02():
@@ -221,6 +227,7 @@ def SID_ZKT_03_ADDI():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_03_SLTI():
     """
@@ -236,6 +243,7 @@ def SID_ZKT_03_SLTI():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_03_SLTIU():
@@ -253,6 +261,7 @@ def SID_ZKT_03_SLTIU():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_03_XORI():
     """
@@ -268,6 +277,7 @@ def SID_ZKT_03_XORI():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_03_ORI():
@@ -285,6 +295,7 @@ def SID_ZKT_03_ORI():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_03_ANDI():
     """
@@ -300,6 +311,7 @@ def SID_ZKT_03_ANDI():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_03_SLLI():
@@ -317,6 +329,7 @@ def SID_ZKT_03_SLLI():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_03_SRLI():
     """
@@ -332,6 +345,7 @@ def SID_ZKT_03_SRLI():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_03_SRAI():
@@ -349,6 +363,7 @@ def SID_ZKT_03_SRAI():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_03_ADDIW():
     """
@@ -364,6 +379,7 @@ def SID_ZKT_03_ADDIW():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_03_SLLIW():
@@ -381,6 +397,7 @@ def SID_ZKT_03_SLLIW():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_03_SRLIW():
     """
@@ -396,6 +413,7 @@ def SID_ZKT_03_SRLIW():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_03_SRAIW():
@@ -428,7 +446,7 @@ def SID_ZKT_04():
     return TestScenario.from_steps(
         id="4",
         name="SID_ZKT_04",
-    description="ZKT: compressed-immediate (placeholder; compressed ops disabled)",
+        description="ZKT: compressed-immediate (placeholder; compressed ops disabled)",
         env=env_m(),
         steps=[
             placeholder1,
@@ -452,7 +470,8 @@ def SID_ZKT_05_ADD():
         description="ZKT: add register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SUB():
@@ -468,7 +487,8 @@ def SID_ZKT_05_SUB():
         description="ZKT: sub register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SLL():
@@ -486,6 +506,7 @@ def SID_ZKT_05_SLL():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_05_SLT():
     """
@@ -500,7 +521,8 @@ def SID_ZKT_05_SLT():
         description="ZKT: slt register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SLTU():
@@ -516,7 +538,8 @@ def SID_ZKT_05_SLTU():
         description="ZKT: sltu register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_XOR():
@@ -532,7 +555,8 @@ def SID_ZKT_05_XOR():
         description="ZKT: xor register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SRL():
@@ -548,7 +572,8 @@ def SID_ZKT_05_SRL():
         description="ZKT: srl register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SRA():
@@ -564,7 +589,8 @@ def SID_ZKT_05_SRA():
         description="ZKT: sra register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_OR():
@@ -580,7 +606,8 @@ def SID_ZKT_05_OR():
         description="ZKT: or register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_AND():
@@ -596,7 +623,8 @@ def SID_ZKT_05_AND():
         description="ZKT: and register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_ADDW():
@@ -612,7 +640,8 @@ def SID_ZKT_05_ADDW():
         description="ZKT: addw register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SUBW():
@@ -628,7 +657,8 @@ def SID_ZKT_05_SUBW():
         description="ZKT: subw register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SLLW():
@@ -644,7 +674,8 @@ def SID_ZKT_05_SLLW():
         description="ZKT: sllw register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SRLW():
@@ -660,7 +691,8 @@ def SID_ZKT_05_SRLW():
         description="ZKT: srlw register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
+
 
 @zkt_scenario
 def SID_ZKT_05_SRAW():
@@ -676,7 +708,7 @@ def SID_ZKT_05_SRAW():
         description="ZKT: sraw register-register dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
 
 
 @zkt_scenario
@@ -693,7 +725,7 @@ def SID_ZKT_06():
     return TestScenario.from_steps(
         id="6",
         name="SID_ZKT_06",
-    description="ZKT: compressed-RR (placeholder; compressed ops disabled)",
+        description="ZKT: compressed-RR (placeholder; compressed ops disabled)",
         env=env_m(),
         steps=[
             placeholder1,
@@ -701,6 +733,7 @@ def SID_ZKT_06():
             assert_equal,
         ],
     )
+
 
 @zkt_scenario
 def SID_ZKT_07_MUL():
@@ -718,6 +751,7 @@ def SID_ZKT_07_MUL():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_07_MULH():
     """
@@ -733,6 +767,7 @@ def SID_ZKT_07_MULH():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_07_MULHU():
@@ -750,6 +785,7 @@ def SID_ZKT_07_MULHU():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_07_MULHSU():
     """
@@ -765,6 +801,7 @@ def SID_ZKT_07_MULHSU():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_07_MULW():
@@ -799,6 +836,7 @@ def SID_ZKT_08_CLMUL():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_CLMULH():
     """
@@ -814,6 +852,7 @@ def SID_ZKT_08_CLMULH():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_XPERM4():
@@ -831,6 +870,7 @@ def SID_ZKT_08_XPERM4():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_XPERM8():
     """
@@ -846,6 +886,7 @@ def SID_ZKT_08_XPERM8():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_ROR():
@@ -863,6 +904,7 @@ def SID_ZKT_08_ROR():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_ROL():
     """
@@ -878,6 +920,7 @@ def SID_ZKT_08_ROL():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_RORI():
@@ -895,6 +938,7 @@ def SID_ZKT_08_RORI():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_RORW():
     """
@@ -910,6 +954,7 @@ def SID_ZKT_08_RORW():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_ROLW():
@@ -927,6 +972,7 @@ def SID_ZKT_08_ROLW():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_RORIW():
     """
@@ -942,6 +988,7 @@ def SID_ZKT_08_RORIW():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_ANDN():
@@ -959,6 +1006,7 @@ def SID_ZKT_08_ANDN():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_ORN():
     """
@@ -974,6 +1022,7 @@ def SID_ZKT_08_ORN():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_XNOR():
@@ -991,6 +1040,7 @@ def SID_ZKT_08_XNOR():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_PACK():
     """
@@ -1006,6 +1056,7 @@ def SID_ZKT_08_PACK():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_PACKH():
@@ -1023,6 +1074,7 @@ def SID_ZKT_08_PACKH():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_PACKW():
     """
@@ -1038,6 +1090,7 @@ def SID_ZKT_08_PACKW():
         env=env_m(),
         steps=steps,
     )
+
 
 @zkt_scenario
 def SID_ZKT_08_BREV8():
@@ -1055,6 +1108,7 @@ def SID_ZKT_08_BREV8():
         steps=steps,
     )
 
+
 @zkt_scenario
 def SID_ZKT_08_REV8():
     """
@@ -1070,6 +1124,7 @@ def SID_ZKT_08_REV8():
         env=env_m(),
         steps=steps,
     )
+
 
 '''
 FIXME: zip and unzip seem to be only available in RV32, not RV64, which seems unusual. Double check this.
@@ -1106,6 +1161,7 @@ def SID_ZKT_08_UNZIP():
     )
 '''
 
+
 @zkt_scenario
 def SID_ZKT_09_CZERO_EQZ():
     """
@@ -1135,4 +1191,4 @@ def SID_ZKT_09_CZERO_NEZ():
         description="ZKT: czero.nez RR dependent chains; check equal cycles/instret across two loops (plus one warm-up)",
         env=env_m(),
         steps=steps,
-    ) 
+    )
