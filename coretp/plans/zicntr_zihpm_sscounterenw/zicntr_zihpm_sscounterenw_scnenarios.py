@@ -5,7 +5,7 @@ from coretp import TestScenario, TestEnvCfg
 from coretp.rv_enums import PrivilegeMode, ExceptionCause
 from coretp.step import CsrWrite, CsrRead, AssertException
 
-from . import zcntr_scenario
+from . import zicntr_zihpm_sscounterenw_scenario
 
 
 # Define field mappings: field_name -> (bit_position, csr_name)
@@ -27,7 +27,7 @@ COUNTER_FIELDS = {
 # ============================================================================
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_01_U():
     description = """
     Test mcounteren=all enabled, scounteren=all enabled in U-mode
@@ -52,7 +52,7 @@ def SID_XCOUNTEREN_01_U():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_01_S():
     description = """
     Test mcounteren=all enabled, scounteren=all enabled in S-mode
@@ -77,7 +77,7 @@ def SID_XCOUNTEREN_01_S():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_01_M():
     description = """
     Test mcounteren=all enabled, scounteren=all enabled in M-mode
@@ -108,7 +108,7 @@ def SID_XCOUNTEREN_01_M():
 # ============================================================================
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_02_U():
     description = """
     Test mcounteren=all enabled, scounteren=all disabled in U-mode
@@ -134,7 +134,7 @@ def SID_XCOUNTEREN_02_U():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_02_S():
     description = """
     Test mcounteren=all enabled, scounteren=all disabled in S-mode
@@ -159,7 +159,7 @@ def SID_XCOUNTEREN_02_S():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_02_M():
     description = """
     Test mcounteren=all enabled, scounteren=all disabled in M-mode
@@ -190,7 +190,7 @@ def SID_XCOUNTEREN_02_M():
 # ============================================================================
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_03_U():
     description = """
     Test mcounteren=all disabled, scounteren=all enabled in U-mode
@@ -216,7 +216,7 @@ def SID_XCOUNTEREN_03_U():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_03_S():
     description = """
     Test mcounteren=all disabled, scounteren=all enabled in S-mode
@@ -242,7 +242,7 @@ def SID_XCOUNTEREN_03_S():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_03_M():
     description = """
     Test mcounteren=all disabled, scounteren=all enabled in M-mode
@@ -273,7 +273,7 @@ def SID_XCOUNTEREN_03_M():
 # ============================================================================
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_04_U():
     description = """
     Test mcounteren=all disabled, scounteren=all disabled in U-mode
@@ -299,7 +299,7 @@ def SID_XCOUNTEREN_04_U():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_04_S():
     description = """
     Test mcounteren=all disabled, scounteren=all disabled in S-mode
@@ -325,7 +325,7 @@ def SID_XCOUNTEREN_04_S():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_04_M():
     description = """
     Test mcounteren=all disabled, scounteren=all disabled in M-mode
@@ -357,7 +357,7 @@ def SID_XCOUNTEREN_04_M():
 # ============================================================================
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_05_U():
     description = """
     Test selective enable in U-mode: mcounteren.<field>=1, scounteren.<field>=0
@@ -392,7 +392,7 @@ def SID_XCOUNTEREN_05_U():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_05_S():
     description = """
     Test selective enable in S-mode: mcounteren.<field>=1, scounteren.<field>=0
@@ -427,7 +427,7 @@ def SID_XCOUNTEREN_05_S():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_05_M():
     description = """
     Test selective enable in M-mode: mcounteren.<field>=1, scounteren.<field>=0
@@ -466,7 +466,7 @@ def SID_XCOUNTEREN_05_M():
 # ============================================================================
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_06_U():
     description = """
     Test selective enable in U-mode: mcounteren.<field>=1, scounteren.<field>=1
@@ -500,7 +500,7 @@ def SID_XCOUNTEREN_06_U():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_06_S():
     description = """
     Test selective enable in S-mode: mcounteren.<field>=1, scounteren.<field>=1
@@ -534,7 +534,7 @@ def SID_XCOUNTEREN_06_S():
     )
 
 
-@zcntr_scenario
+@zicntr_zihpm_sscounterenw_scenario
 def SID_XCOUNTEREN_06_M():
     description = """
     Test selective enable in M-mode: mcounteren.<field>=1, scounteren.<field>=1
