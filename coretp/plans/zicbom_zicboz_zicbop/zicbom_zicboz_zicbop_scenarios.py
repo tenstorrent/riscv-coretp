@@ -3,7 +3,7 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, MemAccess
+from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, MemAccess, LoadImmediateStep
 from coretp.step import Hart, HartExit, Directive
 
 from . import zicbom_zicboz_zicbop_scenario
@@ -22,7 +22,7 @@ def SID_ZICBO_001():
     )
 
     # Configure menvcfg.CBIE = 00
-    menvcfg_write = CsrWrite(csr="menvcfg", value=0x0, mask=0x30)  # Clear CBIE bits
+    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x30)  # Clear CBIE bits
 
     # Execute cbo.inval instruction
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
@@ -37,7 +37,7 @@ def SID_ZICBO_001():
         id="1",
         name="SID_ZICBO_001",
         description="Cover cbo.inval when menvcfg.CBIE = 00 from all lower privilege modes",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U, PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
         steps=[
             mem,
             menvcfg_write,
@@ -59,7 +59,7 @@ def SID_ZICBO_002():
     )
 
     # Configure senvcfg.CBIE = 00
-    senvcfg_write = CsrWrite(csr="senvcfg", value=0x0, mask=0x30)  # Clear CBIE bits
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x30)  # Clear CBIE bits
 
     # Execute cbo.inval instruction
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
@@ -74,7 +74,7 @@ def SID_ZICBO_002():
         id="2",
         name="SID_ZICBO_002",
         description="Cover cbo.inval when senvcfg.CBIE = 00 from U-mode",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
             mem,
             senvcfg_write,
@@ -96,7 +96,7 @@ def SID_ZICBO_003():
     )
 
     # Configure menvcfg.CBCFE = 00
-    menvcfg_write = CsrWrite(csr="menvcfg", value=0x0, mask=0x40)  # Clear CBCFE bits
+    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x40)  # Clear CBCFE bits
 
     # Execute cbo.clean instruction
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
@@ -117,7 +117,7 @@ def SID_ZICBO_003():
         id="3",
         name="SID_ZICBO_003",
         description="Cover cbo.clean, cbo.flush when menvcfg.CBCFE = 00 from all lower privilege modes",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U, PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
         steps=[
             mem,
             menvcfg_write,
@@ -140,7 +140,7 @@ def SID_ZICBO_004():
     )
 
     # Configure senvcfg.CBCFE = 00
-    senvcfg_write = CsrWrite(csr="senvcfg", value=0x0, mask=0x40)  # Clear CBCFE bits
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x40)  # Clear CBCFE bits
 
     # Execute cbo.clean and cbo.flush instructions
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
@@ -160,7 +160,7 @@ def SID_ZICBO_004():
         id="4",
         name="SID_ZICBO_004",
         description="Cover cbo.clean, cbo.flush when senvcfg.CBCFE = 00 from U-mode",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
             mem,
             senvcfg_write,
@@ -183,7 +183,7 @@ def SID_ZICBO_005():
     )
 
     # Configure menvcfg.CBZE = 00
-    menvcfg_write = CsrWrite(csr="menvcfg", value=0x0, mask=0x80)  # Clear CBZE bit
+    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x80)  # Clear CBZE bit
 
     # Execute cbo.zero instruction
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
@@ -198,7 +198,7 @@ def SID_ZICBO_005():
         id="5",
         name="SID_ZICBO_005",
         description="Cover cbo.zero when menvcfg.CBZE = 00 from all lower privilege modes",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U, PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
         steps=[
             mem,
             menvcfg_write,
@@ -220,7 +220,7 @@ def SID_ZICBO_006():
     )
 
     # Configure senvcfg.CBZE = 00
-    senvcfg_write = CsrWrite(csr="senvcfg", value=0x0, mask=0x80)  # Clear CBZE bit
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x80)  # Clear CBZE bit
 
     # Execute cbo.zero instruction
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
@@ -235,7 +235,7 @@ def SID_ZICBO_006():
         id="6",
         name="SID_ZICBO_006",
         description="Cover cbo.zero when senvcfg.CBZE = 00 from U-mode",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
             mem,
             senvcfg_write,
@@ -257,7 +257,7 @@ def SID_ZICBO_007():
     )
 
     # Configure henvcfg.CBIE = 00
-    henvcfg_write = CsrWrite(csr="henvcfg", value=0x0, mask=0x30)  # Clear CBIE bits
+    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x30)  # Clear CBIE bits
 
     # Execute cbo.inval instruction
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
@@ -272,7 +272,7 @@ def SID_ZICBO_007():
         id="7",
         name="SID_ZICBO_007",
         description="Cover cbo.inval from VS,VU-mode when henvcfg.CBIE==00",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.S, PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
             mem,
             henvcfg_write,
@@ -294,7 +294,7 @@ def SID_ZICBO_008():
     )
 
     # Configure henvcfg.CBCFE = 00
-    henvcfg_write = CsrWrite(csr="henvcfg", value=0x0, mask=0x40)  # Clear CBCFE bits
+    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x40)  # Clear CBCFE bits
 
     # Execute cbo.clean and cbo.flush instructions
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
@@ -314,7 +314,7 @@ def SID_ZICBO_008():
         id="8",
         name="SID_ZICBO_008",
         description="Cover cbo.clean, cbo.flush from VS,VU-mode when henvcfg.CBCFE==00",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.S, PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], hypervisor=[True]),
         steps=[
             mem,
             henvcfg_write,
@@ -337,7 +337,7 @@ def SID_ZICBO_009():
     )
 
     # Configure henvcfg.CBZE = 00
-    henvcfg_write = CsrWrite(csr="henvcfg", value=0x0, mask=0x80)  # Clear CBZE bit
+    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x80)  # Clear CBZE bit
 
     # Execute cbo.zero instruction
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
@@ -352,7 +352,7 @@ def SID_ZICBO_009():
         id="9",
         name="SID_ZICBO_009",
         description="Cover cbo.zero from VS,VU-mode when henvcfg.CBZE==00",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.S, PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
             mem,
             henvcfg_write,
@@ -374,7 +374,7 @@ def SID_ZICBO_010():
     )
 
     # Configure senvcfg.CBIE = 00
-    senvcfg_write = CsrWrite(csr="senvcfg", value=0x0, mask=0x30)  # Clear CBIE bits
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x30)  # Clear CBIE bits
 
     # Execute cbo.inval instruction
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
@@ -389,7 +389,7 @@ def SID_ZICBO_010():
         id="10",
         name="SID_ZICBO_010",
         description="Cover cbo.inval from VU-mode when senvcfg.CBIE==00",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], hypervisor=[True]),
         steps=[
             mem,
             senvcfg_write,
@@ -411,7 +411,7 @@ def SID_ZICBO_011():
     )
 
     # Configure senvcfg.CBCFE = 00
-    senvcfg_write = CsrWrite(csr="senvcfg", value=0x0, mask=0x40)  # Clear CBCFE bits
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x40)  # Clear CBCFE bits
 
     # Execute cbo.clean and cbo.flush instructions
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
@@ -431,7 +431,7 @@ def SID_ZICBO_011():
         id="11",
         name="SID_ZICBO_011",
         description="Cover cbo.clean, cbo.flush from VU-mode when senvcfg.CBCFE==00",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
             mem,
             senvcfg_write,
@@ -454,7 +454,7 @@ def SID_ZICBO_012():
     )
 
     # Configure senvcfg.CBZE = 00
-    senvcfg_write = CsrWrite(csr="senvcfg", value=0x0, mask=0x80)  # Clear CBZE bit
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x80)  # Clear CBZE bit
 
     # Execute cbo.zero instruction
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
@@ -469,7 +469,7 @@ def SID_ZICBO_012():
         id="12",
         name="SID_ZICBO_012",
         description="Cover cbo.zero from VU-mode when senvcfg.CBZE==00",
-        env=TestEnvCfg(privilege_modes=[PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
             mem,
             senvcfg_write,
@@ -614,9 +614,9 @@ def SID_ZICBO_017():
     )
 
     # Configure xENVCFG bits to permit execution
-    menvcfg_write = CsrWrite(csr="menvcfg", value=0x4, mask=0x80)  # Set CBZE bit
-    senvcfg_write = CsrWrite(csr="senvcfg", value=0x4, mask=0x80)  # Set CBZE bit
-    henvcfg_write = CsrWrite(csr="henvcfg", value=0x4, mask=0x80)  # Set CBZE bit
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0x80)  # Set CBZE bit
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0x80)  # Set CBZE bit
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0x80)  # Set CBZE bit
 
     # Execute cbo.zero instruction
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
@@ -784,16 +784,16 @@ def SID_ZICBO_021():
     )
 
     # Hart 0: Store data and synchronize
-    hart0 = Hart(hart_id=0)
+    hart0 = Hart(hart_index=0)
     store_data = Store(memory=mem, value=0xDEADBEEF, offset=0)
     sync1 = HartExit(sync=True)
     # Hart 1: Execute cbo.zero and synchronize
-    hart1 = Hart(hart_id=1)
+    hart1 = Hart(hart_index=1)
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
     sync2 = HartExit(sync=True)
 
     # Hart 0: Read back and verify zeros
-    hart0_2 = Hart(hart_id=0)
+    hart0_2 = Hart(hart_index=0)
     load_verify = Load(memory=mem, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
 
@@ -801,7 +801,7 @@ def SID_ZICBO_021():
         id="21",
         name="SID_ZICBO_021",
         description="Ensure all bytes of cache block are zeroed in MP",
-        env=TestEnvCfg(num_harts=2),
+        env=TestEnvCfg(min_num_harts=2),
         steps=[
             mem,
             hart0,
@@ -810,7 +810,7 @@ def SID_ZICBO_021():
             hart1,
             cbo_zero,
             sync2,
-            hart0_2
+            hart0_2,
             load_verify,
             assert_zero,
         ],
@@ -948,7 +948,7 @@ def SID_ZICBO_022():
 
 @zicbom_zicboz_zicbop_scenario
 def SID_ZICBO_039():
-     """
+    """
     Ensure constrained loop into same address does not get affected by any zicbo instruction
     """
     # Set up memory region
@@ -960,14 +960,14 @@ def SID_ZICBO_039():
 
     hart_exit = HartExit(sync=True)
     # Hart 0: Store data and synchronize
-    hart0 = Hart(hart_id=0)
+    hart0 = Hart(hart_index=0)
 
     load_reserve = MemAccess(op="lr.w", memory=mem, offset=0)
     store_conditional = MemAccess(op="sc.w", memory=mem, offset=0)
 
     # Hart 1: Execute cbo.zero and synchronize
     # FIXME: add random cmo operation instead
-    hart1 = Hart(hart_id=1)
+    hart1 = Hart(hart_index=1)
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Hart 0: Read back and verify zero 
@@ -975,7 +975,7 @@ def SID_ZICBO_039():
         id="39",
         name="SID_ZICBO_039",
         description="Ensure all bytes of cache block are zeroed in MP",
-        env=TestEnvCfg(num_harts=2),
+        env=TestEnvCfg(min_num_harts=2),
         steps=[
             mem,
             hart_exit,
@@ -986,7 +986,6 @@ def SID_ZICBO_039():
             cbo_zero,
         ],
     )
-    return
 
 # @zicbom_zicboz_zicbop_scenario
 # def SID_ZICBO_040():
@@ -1031,8 +1030,7 @@ def SID_ZICBO_046():
     )
     bit1 = LoadImmediateStep(imm=1)
     slli = Arithmetic(op="slli", src1=bit1, src2=63)
-    addr = LoadImmediateStep(imm=mem)
-    add = Arithmetic(op="add", src1=addr, src2=slli)
+    add = Arithmetic(op="add", src1=mem, src2=slli)
 
     cmo_op = Arithmetic(op="cbo.flush", src1=add)
     cmo_op_2 = Arithmetic(op="cbo.clean", src1=add)
@@ -1047,7 +1045,6 @@ def SID_ZICBO_046():
             mem,
             bit1,
             slli,
-            addr,
             add,
             cmo_op,
             cmo_op_2,
