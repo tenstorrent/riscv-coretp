@@ -26,6 +26,7 @@ COUNTER_FIELDS = {
 # All counters accessible in U, S, M modes
 # ============================================================================
 
+
 @zcntr_scenario
 def SID_XCOUNTEREN_01_U():
     """
@@ -105,6 +106,7 @@ def SID_XCOUNTEREN_01_M():
 # SID_XCOUNTEREN_02: mcounteren=all enabled, scounteren=all disabled
 # Counters blocked in U-mode, accessible in S/M modes
 # ============================================================================
+
 
 @zcntr_scenario
 def SID_XCOUNTEREN_02_U():
@@ -186,6 +188,7 @@ def SID_XCOUNTEREN_02_M():
 # SID_XCOUNTEREN_03: mcounteren=all disabled, scounteren=all enabled
 # Counters blocked in U/S modes, accessible in M mode
 # ============================================================================
+
 
 @zcntr_scenario
 def SID_XCOUNTEREN_03_U():
@@ -269,6 +272,7 @@ def SID_XCOUNTEREN_03_M():
 # Counters blocked in U/S modes, accessible in M mode
 # ============================================================================
 
+
 @zcntr_scenario
 def SID_XCOUNTEREN_04_U():
     """
@@ -351,6 +355,7 @@ def SID_XCOUNTEREN_04_M():
 # One field at a time enabled - accessible in S/M, blocked in U
 # Other fields blocked in U/S, accessible in M
 # ============================================================================
+
 
 @zcntr_scenario
 def SID_XCOUNTEREN_05_U():
@@ -459,6 +464,7 @@ def SID_XCOUNTEREN_05_M():
 # One field at a time enabled - accessible in U/S/M
 # Other fields blocked in U/S, accessible in M
 # ============================================================================
+
 
 @zcntr_scenario
 def SID_XCOUNTEREN_06_U():
