@@ -158,6 +158,7 @@ def new_test_plan(
     _registry.register_plan(name, description, tags, features)
 
     def scenario_decorator(func: Callable[[], TestScenario]) -> Callable[[], TestScenario]:
+        print(f"Adding scenario {func.__name__} to plan {name}")
         _registry.add_scenario(name, func)
         return func
 
