@@ -29,7 +29,7 @@ COUNTER_FIELDS = {
 
 @zcntr_scenario
 def SID_XCOUNTEREN_01_U():
-    """
+    description = """
     Test mcounteren=all enabled, scounteren=all enabled in U-mode
     All counter CSRs should be accessible
     """
@@ -46,7 +46,7 @@ def SID_XCOUNTEREN_01_U():
     return TestScenario.from_steps(
         id="1",
         name="SID_XCOUNTEREN_01_U",
-        description="All counters accessible in U-mode when mcounteren=scounteren=all enabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=steps,
     )
@@ -54,7 +54,7 @@ def SID_XCOUNTEREN_01_U():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_01_S():
-    """
+    description = """
     Test mcounteren=all enabled, scounteren=all enabled in S-mode
     All counter CSRs should be accessible
     """
@@ -71,7 +71,7 @@ def SID_XCOUNTEREN_01_S():
     return TestScenario.from_steps(
         id="2",
         name="SID_XCOUNTEREN_01_S",
-        description="All counters accessible in S-mode when mcounteren=scounteren=all enabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
         steps=steps,
     )
@@ -79,7 +79,7 @@ def SID_XCOUNTEREN_01_S():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_01_M():
-    """
+    description = """
     Test mcounteren=all enabled, scounteren=all enabled in M-mode
     All counter CSRs should be accessible
     """
@@ -96,7 +96,7 @@ def SID_XCOUNTEREN_01_M():
     return TestScenario.from_steps(
         id="3",
         name="SID_XCOUNTEREN_01_M",
-        description="All counters accessible in M-mode when mcounteren=scounteren=all enabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=steps,
     )
@@ -110,7 +110,7 @@ def SID_XCOUNTEREN_01_M():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_02_U():
-    """
+    description = """
     Test mcounteren=all enabled, scounteren=all disabled in U-mode
     All counter CSRs should be blocked
     """
@@ -128,7 +128,7 @@ def SID_XCOUNTEREN_02_U():
     return TestScenario.from_steps(
         id="4",
         name="SID_XCOUNTEREN_02_U",
-        description="All counters blocked in U-mode when mcounteren=all enabled, scounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=steps,
     )
@@ -136,7 +136,7 @@ def SID_XCOUNTEREN_02_U():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_02_S():
-    """
+    description = """
     Test mcounteren=all enabled, scounteren=all disabled in S-mode
     All counter CSRs should be accessible
     """
@@ -153,7 +153,7 @@ def SID_XCOUNTEREN_02_S():
     return TestScenario.from_steps(
         id="5",
         name="SID_XCOUNTEREN_02_S",
-        description="All counters accessible in S-mode when mcounteren=all enabled, scounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
         steps=steps,
     )
@@ -161,7 +161,7 @@ def SID_XCOUNTEREN_02_S():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_02_M():
-    """
+    description = """
     Test mcounteren=all enabled, scounteren=all disabled in M-mode
     All counter CSRs should be accessible
     """
@@ -178,7 +178,7 @@ def SID_XCOUNTEREN_02_M():
     return TestScenario.from_steps(
         id="6",
         name="SID_XCOUNTEREN_02_M",
-        description="All counters accessible in M-mode when mcounteren=all enabled, scounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=steps,
     )
@@ -192,7 +192,7 @@ def SID_XCOUNTEREN_02_M():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_03_U():
-    """
+    description = """
     Test mcounteren=all disabled, scounteren=all enabled in U-mode
     All counter CSRs should be blocked
     """
@@ -210,7 +210,7 @@ def SID_XCOUNTEREN_03_U():
     return TestScenario.from_steps(
         id="7",
         name="SID_XCOUNTEREN_03_U",
-        description="All counters blocked in U-mode when mcounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=steps,
     )
@@ -218,7 +218,7 @@ def SID_XCOUNTEREN_03_U():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_03_S():
-    """
+    description = """
     Test mcounteren=all disabled, scounteren=all enabled in S-mode
     All counter CSRs should be blocked
     """
@@ -236,7 +236,7 @@ def SID_XCOUNTEREN_03_S():
     return TestScenario.from_steps(
         id="8",
         name="SID_XCOUNTEREN_03_S",
-        description="All counters blocked in S-mode when mcounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
         steps=steps,
     )
@@ -244,7 +244,7 @@ def SID_XCOUNTEREN_03_S():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_03_M():
-    """
+    description = """
     Test mcounteren=all disabled, scounteren=all enabled in M-mode
     All counter CSRs should be accessible
     """
@@ -261,7 +261,7 @@ def SID_XCOUNTEREN_03_M():
     return TestScenario.from_steps(
         id="9",
         name="SID_XCOUNTEREN_03_M",
-        description="All counters accessible in M-mode when mcounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=steps,
     )
@@ -275,7 +275,7 @@ def SID_XCOUNTEREN_03_M():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_04_U():
-    """
+    description = """
     Test mcounteren=all disabled, scounteren=all disabled in U-mode
     All counter CSRs should be blocked
     """
@@ -293,7 +293,7 @@ def SID_XCOUNTEREN_04_U():
     return TestScenario.from_steps(
         id="10",
         name="SID_XCOUNTEREN_04_U",
-        description="All counters blocked in U-mode when mcounteren=scounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=steps,
     )
@@ -301,7 +301,7 @@ def SID_XCOUNTEREN_04_U():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_04_S():
-    """
+    description = """
     Test mcounteren=all disabled, scounteren=all disabled in S-mode
     All counter CSRs should be blocked
     """
@@ -319,7 +319,7 @@ def SID_XCOUNTEREN_04_S():
     return TestScenario.from_steps(
         id="11",
         name="SID_XCOUNTEREN_04_S",
-        description="All counters blocked in S-mode when mcounteren=scounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
         steps=steps,
     )
@@ -327,7 +327,7 @@ def SID_XCOUNTEREN_04_S():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_04_M():
-    """
+    description = """
     Test mcounteren=all disabled, scounteren=all disabled in M-mode
     All counter CSRs should be accessible
     """
@@ -344,7 +344,7 @@ def SID_XCOUNTEREN_04_M():
     return TestScenario.from_steps(
         id="12",
         name="SID_XCOUNTEREN_04_M",
-        description="All counters accessible in M-mode when mcounteren=scounteren=all disabled",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=steps,
     )
@@ -359,7 +359,7 @@ def SID_XCOUNTEREN_04_M():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_05_U():
-    """
+    description = """
     Test selective enable in U-mode: mcounteren.<field>=1, scounteren.<field>=0
     For each enabled field, its CSR should be blocked in U-mode
     All other CSRs should also be blocked in U-mode
@@ -386,7 +386,7 @@ def SID_XCOUNTEREN_05_U():
     return TestScenario.from_steps(
         id="13",
         name="SID_XCOUNTEREN_05_U",
-        description="Selective enable U-mode test: all counters blocked when mcounteren=1, scounteren=0",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=steps,
     )
@@ -394,7 +394,7 @@ def SID_XCOUNTEREN_05_U():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_05_S():
-    """
+    description = """
     Test selective enable in S-mode: mcounteren.<field>=1, scounteren.<field>=0
     For each enabled field, its CSR should be accessible in S-mode
     All other CSRs should be blocked in S-mode
@@ -421,7 +421,7 @@ def SID_XCOUNTEREN_05_S():
     return TestScenario.from_steps(
         id="14",
         name="SID_XCOUNTEREN_05_S",
-        description="Selective enable S-mode test: enabled counter accessible, others blocked when mcounteren=1, scounteren=0",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
         steps=steps,
     )
@@ -429,7 +429,7 @@ def SID_XCOUNTEREN_05_S():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_05_M():
-    """
+    description = """
     Test selective enable in M-mode: mcounteren.<field>=1, scounteren.<field>=0
     All CSRs should be accessible in M-mode regardless of enable bits
     """
@@ -453,7 +453,7 @@ def SID_XCOUNTEREN_05_M():
     return TestScenario.from_steps(
         id="15",
         name="SID_XCOUNTEREN_05_M",
-        description="Selective enable M-mode test: all counters accessible when mcounteren=1, scounteren=0",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=steps,
     )
@@ -468,7 +468,7 @@ def SID_XCOUNTEREN_05_M():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_06_U():
-    """
+    description = """
     Test selective enable in U-mode: mcounteren.<field>=1, scounteren.<field>=1
     For each enabled field, its CSR should be accessible in U-mode
     All other CSRs should be blocked in U-mode
@@ -494,7 +494,7 @@ def SID_XCOUNTEREN_06_U():
     return TestScenario.from_steps(
         id="16",
         name="SID_XCOUNTEREN_06_U",
-        description="Selective enable U-mode test: enabled counter accessible, others blocked when mcounteren=1, scounteren=1",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=steps,
     )
@@ -502,7 +502,7 @@ def SID_XCOUNTEREN_06_U():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_06_S():
-    """
+    description = """
     Test selective enable in S-mode: mcounteren.<field>=1, scounteren.<field>=1
     For each enabled field, its CSR should be accessible in S-mode
     All other CSRs should be blocked in S-mode
@@ -528,7 +528,7 @@ def SID_XCOUNTEREN_06_S():
     return TestScenario.from_steps(
         id="17",
         name="SID_XCOUNTEREN_06_S",
-        description="Selective enable S-mode test: enabled counter accessible, others blocked when mcounteren=1, scounteren=1",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
         steps=steps,
     )
@@ -536,7 +536,7 @@ def SID_XCOUNTEREN_06_S():
 
 @zcntr_scenario
 def SID_XCOUNTEREN_06_M():
-    """
+    description = """
     Test selective enable in M-mode: mcounteren.<field>=1, scounteren.<field>=1
     All CSRs should be accessible in M-mode regardless of enable bits
     """
@@ -560,7 +560,7 @@ def SID_XCOUNTEREN_06_M():
     return TestScenario.from_steps(
         id="18",
         name="SID_XCOUNTEREN_06_M",
-        description="Selective enable M-mode test: all counters accessible when mcounteren=1, scounteren=1",
+        description=description,
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=steps,
     )
