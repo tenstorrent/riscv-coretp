@@ -5,4 +5,5 @@ py_library(
     name = "coretp",
     srcs = glob(["coretp/**/*.py"]),
     visibility = ["//visibility:public"],
+    imports = ["."],
 )
