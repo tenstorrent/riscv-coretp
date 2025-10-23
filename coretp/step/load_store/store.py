@@ -33,7 +33,7 @@ class Store(MemoryOp):
     value: Optional[Union[TestStep, int]] = None
     op: Optional[str] = None
 
-    def deps(self) -> list[TestStep]:
+    def deps(self) -> list[Optional[TestStep]]:
         deps = []
         if self.memory is not None:
             deps.append(self.memory)

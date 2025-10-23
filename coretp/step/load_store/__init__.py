@@ -5,9 +5,11 @@
 from .base import MemoryOp
 from .load import Load
 from .store import Store
+from .memaccess import MemAccess
 
 __all__ = [
     "MemoryOp",
     "Load",
     "Store",
+    "MemAccess",
 ]
