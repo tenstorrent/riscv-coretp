@@ -149,7 +149,7 @@ sha256sig0 = InstructionDef(
     name="sha256sig0",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -162,7 +162,7 @@ sha256sig1 = InstructionDef(
     name="sha256sig1",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -175,7 +175,7 @@ sha256sum0 = InstructionDef(
     name="sha256sum0",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -188,7 +188,7 @@ sha256sum1 = InstructionDef(
     name="sha256sum1",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -201,7 +201,7 @@ sm3p0 = InstructionDef(
     name="sm3p0",
     extension=Extension.ZKSH | Extension.ZKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -214,7 +214,7 @@ sm3p1 = InstructionDef(
     name="sm3p1",
     extension=Extension.ZKSH | Extension.ZKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -227,7 +227,7 @@ sm4ed = InstructionDef(
     name="sm4ed",
     extension=Extension.ZKSED | Extension.ZKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -242,7 +242,7 @@ sm4ks = InstructionDef(
     name="sm4ks",
     extension=Extension.ZKSED | Extension.ZKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("rd", OperandType.GPR),
     source=[
         OperandSlot("rs1", OperandType.GPR),
@@ -697,7 +697,7 @@ vsha2ch_vv = InstructionDef(
     name="vsha2ch.vv",
     extension=Extension.ZVKNHB | Extension.ZVKNHA | Extension.ZVKN,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -711,7 +711,7 @@ vsha2cl_vv = InstructionDef(
     name="vsha2cl.vv",
     extension=Extension.ZVKNHB | Extension.ZVKNHA | Extension.ZVKN,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -725,7 +725,7 @@ vsha2ms_vv = InstructionDef(
     name="vsha2ms.vv",
     extension=Extension.ZVKNHB | Extension.ZVKNHA | Extension.ZVKN,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -739,7 +739,7 @@ vsm3c_vi = InstructionDef(
     name="vsm3c.vi",
     extension=Extension.ZVKSH | Extension.ZVKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -753,7 +753,7 @@ vsm3me_vv = InstructionDef(
     name="vsm3me.vv",
     extension=Extension.ZVKSH | Extension.ZVKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -767,7 +767,7 @@ vsm4k_vi = InstructionDef(
     name="vsm4k.vi",
     extension=Extension.ZVKSED | Extension.ZVKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -781,7 +781,7 @@ vsm4r_vs = InstructionDef(
     name="vsm4r.vs",
     extension=Extension.ZVKSED | Extension.ZVKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -794,7 +794,7 @@ vsm4r_vv = InstructionDef(
     name="vsm4r.vv",
     extension=Extension.ZVKSED | Extension.ZVKS,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot("vd", OperandType.VEC),
     source=[
         OperandSlot("vs2", OperandType.VEC),
@@ -1114,7 +1114,7 @@ sha512sig0 = InstructionDef(
     name="sha512sig0",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN64,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1127,7 +1127,7 @@ sha512sig0h = InstructionDef(
     name="sha512sig0h",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1141,7 +1141,7 @@ sha512sig0l = InstructionDef(
     name="sha512sig0l",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1155,7 +1155,7 @@ sha512sig1 = InstructionDef(
     name="sha512sig1",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN64,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1168,7 +1168,7 @@ sha512sig1h = InstructionDef(
     name="sha512sig1h",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1182,7 +1182,7 @@ sha512sig1l = InstructionDef(
     name="sha512sig1l",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1196,7 +1196,7 @@ sha512sum0 = InstructionDef(
     name="sha512sum0",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN64,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1209,7 +1209,7 @@ sha512sum0r = InstructionDef(
     name="sha512sum0r",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1223,7 +1223,7 @@ sha512sum1 = InstructionDef(
     name="sha512sum1",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN64,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
@@ -1236,7 +1236,7 @@ sha512sum1r = InstructionDef(
     name="sha512sum1r",
     extension=Extension.ZKNH | Extension.ZKN | Extension.ZK,
     xlen=Xlen.XLEN32,
-    category=Category.STORE,
+    category=Category.ENCRYPTION,
     destination=OperandSlot(name="rd", type=OperandType.GPR),
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
