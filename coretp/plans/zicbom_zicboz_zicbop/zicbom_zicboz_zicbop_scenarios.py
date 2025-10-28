@@ -509,31 +509,32 @@ def SID_ZICBO_013():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
-def SID_ZICBO_014():
-    """
-    prefetch.i with imm[4:0] !=0 does not have any side effects
-    """
-    # Set up memory region
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
+# @zicbom_zicboz_zicbop_scenario
+# def SID_ZICBO_014():
+#     """
+#     prefetch.i with imm[4:0] !=0 does not have any side effects
+#     NOTE: compilers will fail out on imm[4:0] !=0, so unfortunately this test is not executable
+#     """
+#     # Set up memory region
+#     mem = Memory(
+#         size=0x1000,
+#         page_size=PageSize.SIZE_4K,
+#         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
+#     )
 
-    # Execute prefetch.i with non-zero imm[4:0]
-    prefetch_i = MemAccess(op="prefetch.i", memory=mem, offset=0x1F)  # imm[4:0] != 0
+#     # Execute prefetch.i with non-zero imm[4:0]
+#     prefetch_i = MemAccess(op="prefetch.i", memory=mem, offset=0x1F)  # imm[4:0] != 0
 
-    return TestScenario.from_steps(
-        id="14",
-        name="SID_ZICBO_014",
-        description="prefetch.i with imm[4:0] !=0 does not have any side effects",
-        env=TestEnvCfg(),
-        steps=[
-            mem,
-            prefetch_i,
-        ],
-    )
+#     return TestScenario.from_steps(
+#         id="14",
+#         name="SID_ZICBO_014",
+#         description="prefetch.i with imm[4:0] !=0 does not have any side effects",
+#         env=TestEnvCfg(),
+#         steps=[
+#             mem,
+#             prefetch_i,
+#         ],
+#     )
 
 
 @zicbom_zicboz_zicbop_scenario
