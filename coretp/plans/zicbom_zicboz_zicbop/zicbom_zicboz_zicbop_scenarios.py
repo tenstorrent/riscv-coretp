@@ -527,7 +527,7 @@ def SID_ZICBO_013():
 
 #     return TestScenario.from_steps(
 #         id="14",
-#         name="SID_ZICBO_014",
+#         name="",
 #         description="prefetch.i with imm[4:0] !=0 does not have any side effects",
 #         env=TestEnvCfg(),
 #         steps=[
@@ -550,7 +550,7 @@ def SID_ZICBO_015():
     )
 
     # Execute prefetch.i with non-zero imm[11:5]
-    prefetch_i = MemAccess(op="prefetch.i", memory=mem, offset=0xFE0)  # imm[11:5] != 0
+    prefetch_i = MemAccess(op="prefetch.i", memory=mem, offset=0x7E0)  # imm[11:5] != 0
 
     return TestScenario.from_steps(
         id="15",
@@ -578,12 +578,14 @@ def SID_ZICBO_016():
 
     # Execute prefetch.r and prefetch.w with various imm values
     prefetch_r_0 = MemAccess(op="prefetch.r", memory=mem, offset=0x0)
-    prefetch_r_1 = MemAccess(op="prefetch.r", memory=mem, offset=0x7fff)
-    prefetch_r_2 = MemAccess(op="prefetch.r", memory=mem, offset=0xffff)
+    prefetch_r_1 = MemAccess(op="prefetch.r", memory=mem, offset=0x7E0)
+    # prefetch_r_2 = MemAccess(op="prefetch.r", memory=mem, offset=0x1F)
+    # NOTE: compilers will fail out on imm[11:0] !=0, so unfortunately this test is not executable
 
     prefetch_w_0 = MemAccess(op="prefetch.w", memory=mem, offset=0x0)
-    prefetch_w_1 = MemAccess(op="prefetch.w", memory=mem, offset=0x7fff)
-    prefetch_w_2 = MemAccess(op="prefetch.w", memory=mem, offset=0xffff)
+    prefetch_w_1 = MemAccess(op="prefetch.w", memory=mem, offset=0x7E0)
+    # prefetch_w_2 = MemAccess(op="prefetch.w", memory=mem, offset=0x1F)
+    # NOTE: compilers will fail out on imm[11:0] !=0, so unfortunately this test is not executable
 
     return TestScenario.from_steps(
         id="16",
@@ -594,10 +596,10 @@ def SID_ZICBO_016():
             mem,
             prefetch_r_0,
             prefetch_r_1,
-            prefetch_r_2,
+            # prefetch_r_2,
             prefetch_w_0,
             prefetch_w_1,
-            prefetch_w_2,
+            # prefetch_w_2,
         ],
     )
 
