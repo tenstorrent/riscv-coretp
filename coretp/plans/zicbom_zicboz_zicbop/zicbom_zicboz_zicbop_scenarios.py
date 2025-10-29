@@ -28,10 +28,7 @@ def SID_ZICBO_001():
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
     # Check for illegal instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_inval]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
         id="1",
@@ -65,10 +62,7 @@ def SID_ZICBO_002():
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
     # Check for illegal instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_inval]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
         id="2",
@@ -104,14 +98,8 @@ def SID_ZICBO_003():
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
     # Check for illegal instruction exception for both
-    assert_exception_clean = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_clean]
-    )
-    assert_exception_flush = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_flush]
-    )
+    assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
+    assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
     return TestScenario.from_steps(
         id="3",
@@ -147,14 +135,8 @@ def SID_ZICBO_004():
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
     # Check for illegal instruction exception
-    assert_exception_clean = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_clean]
-    )
-    assert_exception_flush = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_flush]
-    )
+    assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
+    assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
     return TestScenario.from_steps(
         id="4",
@@ -189,10 +171,7 @@ def SID_ZICBO_005():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Check for illegal instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_zero]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
         id="5",
@@ -226,10 +205,7 @@ def SID_ZICBO_006():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Check for illegal instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_zero]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
         id="6",
@@ -263,10 +239,7 @@ def SID_ZICBO_007():
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
     # Check for virtual instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_inval]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
         id="7",
@@ -301,14 +274,8 @@ def SID_ZICBO_008():
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
     # Check for virtual instruction exception
-    assert_exception_clean = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_clean]
-    )
-    assert_exception_flush = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_flush]
-    )
+    assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
+    assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
     return TestScenario.from_steps(
         id="8",
@@ -343,10 +310,7 @@ def SID_ZICBO_009():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Check for virtual instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_zero]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
         id="9",
@@ -380,10 +344,7 @@ def SID_ZICBO_010():
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
     # Check for virtual instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_inval]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
         id="10",
@@ -418,14 +379,8 @@ def SID_ZICBO_011():
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
     # Check for virtual instruction exception
-    assert_exception_clean = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_clean]
-    )
-    assert_exception_flush = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_flush]
-    )
+    assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
+    assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
     return TestScenario.from_steps(
         id="11",
@@ -460,10 +415,7 @@ def SID_ZICBO_012():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Check for virtual instruction exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
-        code=[cbo_zero]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
         id="12",
@@ -836,19 +788,13 @@ def SID_ZICBO_022():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Check for store page fault exception
-    assert_exception = AssertException(
-        cause=ExceptionCause.STORE_AMO_ACCESS_FAULT,
-        code=[cbo_zero]
-    )
+    assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])
 
     # Execute reverse cbo.zero instruction
     cbo_zero_page_fault = Arithmetic(op="cbo.zero", src1=0)
 
     # Check for store page fault exception
-    assert_exception_page_fault = AssertException(
-        cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
-        code=[cbo_zero_page_fault]
-    )
+    assert_exception_page_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[cbo_zero_page_fault])
 
     return TestScenario.from_steps(
         id="22",
@@ -949,6 +895,7 @@ def SID_ZICBO_022():
 #     # Unable to be tested
 #     return
 
+
 @zicbom_zicboz_zicbop_scenario
 def SID_ZICBO_039():
     """
@@ -973,7 +920,7 @@ def SID_ZICBO_039():
     hart1 = Hart(hart_index=1)
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Hart 0: Read back and verify zero 
+    # Hart 0: Read back and verify zero
     return TestScenario.from_steps(
         id="39",
         name="SID_ZICBO_039",
@@ -989,6 +936,7 @@ def SID_ZICBO_039():
             cbo_zero,
         ],
     )
+
 
 # @zicbom_zicboz_zicbop_scenario
 # def SID_ZICBO_040():
@@ -1024,6 +972,7 @@ def SID_ZICBO_039():
 #     # Unable to be tested
 #     return
 
+
 @zicbom_zicboz_zicbop_scenario
 def SID_ZICBO_047():
     mem = Memory(
@@ -1054,10 +1003,12 @@ def SID_ZICBO_047():
         ],
     )
 
+
 # @zicbom_zicboz_zicbop_scenario
 # def SID_ZICBO_048():
 #     # Unable to be tested
 #     return
+
 
 @zicbom_zicboz_zicbop_scenario
 def SID_ZICBO_049():
@@ -1071,12 +1022,11 @@ def SID_ZICBO_049():
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-
     # Execute LR (Load Reserved)
     lr_op = MemAccess(op="lr.w", memory=mem)
 
     # Execute CMO between LR and SC
-     # FIXME: add random cmo operation after LR and before SC
+    # FIXME: add random cmo operation after LR and before SC
     cmo_op = MemAccess(op="cbo.flush", memory=mem)
 
     # Execute SC (Store Conditional) - should succeed or fail based on reservation
