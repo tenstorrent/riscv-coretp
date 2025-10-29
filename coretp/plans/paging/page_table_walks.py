@@ -3,7 +3,7 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call
+from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, ModifyPte
 
 from . import paging_scenario
 
@@ -78,28 +78,6 @@ def ptw_all_page_size_combinations():
             load_3,
         ],
     )
-
-
-# @paging_scenario
-# def ptw_all_privilege_modes():
-#     mem0 = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=(PageFlags.READ | PageFlags.WRITE))
-#     code_page = CodePage(size=0x10000, page_size=PageSize.SIZE_4K, code=[Arithmetic(), Arithmetic()])
-#     # load_page_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem0)])
-#     store_amo_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[Store(memory=mem0, value=0xDEAD)])
-#     call = Call(target=code_page)
-#     return TestScenario.from_steps(
-#         id="3",
-#         name="ptw_all_privilege_modes",
-#         description="Cover PTW at all privilege mode combinations",
-#         env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S, PrivilegeMode.M], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             mem0,
-#             code_page,
-#             # load_page_fault,
-#             store_amo_fault,
-#             call,
-#         ],
-#     )
 
 
 @paging_scenario
@@ -236,26 +214,25 @@ def ptw_page_boundary_crossing():
     )
 
 
-# #NOTE Need support for directly accessing PTE structure
-# @paging_scenario
-# def ptw_non_leaf_recursive_walk():
-#     mem_1 = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ)
-#     mem_2 = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ)
-#     load = Load(memory=mem_2)
-#     return TestScenario.from_steps(
-#         id="7",
-#         name="ptw_non_leaf_recursive_walk",
-#         description="Cover PTW with non-leaf doing a recursive walk",
-#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             mem_1,
-#             mem_2,
-#             load,
-#         ],
-#     )
+@paging_scenario
+def ptw_non_leaf_recursive_walk():
+    mem0 = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ, modify=True)
+    modify_pte = ModifyPte(memory=mem0, level=0, make_recursive=True)
+    assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem0, offset=0x1000)])
+    # load = Load(memory=mem0)
+    return TestScenario.from_steps(
+        id="7",
+        name="ptw_non_leaf_recursive_walk",
+        description="Cover PTW with non-leaf doing a recursive walk",
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        steps=[
+            mem0,
+            modify_pte,
+            assert_exception,
+        ],
+    )
 
 
-# NOTE Need support for VA control
 @paging_scenario
 def va_sign_extension_fault():
     mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ)
