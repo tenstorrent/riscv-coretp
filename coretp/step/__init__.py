@@ -6,7 +6,7 @@ from .memory import Memory, CodePage
 
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
-from .load_store import MemoryOp, Load, Store
+from .load_store import MemoryOp, Load, Store, MemAccess
 from .csr import CsrWrite, CsrRead
 from .assertion import AssertEqual, AssertNotEqual, AssertException
 from .hart import Hart, HartExit
@@ -19,6 +19,7 @@ __all__ = [
     "Call",
     "TestStep",
     "Call",
+    "MemAccess",
     "Load",
     "Store",
     "Memory",
