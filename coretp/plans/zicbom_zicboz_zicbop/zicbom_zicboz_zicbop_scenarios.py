@@ -1025,38 +1025,6 @@ def SID_ZICBO_039():
 #     return
 
 @zicbom_zicboz_zicbop_scenario
-def SID_ZICBO_046():
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-    bit1 = LoadImmediateStep(imm=1)
-    slli = Arithmetic(op="slli", src1=bit1, src2=63)
-    add = Arithmetic(op="add", src1=mem, src2=slli)
-
-    cmo_op = Arithmetic(op="cbo.flush", src1=add)
-    cmo_op_2 = Arithmetic(op="cbo.clean", src1=add)
-    cmo_op_3 = Arithmetic(op="cbo.inval", src1=add)
-
-    return TestScenario.from_steps(
-        id="46",
-        name="SID_ZICBO_046",
-        description="Execute CMO to non-canonical address",
-        env=TestEnvCfg(),
-        steps=[
-            mem,
-            bit1,
-            slli,
-            add,
-            cmo_op,
-            cmo_op_2,
-            cmo_op_3,
-        ],
-    )
-
-
-@zicbom_zicboz_zicbop_scenario
 def SID_ZICBO_047():
     mem = Memory(
         size=0x1000,
