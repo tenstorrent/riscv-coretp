@@ -1264,6 +1264,94 @@ hinval_vvma = InstructionDef(
     formatter="hinval.vvma {rs1} {rs2}",
 )
 
+cbo_clean = InstructionDef(
+    name="cbo.clean",
+    extension=Extension.ZICBOM,
+    xlen=Xlen.XLEN32,
+    category=Category.CACHE_OPERATION,
+    destination=None,
+    source=[
+        OperandSlot(name="rs1", type=OperandType.GPR),
+    ],
+    formatter="cbo.clean {rs1}",
+)
+
+cbo_flush = InstructionDef(
+    name="cbo.flush",
+    extension=Extension.ZICBOM,
+    xlen=Xlen.XLEN32,
+    category=Category.CACHE_OPERATION,
+    destination=None,
+    source=[
+        OperandSlot(name="rs1", type=OperandType.GPR),
+    ],
+    formatter="cbo.flush {rs1}",
+)
+
+cbo_inval = InstructionDef(
+    name="cbo.inval",
+    extension=Extension.ZICBOM,
+    xlen=Xlen.XLEN32,
+    category=Category.CACHE_OPERATION,
+    destination=None,
+    source=[
+        OperandSlot(name="rs1", type=OperandType.GPR),
+    ],
+    formatter="cbo.inval {rs1}",
+)
+
+cbo_zero = InstructionDef(
+    name="cbo.zero",
+    extension=Extension.ZICBOZ,
+    xlen=Xlen.XLEN32,
+    category=Category.CACHE_OPERATION,
+    destination=None,
+    source=[
+        OperandSlot(name="rs1", type=OperandType.GPR),
+    ],
+    formatter="cbo.zero {rs1}",
+)
+
+
+
+prefetch_i = InstructionDef(
+    name="prefetch.i",
+    extension=Extension.ZICBOP,
+    xlen=Xlen.XLEN32,
+    category=Category.CACHE_OPERATION,
+    destination=None,
+    source=[
+        OperandSlot(name="rs1", type=OperandType.GPR),
+        OperandSlot(name="imm", type=OperandType.IMM),
+    ],
+    formatter="prefetch.i {imm}({rs1})",
+)
+
+prefetch_r = InstructionDef(
+    name="prefetch.r",
+    extension=Extension.ZICBOP,
+    xlen=Xlen.XLEN32,
+    category=Category.CACHE_OPERATION,
+    destination=None,
+    source=[
+        OperandSlot(name="rs1", type=OperandType.GPR),
+        OperandSlot(name="imm", type=OperandType.IMM),
+    ],
+    formatter="prefetch.r {imm}({rs1})",
+)
+
+prefetch_w = InstructionDef(
+    name="prefetch.w",
+    extension=Extension.ZICBOP,
+    xlen=Xlen.XLEN32,
+    category=Category.CACHE_OPERATION,
+    destination=None,
+    source=[
+        OperandSlot(name="rs1", type=OperandType.GPR),
+        OperandSlot(name="imm", type=OperandType.IMM),
+    ],
+    formatter="prefetch.w {imm}({rs1})",
+)
 
 misc_instrs = [
     amoadd_b,
@@ -1358,4 +1446,11 @@ misc_instrs = [
     vfwmaccbf16_vv,
     wrs_nto,
     wrs_sto,
+    cbo_clean,
+    cbo_flush,
+    cbo_inval,
+    cbo_zero,
+    prefetch_i,
+    prefetch_r,
+    prefetch_w,
 ]

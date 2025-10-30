@@ -46,6 +46,7 @@ class Category(Enum):
     ENCRYPTION = auto()
     VECTOR = auto()
     SYSTEM = auto()
+    CACHE_OPERATION = auto()
     PSEUDO = auto()
 
     @classmethod
