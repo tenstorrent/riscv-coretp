@@ -54,6 +54,19 @@ class InstructionCatalog:
             # instruction belongs to is in the isa's used extensions (using 'in' would require all
             # extensions the instruction belongs to)
             # 'Extension(0)' is the empty mask for this flag enum, NOT the same as 0 or None
+            if i.name.startswith("cbo."):
+                print("Instruction Definition:")
+                print(f"name: {i.name}")
+                print(f"extension: {i.extension}")
+                print(f"xlen: {i.xlen}")
+                print(f"category: {i.category}")
+                print(f"destination: {i.destination}")
+                print(f"source: {i.source}")
+                print(f"formatter: {i.formatter}")
+                print(f"clobbers: {i.clobbers}")
+                print(f"matching instruction {i.name} with extension {i.extension} and isa extensions {self.isa.extensions}")
+                print(f"i.xlen.compatible_with(self.isa.xlen): {i.xlen.compatible_with(self.isa.xlen)}")
+                print(f"(i.extension & ~self.isa.extensions) == Extension(0): {(i.extension & ~self.isa.extensions) == Extension(0)}")
             return i.xlen.compatible_with(self.isa.xlen) and (i.extension & ~self.isa.extensions) == Extension(0)  # every bit in required is present in provided
 
         self._instructions = [i for i in self._instructions if matching_instr(i)]
@@ -123,8 +136,6 @@ class InstructionCatalog:
         """
         Get an instruction by name.
         """
-        print(f"getting instruction {name}")
-        print(f"instruction lookup: {self._instruction_lookup}")
         if name not in self._instruction_lookup:
             raise KeyError(f"Instruction {name} not found in catalog")
         return self._instruction_lookup[name].build()
