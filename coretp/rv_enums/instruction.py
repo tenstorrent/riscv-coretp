@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import Enum, auto
+from enum import Enum, auto, Flag
 
 
 class OperandType(Enum):
@@ -24,7 +24,7 @@ class OperandType(Enum):
         return f"{self.name}"
 
 
-class Category(Enum):
+class Category(Flag):
     """
     Enum of all categories for RISC-V ISA instructions
     """
