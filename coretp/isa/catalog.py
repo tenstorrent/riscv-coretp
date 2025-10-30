@@ -123,6 +123,8 @@ class InstructionCatalog:
         """
         Get an instruction by name.
         """
+        print(f"getting instruction {name}")
+        print(f"instruction lookup: {self._instruction_lookup}")
         if name not in self._instruction_lookup:
             raise KeyError(f"Instruction {name} not found in catalog")
         return self._instruction_lookup[name].build()
