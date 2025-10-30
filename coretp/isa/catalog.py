@@ -41,6 +41,7 @@ class InstructionCatalog:
 
     def __init__(self, isa: Union[str, RvArch]):
         self._instructions: list[InstructionDef] = ALL_INSTRS
+        print(f"isa: {isa}")
         if isinstance(isa, str):
             self.isa = RvArch.from_str(isa)
         else:
