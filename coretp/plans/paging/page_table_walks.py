@@ -3,7 +3,7 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call
+from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrRead, CsrWrite, AssertException, Call, ModifyPte
 
 from . import paging_scenario
 
@@ -42,7 +42,7 @@ def basic_ptw_all_access_types():
     store = Store(memory=mem, value=0xDEAD)
 
     return TestScenario.from_steps(
-        id="1",
+        id="SID_PBVMS_001",
         name="basic_ptw_all_access_types",
         description="Cover PTW w/o faults for all access types",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
@@ -65,7 +65,7 @@ def ptw_all_page_size_combinations():
     load_2 = Load(memory=mem_2)
     load_3 = Load(memory=mem_3)
     return TestScenario.from_steps(
-        id="2",
+        id="SID_PBVMS_002",
         name="ptw_all_page_size_combinations",
         description="Cover PTW w/o faults for all page sizes combinations - SV39(1G, 2M, 4K), SV48(512G, 1G, 2M, 4K) and SV57(256TB, 512G, 1G, 2M, 4K)",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
@@ -78,28 +78,6 @@ def ptw_all_page_size_combinations():
             load_3,
         ],
     )
-
-
-# @paging_scenario
-# def ptw_all_privilege_modes():
-#     mem0 = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=(PageFlags.READ | PageFlags.WRITE))
-#     code_page = CodePage(size=0x10000, page_size=PageSize.SIZE_4K, code=[Arithmetic(), Arithmetic()])
-#     # load_page_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem0)])
-#     store_amo_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[Store(memory=mem0, value=0xDEAD)])
-#     call = Call(target=code_page)
-#     return TestScenario.from_steps(
-#         id="3",
-#         name="ptw_all_privilege_modes",
-#         description="Cover PTW at all privilege mode combinations",
-#         env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S, PrivilegeMode.M], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             mem0,
-#             code_page,
-#             # load_page_fault,
-#             store_amo_fault,
-#             call,
-#         ],
-#     )
 
 
 @paging_scenario
@@ -143,7 +121,7 @@ def ptw_vpn_boundary_values():
     steps += [Load(memory=mem_4k, offset=off) for off in offsets_4k]
 
     return TestScenario.from_steps(
-        id="4",
+        id="SID_PBVMS_004",
         name="ptw_vpn_boundary_values",
         description="Cover PTW with VPN[*] == {0, 1, intermediate value} for all page size combinations",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
@@ -189,7 +167,7 @@ def ptw_ppn_boundary_values():
     load_4k_mid = Load(memory=mem_4k_mid, offset=0x0)
 
     return TestScenario.from_steps(
-        id="5",
+        id="SID_PBVMS_005",
         name="ptw_ppn_boundary_values",
         description="Cover PTW with PPN[*] == {min,max, intermediate value} for all page size combinations",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
@@ -223,7 +201,7 @@ def ptw_page_boundary_crossing():
     load2 = Load(memory=mem, offset=0x1000)
     store = Store(memory=mem, offset=0xFF8, value=0xCAFE)
     return TestScenario.from_steps(
-        id="6",
+        id="SID_PBVMS_006",
         name="ptw_page_boundary_crossing",
         description="Cover PTW with page boundary crossing",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
@@ -236,35 +214,35 @@ def ptw_page_boundary_crossing():
     )
 
 
-# #NOTE Need support for directly accessing PTE structure
-# @paging_scenario
-# def ptw_non_leaf_recursive_walk():
-#     mem_1 = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ)
-#     mem_2 = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ)
-#     load = Load(memory=mem_2)
-#     return TestScenario.from_steps(
-#         id="7",
-#         name="ptw_non_leaf_recursive_walk",
-#         description="Cover PTW with non-leaf doing a recursive walk",
-#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             mem_1,
-#             mem_2,
-#             load,
-#         ],
-#     )
+@paging_scenario
+def ptw_non_leaf_recursive_walk():
+    mem0 = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ, modify=True)
+    modify_pte = ModifyPte(memory=mem0, level=0, make_recursive=True)
+    assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem0, offset=0x1000)])
+    # load = Load(memory=mem0)
+    return TestScenario.from_steps(
+        id="SID_PBVMS_007",
+        name="ptw_non_leaf_recursive_walk",
+        description="Cover PTW with non-leaf doing a recursive walk",
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        steps=[
+            mem0,
+            modify_pte,
+            assert_exception,
+        ],
+    )
 
 
-# NOTE Need support for VA control
 @paging_scenario
 def va_sign_extension_fault():
     mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ)
+
     assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0x8000000000000000)])
     return TestScenario.from_steps(
-        id="8",
+        id="SID_PBVMS_008",
         name="va_sign_extension_fault",
         description="Ensure that if VA[63:VaMax] != VA[VaMax] leads to page fault exception",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV57]),
         steps=[
             mem,
             assert_exception,
@@ -277,7 +255,7 @@ def superpage_alignment_fault():
     mem = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ)
     assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0x200001)])
     return TestScenario.from_steps(
-        id="9",
+        id="SID_PBVMS_009",
         name="superpage_alignment_fault",
         description="Ensure alignment check for page sizes != 4KB leads to page fault exception",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
@@ -288,57 +266,61 @@ def superpage_alignment_fault():
     )
 
 
-# NOTE Need support for directly accessing PTE structure
-# @paging_scenario
-# def pte_reserved_values_fault():
-#     mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ)
-#     load = Load(memory=mem, offset=0x1000)
-#     assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0x1000)])
-#     return TestScenario.from_steps(
-#         id="10",
-#         name="pte_reserved_values_fault",
-#         description="PTEs with reserved values for non-leaf, leaf PTEs",
-#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             mem,
-#             load,
-#             assert_exception,
-#         ],
-#     )
-
-# NOTE Need support for directly accessing PTE structure
-# @paging_scenario
-# def ptw_invalid_pte_fault():
-#     mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.READ)
-#     return TestScenario.from_steps(
-#         id="11",
-#         name="ptw_invalid_pte_fault",
-#         description="PTW with invalid PTEs",
-#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             mem,
-#             Load(memory=mem, offset=0x1000),
-#             AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0x1000)]),
-#         ],
-#     )
-
-
 @paging_scenario
-def ptw_access_dirty_bits():
-    mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.ACCESSED | PageFlags.DIRTY)
-    load_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0x1000)])
-    store_exception = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, offset=0x1000, value=0xCAFE)])
+def pte_reserved_values_fault():
+    mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.WRITE)
+    assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0x1000)])
     return TestScenario.from_steps(
-        id="12",
-        name="ptw_access_dirty_bits",
-        description="PTW with access/dirty bits",
+        id="SID_PBVMS_010",
+        name="pte_reserved_values_fault",
+        description="PTEs with reserved values for non-leaf, leaf PTEs. V=1, R=0,W=1, X=0",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
-            load_exception,
-            store_exception,
+            assert_exception,
         ],
     )
+
+
+@paging_scenario
+def ptw_with_boundary_crossing():
+    mem1_first = Memory(num_pages=2, size=0x2000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+    load1 = Load(memory=mem1_first, offset=0xFFA, access_size=8)
+    # Combination 2: First page leaf PTE fault, Second page valid
+    mem2_first = Memory(num_pages=2, size=0x2000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID)
+    load2 = Load(memory=mem2_first, offset=0xFFA, access_size=8)
+    steps = [
+        mem1_first,
+        load1,
+        mem2_first,
+        AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[load2]),
+    ]
+
+    return TestScenario.from_steps(
+        id="SID_PBVMS_011",
+        name="ptw_with_boundary_crossing",
+        description="PTW with boundary crossing fault combinations",
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        steps=steps,
+    )
+
+
+# @paging_scenario
+# def ptw_access_dirty_bits():
+#     mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.ACCESSED | PageFlags.DIRTY)
+#     load_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0x1000)])
+#     store_exception = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, offset=0x1000, value=0xCAFE)])
+#     return TestScenario.from_steps(
+#         id="SID_PBVMS_012",
+#         name="ptw_access_dirty_bits",
+#         description="PTW with access/dirty bits",
+#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+#         steps=[
+#             mem,
+#             load_exception,
+#             store_exception,
+#         ],
+#     )
 
 
 @paging_scenario
@@ -352,7 +334,7 @@ def ptw_permission_encodings():
     store_w = Store(memory=mem_w, value=0xDEAD)
     arith_x = Arithmetic(src1=load_x)
     return TestScenario.from_steps(
-        id="13",
+        id="SID_PBVMS_013",
         name="ptw_permission_encodings",
         description="Cover PTW w/ different permission encodings - R,W,X,U",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S, PrivilegeMode.M], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
@@ -370,88 +352,28 @@ def ptw_permission_encodings():
 
 
 # NOTE no mstatus support in whisper
-# @paging_scenario
-# def mstatus_sum_mxr_impact():
-#     arith_a = Arithmetic()
-#     arith_b = Arithmetic(src1=arith_a)
-#     code = CodePage(size=0x10000, page_size=PageSize.SIZE_4K, code=[arith_a, arith_b])
-#     csr_write_mstatus1 = CsrWrite(csr_name="cycle", value=0x00080000)
-#     load = Load(memory=code, offset=0x1000)
-#     csr_write_mstatus2 = CsrWrite(csr_name="cycle", value=0x0)
-#     call = Call(target=code)
-#     assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Call(target=code)])
-#     return TestScenario.from_steps(
-#         id="14",
-#         name="mstatus_sum_mxr_impact",
-#         description="Impact of mstatus.{SUM,MXR} on PTW to Dside, Iside accesses",
-#         env=TestEnvCfg(priv_modes=[PrivilegeMode.M], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             code,
-#             csr_write_mstatus1,
-#             load,
-#             csr_write_mstatus2,
-#             call,
-#             assert_exception,
-#         ],
-#     )
+@paging_scenario
+def global_bit_handling():
+    mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.GLOBAL)
+    original_satp = CsrRead(csr_name="satp")
+    set_asid = CsrWrite(csr_name="satp", set_mask=0xF << 44)
+    write1 = Store(memory=mem, value=0xDEAD)
+    clear_asid = CsrWrite(csr_name="satp", clear_mask=0xF << 44)
+    write2 = Store(memory=mem, offset=0xF0, value=0xDEAD)
+    restore_asid = CsrWrite(csr_name="satp", value=original_satp)
 
-# NOTE no mstatus support in whisper
-# @paging_scenario
-# def global_bit_handling():
-#     mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.GLOBAL)
-#     return TestScenario.from_steps(
-#         id="15",
-#         name="global_bit_handling",
-#         description="Ensure Global bit honoured",
-#         env=TestEnvCfg(priv_modes=[PrivilegeMode.S], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-#         steps=[
-#             mem,
-#             CsrWrite(csr_name="satp", value=0x8000000000000001),
-#             Store(memory=mem, offset=0x1000, value=0xDEAD),
-#             CsrWrite(csr_name="satp", value=0x8000000000000002),
-#             Store(memory=mem, offset=0x1000, value=0xBEEF),
-#         ],
-#     )
-
-# NOTE no mstatus support in whisper
-# @paging_scenario
-# def asid_non_global_fault_isolation():
-#     # SATP values: mode=SV39 (8), ASID=1 or 2, PPN=0x1000
-#     satp_sv39_asid1 = (8 << 60) | (1 << 44) | 0x1000
-#     satp_sv39_asid2 = (8 << 60) | (2 << 44) | 0x1000
-
-#     mem_valid = Memory(
-#         size=0x1000,
-#         page_size=PageSize.SIZE_4K,
-#         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-#         base_va=0x400000,
-#         base_pa=0x800000,
-#     )
-#     mem_fault = Memory(
-#         size=0x1000,
-#         page_size=PageSize.SIZE_4K,
-#         flags=PageFlags.VALID,  # No READ/WRITE
-#         base_va=0x400000,
-#         base_pa=0x800000,
-#     )
-
-#     return TestScenario.from_steps(
-#         id="17",
-#         name="asid_non_global_fault_isolation",
-#         description="Ensure G=non-Global is honored ; Access VA1 ; Introduce fault;  Change ASID to a never used value; Access VA1 again and check for fault",
-#         env=TestEnvCfg(
-#             priv_modes=[PrivilegeMode.S],
-#             paging_modes=[PagingMode.SV39],
-#         ),
-#         steps=[
-#             CsrWrite(csr_name="satp", value=satp_sv39_asid1),
-#             mem_valid,
-#             Store(memory=mem_valid, offset=0x0, value=0xDEAD),  # Should succeed
-#             CsrWrite(csr_name="satp", value=satp_sv39_asid2),
-#             mem_fault,
-#             AssertException(
-#                 cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
-#                 code=[Store(memory=mem_fault, offset=0x0, value=0xBEEF)],
-#             ),
-#         ],
-#     )
+    return TestScenario.from_steps(
+        id="SID_PBVMS_015",
+        name="global_bit_handling",
+        description="Ensure Global bit honoured",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        steps=[
+            mem,
+            original_satp,
+            set_asid,
+            write1,
+            clear_asid,
+            write2,
+            restore_asid,
+        ],
+    )

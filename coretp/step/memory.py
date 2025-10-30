@@ -30,6 +30,8 @@ class Memory(TestStep):
     :type base_pa: Optional[int]
     :param base_va: Virtual address - used to request a specific VPN
     :type base_va: Optional[int]
+    :param modify: Whether memory can be modified
+    :type modify: bool
     """
 
     size: int = 0x1000
@@ -40,6 +42,7 @@ class Memory(TestStep):
     base_pa: Optional[int] = None
     base_va: Optional[int] = None
     num_pages: Optional[int] = 1
+    modify: bool = False
 
 
 @dataclass(frozen=True)
@@ -63,3 +66,19 @@ class CodePage(Memory):
     def __post_init__(self):
         if any(isinstance(step, CodePage) for step in self.code):
             raise ValueError("CodePage cannot contain another CodePage")
+
+
+@dataclass(frozen=True)
+class ModifyPte(TestStep):
+    """
+    Represents a modify PTE instruction in a test scenario.
+
+    :param memory: Memory to modify PTE
+    :param level: int level of PTE to modify
+    :param make_recursive: bool whether to make the PTE recursive
+
+    """
+
+    memory: Optional[Memory] = None
+    level: Optional[int] = None
+    make_recursive: bool = False

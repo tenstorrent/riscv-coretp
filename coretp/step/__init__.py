@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .step import TestStep
-from .memory import Memory, CodePage
+from .memory import Memory, CodePage, ModifyPte
 
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
@@ -16,6 +16,7 @@ __all__ = [
     "TestStep",
     "MemoryOp",
     "CodePage",
+    "ModifyPte",
     "Call",
     "TestStep",
     "Call",

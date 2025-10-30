@@ -117,9 +117,11 @@ class Label(Instruction):
     """
     Label, extended instruction whose destination is a symbol.
     Extending ``Instruction`` to allow for labels to be generated.
+
+    :param instruction_pointer: True if the label points to a specific instruction
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, instruction_pointer: bool = False):
         super().__init__(
             name="label",
             extension=Extension.I,
@@ -129,6 +131,7 @@ class Label(Instruction):
             source=[],
             formatter="{name}:",
         )
+        self.instruction_pointer = instruction_pointer
 
     def __repr__(self) -> str:
         return f"{self.name} (id={self.instruction_id}), (dest=({self.destination})"
