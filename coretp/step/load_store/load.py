@@ -22,8 +22,10 @@ class Load(MemoryOp):
     :type memory: Optional[TestStep]
     :param offset: Offset within the memory region
     :type offset: Optional[int]
+    :param access_size: Access size in bytes
     """
 
     memory: Optional[Memory] = None
     offset: int = 0
     op: Optional[str] = None
+    access_size: Optional[int] = None
