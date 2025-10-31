@@ -1281,7 +1281,7 @@ cbo_clean = InstructionDef(
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
     ],
-    formatter="cbo.clean {rs1}",
+    formatter="cbo.clean ({rs1})",
 )
 
 cbo_flush = InstructionDef(
@@ -1293,7 +1293,7 @@ cbo_flush = InstructionDef(
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
     ],
-    formatter="cbo.flush {rs1}",
+    formatter="cbo.flush ({rs1})",
 )
 
 cbo_inval = InstructionDef(
@@ -1305,7 +1305,7 @@ cbo_inval = InstructionDef(
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
     ],
-    formatter="cbo.inval {rs1}",
+    formatter="cbo.inval ({rs1})",
 )
 
 cbo_zero = InstructionDef(
@@ -1317,7 +1317,7 @@ cbo_zero = InstructionDef(
     source=[
         OperandSlot(name="rs1", type=OperandType.GPR),
     ],
-    formatter="cbo.zero {rs1}",
+    formatter="cbo.zero ({rs1})",
 )
 
 
