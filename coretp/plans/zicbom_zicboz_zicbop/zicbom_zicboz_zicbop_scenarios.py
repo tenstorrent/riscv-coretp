@@ -1030,7 +1030,7 @@ def SID_ZICBO_049():
     cmo_op = MemAccess(op="cbo.flush", memory=mem)
 
     # Execute SC (Store Conditional) - should succeed or fail based on reservation
-    sc_op = MemAccess(op="sc.w", memory=mem, offset=0xDEADBEEF)
+    sc_op = MemAccess(op="sc.w", memory=mem)
 
     # Verify the result
     load_verify = Load(memory=mem, offset=0)
