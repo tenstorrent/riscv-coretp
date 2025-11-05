@@ -980,6 +980,9 @@ def SID_ZICBO_047():
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     cmo_op = MemAccess(op="cbo.flush", memory=mem)
     random_mem_access_1 = MemAccess(memory=mem)
     cmo_op_2 = MemAccess(op="cbo.clean", memory=mem)
@@ -994,6 +997,9 @@ def SID_ZICBO_047():
         env=TestEnvCfg(),
         steps=[
             mem,
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             cmo_op,
             random_mem_access_1,
             cmo_op_2,
@@ -1023,6 +1029,9 @@ def SID_ZICBO_049():
     )
 
     # Execute LR (Load Reserved)
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     lr_op = MemAccess(op="lr.w", memory=mem)
 
     # Execute CMO between LR and SC
@@ -1042,6 +1051,9 @@ def SID_ZICBO_049():
         env=TestEnvCfg(),
         steps=[
             mem,
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             lr_op,
             cmo_op,
             sc_op,
