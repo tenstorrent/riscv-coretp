@@ -809,7 +809,7 @@ def SID_ZICBO_022():
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,  # No write permission
+        flags=PageFlags.READ,  # No write permission
     )
 
     # Execute cbo.zero instruction
