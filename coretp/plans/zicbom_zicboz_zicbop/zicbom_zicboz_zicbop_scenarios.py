@@ -664,8 +664,8 @@ def SID_ZICBO_019():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem_va1)
 
     # Read back from both VAs and verify zeros
-    load_va1 = Load(memory=mem_va1, offset=0)
-    load_va2 = Load(memory=mem_va2, offset=0)
+    load_va1 = Load(op="lw", memory=mem_va1, offset=0)
+    load_va2 = Load(op="lw", memory=mem_va2, offset=0)
     assert_zero_va1 = AssertEqual(src1=load_va1, src2=0)
     assert_zero_va2 = AssertEqual(src1=load_va2, src2=0)
 
