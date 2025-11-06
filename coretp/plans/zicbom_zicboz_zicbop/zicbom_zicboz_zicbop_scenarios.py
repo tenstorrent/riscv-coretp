@@ -750,6 +750,9 @@ def SID_ZICBO_021():
     """
     Ensure all bytes of cache block are zeroed in MP
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory region
     mem = Memory(
         size=0x1000,
@@ -777,6 +780,9 @@ def SID_ZICBO_021():
         description="Ensure all bytes of cache block are zeroed in MP",
         env=TestEnvCfg(min_num_harts=2),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem,
             hart0,
             store_data,
@@ -796,6 +802,9 @@ def SID_ZICBO_022():
     """
     Ensure cbo.zero is treated as a store for the exception purpose
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory region with restricted access
     mem = Memory(
         size=0x1000,
@@ -821,6 +830,9 @@ def SID_ZICBO_022():
         description="Ensure cbo.zero is treated as a store for the exception purpose",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39]),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem,
             assert_exception,
             assert_exception_page_fault,
@@ -920,6 +932,9 @@ def SID_ZICBO_039():
     """
     Ensure constrained loop into same address does not get affected by any zicbo instruction
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory region
     mem = Memory(
         size=0x1000,
@@ -946,6 +961,9 @@ def SID_ZICBO_039():
         description="Ensure all bytes of cache block are zeroed in MP",
         env=TestEnvCfg(min_num_harts=2),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem,
             hart_exit,
             hart0,
