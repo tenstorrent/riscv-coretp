@@ -695,6 +695,9 @@ def SID_ZICBO_020():
     """
     Ensure rs1 is adjusted cache block size and cbo.zero is performed
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory regions for aliasing
     mem_va1 = Memory(
         size=0x1000,
@@ -727,6 +730,9 @@ def SID_ZICBO_020():
         description="Ensure rs1 is adjusted cache block size and cbo.zero is performed",
         env=TestEnvCfg(),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem_va1,
             mem_va2,
             store_data,
