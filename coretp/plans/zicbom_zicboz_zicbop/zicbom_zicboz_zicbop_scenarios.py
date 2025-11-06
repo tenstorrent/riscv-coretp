@@ -613,7 +613,7 @@ def SID_ZICBO_018():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Read back and verify zeros
-    load_verify = Load(op="lw",memory=mem, offset=0)
+    load_verify = Load(op="lw", memory=mem, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
 
     return TestScenario.from_steps(

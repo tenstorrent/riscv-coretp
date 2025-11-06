@@ -1321,7 +1321,6 @@ cbo_zero = InstructionDef(
 )
 
 
-
 prefetch_i = InstructionDef(
     name="prefetch.i",
     extension=Extension.ZICBOP,
