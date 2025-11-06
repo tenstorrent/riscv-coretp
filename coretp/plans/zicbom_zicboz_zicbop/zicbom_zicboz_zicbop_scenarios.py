@@ -820,7 +820,7 @@ def SID_ZICBO_022():
     # assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])
 
     # Execute reverse cbo.zero instruction
-    cbo_zero_page_fault = Arithmetic(op="cbo.zero", src1=mem)
+    cbo_zero_page_fault = MemAccess(op="cbo.zero", memory=mem)
 
     # Check for store page fault exception
     assert_exception_page_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[cbo_zero_page_fault])
