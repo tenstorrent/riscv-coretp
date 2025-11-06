@@ -812,14 +812,15 @@ def SID_ZICBO_022():
         flags=PageFlags.READ,  # No write permission
     )
 
-    # Execute cbo.zero instruction
-    cbo_zero = MemAccess(op="cbo.zero", memory=mem)
+    # FIXME: add pmp configuratoin to create access fault
+    # # Execute cbo.zero instruction
+    # cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Check for store page fault exception
-    assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])
+    # # Check for store page fault exception
+    # assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])
 
     # Execute reverse cbo.zero instruction
-    cbo_zero_page_fault = Arithmetic(op="cbo.zero", src1=0)
+    cbo_zero_page_fault = Arithmetic(op="cbo.zero", src1=mem)
 
     # Check for store page fault exception
     assert_exception_page_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[cbo_zero_page_fault])
@@ -834,7 +835,7 @@ def SID_ZICBO_022():
             senvcfg_write,
             henvcfg_write,
             mem,
-            assert_exception,
+            # assert_exception,
             assert_exception_page_fault,
         ],
     )
