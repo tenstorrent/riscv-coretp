@@ -596,6 +596,9 @@ def SID_ZICBO_018():
     """
     Ensure all bytes of cache block are zeroed in UP
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory region
     mem = Memory(
         size=0x1000,
@@ -610,7 +613,7 @@ def SID_ZICBO_018():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     # Read back and verify zeros
-    load_verify = Load(memory=mem, offset=0)
+    load_verify = Load(op="lw", memory=mem, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
 
     return TestScenario.from_steps(
@@ -619,6 +622,9 @@ def SID_ZICBO_018():
         description="Ensure all bytes of cache block are zeroed in UP",
         env=TestEnvCfg(),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem,
             store_data,
             cbo_zero,
@@ -633,6 +639,10 @@ def SID_ZICBO_019():
     """
     Ensure all bytes of cache block are zeroed to right PA (VA aliasing)
     """
+
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory regions for aliasing
     mem_va1 = Memory(
         size=0x1000,
@@ -654,8 +664,8 @@ def SID_ZICBO_019():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem_va1)
 
     # Read back from both VAs and verify zeros
-    load_va1 = Load(memory=mem_va1, offset=0)
-    load_va2 = Load(memory=mem_va2, offset=0)
+    load_va1 = Load(op="lw", memory=mem_va1, offset=0)
+    load_va2 = Load(op="lw", memory=mem_va2, offset=0)
     assert_zero_va1 = AssertEqual(src1=load_va1, src2=0)
     assert_zero_va2 = AssertEqual(src1=load_va2, src2=0)
 
@@ -665,6 +675,9 @@ def SID_ZICBO_019():
         description="Ensure all bytes of cache block are zeroed to right PA (VA aliasing)",
         env=TestEnvCfg(),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem_va1,
             mem_va2,
             store_data,
@@ -682,6 +695,9 @@ def SID_ZICBO_020():
     """
     Ensure rs1 is adjusted cache block size and cbo.zero is performed
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory regions for aliasing
     mem_va1 = Memory(
         size=0x1000,
@@ -703,8 +719,8 @@ def SID_ZICBO_020():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem_va1)  # Unaligned address
 
     # Read back and verify zeros (should be aligned to cache block boundary)
-    load_verify = Load(memory=mem_va1, offset=0)
-    load_verify_va2 = Load(memory=mem_va2, offset=0)
+    load_verify = Load(op="lw", memory=mem_va1, offset=0)
+    load_verify_va2 = Load(op="lw", memory=mem_va2, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
     assert_zero_va2 = AssertEqual(src1=load_verify_va2, src2=0)
 
@@ -714,6 +730,9 @@ def SID_ZICBO_020():
         description="Ensure rs1 is adjusted cache block size and cbo.zero is performed",
         env=TestEnvCfg(),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem_va1,
             mem_va2,
             store_data,
@@ -731,6 +750,9 @@ def SID_ZICBO_021():
     """
     Ensure all bytes of cache block are zeroed in MP
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory region
     mem = Memory(
         size=0x1000,
@@ -749,7 +771,7 @@ def SID_ZICBO_021():
 
     # Hart 0: Read back and verify zeros
     hart0_2 = Hart(hart_index=0)
-    load_verify = Load(memory=mem, offset=0)
+    load_verify = Load(op="lw", memory=mem, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
 
     return TestScenario.from_steps(
@@ -758,6 +780,9 @@ def SID_ZICBO_021():
         description="Ensure all bytes of cache block are zeroed in MP",
         env=TestEnvCfg(min_num_harts=2),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem,
             hart0,
             store_data,
@@ -777,21 +802,25 @@ def SID_ZICBO_022():
     """
     Ensure cbo.zero is treated as a store for the exception purpose
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory region with restricted access
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,  # No write permission
+        flags=PageFlags.READ,  # No write permission
     )
 
-    # Execute cbo.zero instruction
-    cbo_zero = MemAccess(op="cbo.zero", memory=mem)
+    # FIXME: add pmp configuratoin to create access fault
+    # # Execute cbo.zero instruction
+    # cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Check for store page fault exception
-    assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])
+    # # Check for store page fault exception
+    # assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])
 
     # Execute reverse cbo.zero instruction
-    cbo_zero_page_fault = Arithmetic(op="cbo.zero", src1=0)
+    cbo_zero_page_fault = MemAccess(op="cbo.zero", memory=mem)
 
     # Check for store page fault exception
     assert_exception_page_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[cbo_zero_page_fault])
@@ -802,8 +831,11 @@ def SID_ZICBO_022():
         description="Ensure cbo.zero is treated as a store for the exception purpose",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39]),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem,
-            assert_exception,
+            # assert_exception,
             assert_exception_page_fault,
         ],
     )
@@ -901,6 +933,9 @@ def SID_ZICBO_039():
     """
     Ensure constrained loop into same address does not get affected by any zicbo instruction
     """
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     # Set up memory region
     mem = Memory(
         size=0x1000,
@@ -927,6 +962,9 @@ def SID_ZICBO_039():
         description="Ensure all bytes of cache block are zeroed in MP",
         env=TestEnvCfg(min_num_harts=2),
         steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             mem,
             hart_exit,
             hart0,
@@ -980,6 +1018,9 @@ def SID_ZICBO_047():
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     cmo_op = MemAccess(op="cbo.flush", memory=mem)
     random_mem_access_1 = MemAccess(memory=mem)
     cmo_op_2 = MemAccess(op="cbo.clean", memory=mem)
@@ -994,6 +1035,9 @@ def SID_ZICBO_047():
         env=TestEnvCfg(),
         steps=[
             mem,
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             cmo_op,
             random_mem_access_1,
             cmo_op_2,
@@ -1023,6 +1067,9 @@ def SID_ZICBO_049():
     )
 
     # Execute LR (Load Reserved)
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     lr_op = MemAccess(op="lr.w", memory=mem)
 
     # Execute CMO between LR and SC
@@ -1030,7 +1077,7 @@ def SID_ZICBO_049():
     cmo_op = MemAccess(op="cbo.flush", memory=mem)
 
     # Execute SC (Store Conditional) - should succeed or fail based on reservation
-    sc_op = MemAccess(op="sc.w", memory=mem, offset=0xDEADBEEF)
+    sc_op = MemAccess(op="sc.w", memory=mem)
 
     # Verify the result
     load_verify = Load(memory=mem, offset=0)
@@ -1042,6 +1089,9 @@ def SID_ZICBO_049():
         env=TestEnvCfg(),
         steps=[
             mem,
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
             lr_op,
             cmo_op,
             sc_op,

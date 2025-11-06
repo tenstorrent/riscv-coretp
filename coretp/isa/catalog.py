@@ -94,7 +94,7 @@ class InstructionCatalog:
         if extension is not None:
             predicates.append(lambda i: i.extension in extension)
         if category is not None:
-            predicates.append(lambda i: i.category == category)
+            predicates.append(lambda i: i.category & category == i.category)
         if has_destination is not None:
             predicates.append(lambda i: (i.destination is not None) == has_destination)
         if source_reg_count is not None:
