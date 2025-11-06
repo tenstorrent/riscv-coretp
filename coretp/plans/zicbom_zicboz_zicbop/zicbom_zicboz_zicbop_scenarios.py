@@ -771,7 +771,7 @@ def SID_ZICBO_021():
 
     # Hart 0: Read back and verify zeros
     hart0_2 = Hart(hart_index=0)
-    load_verify = Load(memory=mem, offset=0)
+    load_verify = Load(op="lw", memory=mem, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
 
     return TestScenario.from_steps(
