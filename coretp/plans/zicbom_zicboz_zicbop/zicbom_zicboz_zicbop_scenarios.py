@@ -719,8 +719,8 @@ def SID_ZICBO_020():
     cbo_zero = MemAccess(op="cbo.zero", memory=mem_va1)  # Unaligned address
 
     # Read back and verify zeros (should be aligned to cache block boundary)
-    load_verify = Load(memory=mem_va1, offset=0)
-    load_verify_va2 = Load(memory=mem_va2, offset=0)
+    load_verify = Load(op="lw", memory=mem_va1, offset=0)
+    load_verify_va2 = Load(op="lw", memory=mem_va2, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
     assert_zero_va2 = AssertEqual(src1=load_verify_va2, src2=0)
 
