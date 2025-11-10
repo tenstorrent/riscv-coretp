@@ -155,7 +155,6 @@ def new_test_plan(
     :param tags: Optional tags for the test plan, e.g. "security", "memory"
     :param features: Optional features for the test plan. unused for now, but can be used later to track dependencies or required features
     """
-    print(f"Registering test plan: {name}")
     _registry.register_plan(name, description, tags, features)
 
     def scenario_decorator(func: Callable[[], TestScenario]) -> Callable[[], TestScenario]:

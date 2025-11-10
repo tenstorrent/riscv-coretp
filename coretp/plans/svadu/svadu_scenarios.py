@@ -565,7 +565,7 @@ def SID_SVADU_11_speculative_access_with_trap():
     assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
 
     # Instruction that causes spec D change with trap
-    store_fail_op = Store(memory=mem, value=LoadImmediateStep(imm=0xDEAD))
+    store_fail_op = Store(memory=mem, value=0xDEAD)
     assert_store_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[store_fail_op])
 
     read_leaf_pte_2 = ReadLeafPTE(memory=mem)
