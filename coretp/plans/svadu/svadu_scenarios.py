@@ -432,7 +432,7 @@ def SID_SVADU_07_store_then_modify_pte():
     modify_pte = ModifyPte(memory=mem, level=0)
 
     # Invalidate TLB
-    sfence = Directive(directive="sfence.vma")
+    sfence = Arithmetic(op="sfence.vma")
 
     # Subsequent load may fault depending on PTE modification
     load_op = Load(memory=mem)
