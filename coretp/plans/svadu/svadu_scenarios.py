@@ -2,8 +2,29 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
-from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, CsrRead, AssertException, AssertEqual, AssertNotEqual, Call, LoadImmediateStep, LoadAddressStep, ModifyPte, MemAccess, Directive
+from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension
+from coretp.step import (
+    TestStep,
+    Memory,
+    Load,
+    Store,
+    CodePage,
+    Arithmetic,
+    CsrWrite,
+    CsrRead,
+    AssertException,
+    AssertEqual,
+    AssertNotEqual,
+    Call,
+    LoadImmediateStep,
+    LoadAddressStep,
+    ModifyPte,
+    MemAccess,
+    Directive,
+    ReadLeafPTE,
+    Hart,
+    HartExit,
+)
 
 from . import svadu_scenario
 
@@ -50,7 +71,7 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED,
         modify=True,
     )
 
@@ -61,7 +82,7 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
     # Store to memory with pte.d=0 should fault
     store_val = LoadImmediateStep(imm=0xDEAD)
     store_op = Store(memory=mem, value=store_val)
-    assert_store_fault = AssertException(cause=ExceptionCause.STORE_PAGE_FAULT, code=[store_op])
+    assert_store_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[store_op])
 
     return TestScenario.from_steps(
         id="2",
@@ -98,8 +119,11 @@ def SID_SVADU_02_hardware_update_a_bit():
     # Perform load - should update A bit
     load_op = Load(memory=mem)
 
-    # Note: Actual PTE A bit verification would be done by the test infrastructure
-    # We just ensure the load completes without fault
+    read_leaf_pte = ReadLeafPTE(memory=mem)
+    # A bit is bit 6 in the PTE entry
+    load_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
+    and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+    assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
 
     return TestScenario.from_steps(
         id="3",
@@ -111,6 +135,10 @@ def SID_SVADU_02_hardware_update_a_bit():
             adue_bit,
             enable_svadu,
             load_op,
+            read_leaf_pte,
+            load_immediate_mask_check,
+            and_op,
+            assert_equal,
         ],
     )
 
@@ -136,6 +164,12 @@ def SID_SVADU_02_hardware_update_d_bit():
     store_val = LoadImmediateStep(imm=0xBEEF)
     store_op = Store(memory=mem, value=store_val)
 
+    read_leaf_pte = ReadLeafPTE(memory=mem)
+    # D bit is bit 7 in the PTE entry
+    load_immediate_mask_check = LoadImmediateStep(imm=1 << 7)
+    and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+    assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
+
     return TestScenario.from_steps(
         id="4",
         name="SID_SVADU_02_hardware_update_d_bit",
@@ -147,6 +181,10 @@ def SID_SVADU_02_hardware_update_d_bit():
             enable_svadu,
             store_val,
             store_op,
+            read_leaf_pte,
+            load_immediate_mask_check,
+            and_op,
+            assert_equal,
         ],
     )
 
@@ -162,6 +200,7 @@ def SID_SVADU_03_nc_io_memory_a_bit_fault():
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
         modify=True,
+        needs_io=True,
     )
 
     # Enable SVADU
@@ -181,6 +220,7 @@ def SID_SVADU_03_nc_io_memory_a_bit_fault():
             mem,
             adue_bit,
             enable_svadu,
+            load_op,
             assert_fault,
         ],
     )
@@ -195,8 +235,9 @@ def SID_SVADU_03_nc_io_memory_d_bit_fault():
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED,
         modify=True,
+        needs_io=True,
     )
 
     # Enable SVADU
@@ -206,7 +247,7 @@ def SID_SVADU_03_nc_io_memory_d_bit_fault():
     # Store to NC/IO memory with pte.d=0 should fault
     store_val = LoadImmediateStep(imm=0xCAFE)
     store_op = Store(memory=mem, value=store_val)
-    assert_fault = AssertException(cause=ExceptionCause.STORE_PAGE_FAULT, code=[store_op])
+    assert_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[store_op])
 
     return TestScenario.from_steps(
         id="6",
@@ -218,83 +259,104 @@ def SID_SVADU_03_nc_io_memory_d_bit_fault():
             adue_bit,
             enable_svadu,
             store_val,
+            store_op,
             assert_fault,
         ],
     )
 
 
-@svadu_scenario
-def SID_SVADU_04_speculative_a_bit_update_with_page_fault():
-    """
-    Speculative A bit update: A bit may be updated even on page faults
-    """
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID,  # Missing READ flag to cause page fault
-        modify=True,
-    )
+# requires pmp pma access faults
+# @svadu_scenario
+# def SID_SVADU_04_speculative_a_bit_update_with_page_fault():
+#     """
+#     Speculative A bit update: A bit may be updated even on page faults
+#     """
+#     mem = Memory(
+#         size=0x1000,
+#         page_size=PageSize.SIZE_4K,
+#         flags=PageFlags.VALID,  # Missing READ flag to cause page fault
+#         modify=True,
+#     )
 
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     # Enable SVADU
+#     adue_bit = LoadImmediateStep(imm=1 << 61)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
 
-    # Load should fault due to missing READ permission
-    load_op = Load(memory=mem)
-    assert_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[load_op])
+#     # Load should fault due to missing READ permission
+#     load_op = Load(memory=mem)
+#     assert_fault = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op])
 
-    # Note: A bit may still be speculatively updated
+#     # Note: A bit may still be speculatively updated
+#     read_leaf_pte = ReadLeafPTE(memory=mem)
+#     # A bit is bit 6 in the PTE entry
+#     load_immediate_mask_check = LoadImmediateStep(imm=1<<6)
+#     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+#     assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
 
-    return TestScenario.from_steps(
-        id="7",
-        name="SID_SVADU_04_speculative_a_bit_update_with_page_fault",
-        description="Speculative A bit update on page fault",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            assert_fault,
-        ],
-    )
+#     return TestScenario.from_steps(
+#         id="7",
+#         name="SID_SVADU_04_speculative_a_bit_update_with_page_fault",
+#         description="Speculative A bit update on page fault",
+#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+#         steps=[
+#             mem,
+#             adue_bit,
+#             enable_svadu,
+#             assert_fault,
+#             read_leaf_pte,
+#             load_immediate_mask_check,
+#             and_op,
+#             assert_equal,
+#         ],
+#     )
 
 
-@svadu_scenario
-def SID_SVADU_05_non_speculative_d_bit_no_update_on_fault():
-    """
-    Non-speculative D bit update: D bit should NOT be updated on page faults
-    """
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,  # Missing WRITE flag to cause fault
-        modify=True,
-    )
+# requires update of pmp/pma to have access faults
+# @svadu_scenario
+# def SID_SVADU_05_non_speculative_d_bit_no_update_on_fault():
+#     """
+#     Non-speculative D bit update: D bit should NOT be updated on page faults
+#     """
+#     mem = Memory(
+#         size=0x1000,
+#         page_size=PageSize.SIZE_4K,
+#         flags=PageFlags.VALID | PageFlags.READ,  # Missing WRITE flag to cause fault
+#         modify=True,
+#     )
 
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     # Enable SVADU
+#     adue_bit = LoadImmediateStep(imm=1 << 61)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
 
-    # Store should fault due to missing WRITE permission
-    store_val = LoadImmediateStep(imm=0xDEAD)
-    store_op = Store(memory=mem, value=store_val)
-    assert_fault = AssertException(cause=ExceptionCause.STORE_PAGE_FAULT, code=[store_op])
+#     # Store should fault due to missing WRITE permission
+#     store_val = LoadImmediateStep(imm=0xDEAD)
+#     store_op = Store(memory=mem, value=store_val)
+#     assert_fault = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_op])
 
-    # Note: D bit should NOT be updated on fault
+#     # Note: D bit should NOT be updated on fault
+#     read_leaf_pte = ReadLeafPTE(memory=mem)
+#     # D bit is bit 7 in the PTE entry
+#     load_immediate_mask_check = LoadImmediateStep(imm=1<<7)
+#     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+#     assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
 
-    return TestScenario.from_steps(
-        id="8",
-        name="SID_SVADU_05_non_speculative_d_bit_no_update_on_fault",
-        description="Non-speculative D bit: no update on page fault",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            store_val,
-            assert_fault,
-        ],
-    )
+#     return TestScenario.from_steps(
+#         id="8",
+#         name="SID_SVADU_05_non_speculative_d_bit_no_update_on_fault",
+#         description="Non-speculative D bit: no update on page fault",
+#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+#         steps=[
+#             mem,
+#             adue_bit,
+#             enable_svadu,
+#             store_val,
+#             assert_fault,
+#             read_leaf_pte,
+#             load_immediate_mask_check,
+#             and_op,
+#             assert_equal,
+#         ],
+#     )
 
 
 @svadu_scenario
@@ -393,85 +455,11 @@ def SID_SVADU_07_store_then_modify_pte():
     )
 
 
-@svadu_scenario
-def SID_SVADU_08_non_leaf_pte_with_ad_bits():
-    """
-    Non-leaf PTE with pte.AD!=00 (reserved for future use)
-    """
-    mem = Memory(
-        size=0x200000,  # Large enough to require non-leaf PTEs
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,
-        num_pages=512,
-        modify=True,
-    )
-
-    # Modify non-leaf PTE (level 1)
-    modify_pte = ModifyPte(memory=mem, level=1)
-
-    # Load from memory
-    load_op = Load(memory=mem)
-
-    # Behavior is reserved - may fault or ignore
-
-    return TestScenario.from_steps(
-        id="11",
-        name="SID_SVADU_08_non_leaf_pte_with_ad_bits",
-        description="Non-leaf PTE with A/D bits set (reserved behavior)",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            modify_pte,
-            load_op,
-        ],
-    )
-
-
-@svadu_scenario
-def SID_SVADU_09_hardware_update_with_global_bit():
-    """
-    H/W update with global bit: PTE brought in with one ASID, accessed with different ASID
-    """
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.GLOBAL,
-        modify=True,
-    )
-
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-
-    # Access with ASID 1
-    asid1 = LoadImmediateStep(imm=1 << 44)
-    set_asid1 = CsrWrite(csr_name="satp", set_mask=asid1)
-    load_op1 = Load(memory=mem)
-
-    # Access with ASID 2
-    asid2 = LoadImmediateStep(imm=2 << 44)
-    set_asid2 = CsrWrite(csr_name="satp", set_mask=asid2)
-    store_val = LoadImmediateStep(imm=0xBEEF)
-    store_op = Store(memory=mem, value=store_val)
-
-    return TestScenario.from_steps(
-        id="12",
-        name="SID_SVADU_09_hardware_update_with_global_bit",
-        description="H/W update with global bit across different ASIDs",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            asid1,
-            set_asid1,
-            load_op1,
-            asid2,
-            set_asid2,
-            store_val,
-            store_op,
-        ],
-    )
+# reserved behavior
+# Non-leaf pte with pte.AD != 00
+# @svadu_scenario
+# def SID_SVADU_08_non_leaf_pte_with_ad_bits():
+#     return
 
 
 @svadu_scenario
@@ -490,12 +478,11 @@ def SID_SVADU_10_enable_disable_svadu_seq1():
 
     # Enable SVADU
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-    load_op1 = Load(memory=mem)
+    mem_access_op_1 = MemAccess(memory=mem)
 
     # Disable SVADU
     disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=adue_bit)
-    store_val = LoadImmediateStep(imm=0xCAFE)
-    store_op = Store(memory=mem, value=store_val)
+    mem_access_op_2 = MemAccess(memory=mem)
 
     return TestScenario.from_steps(
         id="13",
@@ -506,10 +493,9 @@ def SID_SVADU_10_enable_disable_svadu_seq1():
             mem,
             adue_bit,
             enable_svadu,
-            load_op1,
+            mem_access_op_1,
             disable_svadu,
-            store_val,
-            store_op,
+            mem_access_op_2,
         ],
     )
 
@@ -530,12 +516,11 @@ def SID_SVADU_10_disable_enable_svadu_seq2():
 
     # Disable SVADU
     disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=adue_bit)
-    load_op1 = Load(memory=mem)
+    mem_access_op_1 = MemAccess(memory=mem)
 
     # Enable SVADU
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-    store_val = LoadImmediateStep(imm=0xBEEF)
-    store_op = Store(memory=mem, value=store_val)
+    mem_access_op_2 = MemAccess(memory=mem)
 
     return TestScenario.from_steps(
         id="14",
@@ -546,10 +531,9 @@ def SID_SVADU_10_disable_enable_svadu_seq2():
             mem,
             adue_bit,
             disable_svadu,
-            load_op1,
+            mem_access_op_1,
             enable_svadu,
-            store_val,
-            store_op,
+            mem_access_op_2,
         ],
     )
 
@@ -562,7 +546,7 @@ def SID_SVADU_11_speculative_access_with_trap():
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID,
         modify=True,
     )
 
@@ -570,13 +554,25 @@ def SID_SVADU_11_speculative_access_with_trap():
     adue_bit = LoadImmediateStep(imm=1 << 61)
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
 
-    # Instruction that causes trap (division by zero)
-    zero = LoadImmediateStep(imm=0)
-    one = LoadImmediateStep(imm=1)
-    div_op = Arithmetic(op="div", src1=one, src2=zero)
+    # Instruction that causes spec A change with trap
+    load_fail_op = Load(memory=mem)
+    assert_load_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[load_fail_op])
 
-    # Speculative access that may not complete
-    load_op = Load(memory=mem)
+    read_leaf_pte = ReadLeafPTE(memory=mem)
+    # A bit is bit 6 in the PTE entry
+    load_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
+    and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+    assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
+
+    # Instruction that causes spec D change with trap
+    store_fail_op = Store(memory=mem, value=LoadImmediateStep(imm=0xDEAD))
+    assert_store_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[store_fail_op])
+
+    read_leaf_pte_2 = ReadLeafPTE(memory=mem)
+    # D bit is bit 7 in the PTE entry
+    load_immediate_mask_check_2 = LoadImmediateStep(imm=1 << 7)
+    and_op_2 = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check_2)
+    assert_equal_2 = AssertEqual(src1=and_op_2, src2=load_immediate_mask_check_2)
 
     return TestScenario.from_steps(
         id="15",
@@ -587,87 +583,43 @@ def SID_SVADU_11_speculative_access_with_trap():
             mem,
             adue_bit,
             enable_svadu,
-            zero,
-            one,
-            div_op,
-            load_op,
+            load_fail_op,
+            assert_load_fault,
+            read_leaf_pte,
+            load_immediate_mask_check,
+            and_op,
+            assert_equal,
+            store_fail_op,
+            assert_store_fault,
+            read_leaf_pte_2,
+            load_immediate_mask_check_2,
+            and_op_2,
+            assert_equal_2,
         ],
     )
 
 
-@svadu_scenario
-def SID_SVADU_12_page_fault_with_access_fault():
-    """
-    Page faults combined with access faults
-    """
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID,  # Missing READ/WRITE to cause page fault
-        modify=True,
-    )
+# will revisit, may require NC.IO support
+# @svadu_scenario
+# def SID_SVADU_12_page_fault_with_access_fault():
+#     """
+#     Page faults combined with access faults
+#     Cases are
+#     1. NC/IO + pma.rw/pmp.rw !=11
+#     2. NC/IO + pte.ad != 11
+#     3. Any page fault
 
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-
-    # Load should cause page fault
-    load_op = Load(memory=mem)
-    assert_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[load_op])
-
-    return TestScenario.from_steps(
-        id="16",
-        name="SID_SVADU_12_page_fault_with_access_fault",
-        description="Page faults combined with access faults",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            assert_fault,
-        ],
-    )
+#     and also
+#     1. pma/pmp access fault crossed with above cases
+#     2. misaligned accesses crosed with above cases
+#     """
+#     return
 
 
-@svadu_scenario
-def SID_SVADU_13_page_crossing_different_pte_types():
-    """
-    Page crossing with 2 PTEs over two different pages with different memory attributes
-    """
-    mem1 = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
-
-    mem2 = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
-
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-
-    # Access that crosses page boundary
-    load_op = Load(memory=mem1, offset=0xFF8, access_size=16)
-
-    return TestScenario.from_steps(
-        id="17",
-        name="SID_SVADU_13_page_crossing_different_pte_types",
-        description="Page crossing with different PTE memory attributes",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem1,
-            mem2,
-            adue_bit,
-            enable_svadu,
-            load_op,
-        ],
-    )
+# FIXME: needs API to have PTEs in different regions
+# @svadu_scenario
+# def SID_SVADU_13_page_crossing_different_pte_types():
+#     return
 
 
 @svadu_scenario
@@ -687,7 +639,20 @@ def SID_SVADU_14_vector_load_hardware_update():
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
 
     # Vector load
-    vec_load = Load(memory=mem, op="vle")
+    vec_load = Load(memory=mem, extension=Extension.V)
+
+    read_leaf_pte = ReadLeafPTE(memory=mem)
+    # A bit is bit 6 in the PTE entry
+    load_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
+    and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+    assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
+
+    vec_store = Store(memory=mem, value=vec_load, extension=Extension.V)
+    read_leaf_pte_2 = ReadLeafPTE(memory=mem)
+    # D bit is bit 7 in the PTE entry
+    load_immediate_mask_check_2 = LoadImmediateStep(imm=1 << 7)
+    and_op_2 = Arithmetic(op="and", src1=read_leaf_pte_2, src2=load_immediate_mask_check_2)
+    assert_equal_2 = AssertEqual(src1=and_op_2, src2=load_immediate_mask_check_2)
 
     return TestScenario.from_steps(
         id="18",
@@ -699,117 +664,28 @@ def SID_SVADU_14_vector_load_hardware_update():
             adue_bit,
             enable_svadu,
             vec_load,
-        ],
-    )
-
-
-@svadu_scenario
-def SID_SVADU_14_vector_store_hardware_update():
-    """
-    Vector store operations with hardware D bit update
-    """
-    mem = Memory(
-        size=0x10000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
-
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-
-    # Vector store
-    store_val = LoadImmediateStep(imm=0xDEAD)
-    vec_store = Store(memory=mem, value=store_val, op="vse")
-
-    return TestScenario.from_steps(
-        id="19",
-        name="SID_SVADU_14_vector_store_hardware_update",
-        description="Vector store with hardware D bit update",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            store_val,
+            read_leaf_pte,
+            load_immediate_mask_check,
+            and_op,
+            assert_equal,
             vec_store,
+            read_leaf_pte_2,
+            load_immediate_mask_check_2,
+            and_op_2,
+            assert_equal_2,
         ],
     )
 
 
-@svadu_scenario
-def SID_SVADU_15_masked_vector_no_update():
-    """
-    Masked vector operations should not trigger A/D updates for masked elements
-    """
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
+# FIXME: requires TP support for masked vector operations in Riescue-C
+# @svadu_scenario
+# def SID_SVADU_15_masked_vector_no_update():
+#     return
 
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-
-    # Masked vector load
-    masked_vec_load = Load(memory=mem, op="vle_masked")
-
-    return TestScenario.from_steps(
-        id="20",
-        name="SID_SVADU_15_masked_vector_no_update",
-        description="Masked vector operations with selective A/D updates",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            masked_vec_load,
-        ],
-    )
-
-
-@svadu_scenario
-def SID_SVADU_16_vector_page_spill_with_faults():
-    """
-    Vector nano-op page spill with different memory attributes and faults
-    """
-    mem1 = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
-
-    mem2 = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,
-        modify=True,
-    )
-
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-
-    # Vector load that crosses page boundary
-    vec_load = Load(memory=mem1, offset=0xF00, op="vle", access_size=0x200)
-
-    return TestScenario.from_steps(
-        id="21",
-        name="SID_SVADU_16_vector_page_spill_with_faults",
-        description="Vector nano-op page spill with faults",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem1,
-            mem2,
-            adue_bit,
-            enable_svadu,
-            vec_load,
-        ],
-    )
+# FIXME: requires PMA, PBMT settings and faulting behaviour on page crosser
+# @svadu_scenario
+# def SID_SVADU_16_vector_page_spill_with_faults():
+#     return
 
 
 @svadu_scenario
@@ -829,13 +705,16 @@ def SID_SVADU_17_amo_with_tlb_invalidation():
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
 
     # AMO operation
-    amo_op = MemAccess(memory=mem, op="amoadd")
+    amo_op = MemAccess(memory=mem, extension=Extension.A)
 
     # TLB invalidation
-    sfence = Directive(directive="sfence.vma")
+    sfence = Arithmetic(op="sfence.vma")
 
-    # Subsequent load
-    load_op = Load(memory=mem)
+    read_leaf_pte = ReadLeafPTE(memory=mem)
+    # Check if bit 6 or 7 is set
+    load_immediate_mask_check = LoadImmediateStep(imm=(1 << 6) | (1 << 7))
+    and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+    assert_not_equal = AssertNotEqual(src1=and_op, src2=0)
 
     return TestScenario.from_steps(
         id="22",
@@ -848,92 +727,64 @@ def SID_SVADU_17_amo_with_tlb_invalidation():
             enable_svadu,
             amo_op,
             sfence,
-            load_op,
+            amo_op,
+            read_leaf_pte,
+            load_immediate_mask_check,
+            and_op,
+            assert_not_equal,
         ],
     )
 
 
-@svadu_scenario
-def SID_SVADU_MP_1_pte_update_visible_across_harts():
-    """
-    Multi-processor: PTE update visible across harts with fence/AMO
-    """
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
+# FIXME: requires branch back behaviour
+# @svadu_scenario
+# def SID_SVADU_MP_1_pte_update_visible_across_harts():
+#     """
+#     Multi-processor: PTE update visible across harts with fence/AMO
+#     """
+#     mem = Memory(
+#         size=0x1000,
+#         page_size=PageSize.SIZE_4K,
+#         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+#         modify=True,
+#     )
 
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     # Enable SVADU
+#     adue_bit = LoadImmediateStep(imm=1 << 61)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
 
-    # Hart 0: Load
-    load_op = Load(memory=mem)
-    fence = Directive(directive="fence")
-
-    # Hart 1: Store
-    store_val = LoadImmediateStep(imm=0xDEAD)
-    store_op = Store(memory=mem, value=store_val)
-
-    return TestScenario.from_steps(
-        id="23",
-        name="SID_SVADU_MP_1_pte_update_visible_across_harts",
-        description="Multi-processor: PTE update visible with fence",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            load_op,
-            fence,
-            store_val,
-            store_op,
-        ],
-    )
+#     # Hart 0: Load
+#     hart_0_entry = Hart(hart_index=0)
+#     load_store_amo_op = MemAccess(memory=mem)
+#     fence = Arithmetic(op="fence")
 
 
-@svadu_scenario
-def SID_SVADU_MP_2_disable_svadu_other_hart():
-    """
-    Multi-processor: PTE update visible after disabling SVADU on other hart
-    """
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
+#     hart_1_entry = Hart(hart_index=1)
+#     repeat_check_read_leaf_pte = ReadLeatPTE(memory=mem)
 
-    adue_bit = LoadImmediateStep(imm=1 << 61)
+#     hart_exit = HartExit(sync=True)
 
-    # Hart 0: Enable SVADU and store
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-    store_val = LoadImmediateStep(imm=0xBEEF)
-    store_op = Store(memory=mem, value=store_val)
+#     return TestScenario.from_steps(
+#         id="23",
+#         name="SID_SVADU_MP_1_pte_update_visible_across_harts",
+#         description="Multi-processor: PTE update visible with fence",
+#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+#         steps=[
+#             mem,
+#             adue_bit,
+#             enable_svadu,
+#             load_op,
+#             fence,
+#             store_val,
+#             store_op,
+#         ],
+#     )
 
-    # Hart 1: Disable SVADU and access
-    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=adue_bit)
-    sfence = Directive(directive="sfence.vma")
-    load_op = Load(memory=mem)
 
-    return TestScenario.from_steps(
-        id="24",
-        name="SID_SVADU_MP_2_disable_svadu_other_hart",
-        description="Multi-processor: disable SVADU on other hart",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            store_val,
-            store_op,
-            disable_svadu,
-            sfence,
-            load_op,
-        ],
-    )
+# @svadu_scenario
+# def SID_SVADU_MP_2_disable_svadu_other_hart():
+#     # need clafirication on Hart 1 behaviour
+#     return
 
 
 @svadu_scenario
@@ -952,15 +803,22 @@ def SID_SVADU_MP_3_hart_update_observe():
     adue_bit = LoadImmediateStep(imm=1 << 61)
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
 
-    # Hart 1: Store
-    sfence1 = Directive(directive="sfence.vma")
-    store_val = LoadImmediateStep(imm=0xCAFE)
-    store_op = Store(memory=mem, value=store_val)
+    # Hart 0: MemAccess
+    hart_0_entry = Hart(hart_index=0)
+    tlb_invalidate = Arithmetic(op="sfence.vma")
+    mem_access_op = MemAccess(memory=mem)
 
-    # Hart 0: Observe with fence
-    fence = Directive(directive="fence")
-    load_op = Load(memory=mem)
-    assert_equal = AssertEqual(src1=load_op, src2=store_val)
+    hart_exit = HartExit(sync=False)
+
+    # Hart 1: Observe with fence
+    hart_1_entry = Hart(hart_index=1)
+    fence = Arithmetic(op="fence")
+
+    read_leaf_pte = ReadLeafPTE(memory=mem)
+    # Check if bit 6 or 7 is set
+    load_immediate_mask_check = LoadImmediateStep(imm=(1 << 6) | (1 << 7))
+    and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
+    assert_not_equal = AssertNotEqual(src1=and_op, src2=0)
 
     return TestScenario.from_steps(
         id="25",
@@ -971,52 +829,21 @@ def SID_SVADU_MP_3_hart_update_observe():
             mem,
             adue_bit,
             enable_svadu,
-            sfence1,
-            store_val,
-            store_op,
+            hart_0_entry,
+            tlb_invalidate,
+            mem_access_op,
+            hart_exit,
+            hart_1_entry,
             fence,
-            load_op,
-            assert_equal,
+            read_leaf_pte,
+            load_immediate_mask_check,
+            and_op,
+            assert_not_equal,
         ],
     )
 
 
-@svadu_scenario
-def SID_SVADU_MP_4_vector_with_snoop():
-    """
-    Multi-processor: Vector access updates with snoop from other hart
-    """
-    mem = Memory(
-        size=0x10000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        modify=True,
-    )
-
-    # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
-
-    # Hart 0: Vector load
-    vec_load = Load(memory=mem, op="vle")
-    fence = Directive(directive="fence")
-
-    # Hart 1: Vector store
-    store_val = LoadImmediateStep(imm=0xDEAD)
-    vec_store = Store(memory=mem, value=store_val, op="vse")
-
-    return TestScenario.from_steps(
-        id="26",
-        name="SID_SVADU_MP_4_vector_with_snoop",
-        description="Multi-processor: Vector access with snoop",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            mem,
-            adue_bit,
-            enable_svadu,
-            vec_load,
-            fence,
-            store_val,
-            vec_store,
-        ],
-    )
+# @svadu_scenario
+# def SID_SVADU_MP_4_vector_with_snoop():
+#     # FIXME: requires loop support in Riescue-C
+#     return

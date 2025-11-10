@@ -32,6 +32,8 @@ class Memory(TestStep):
     :type base_va: Optional[int]
     :param modify: Whether memory can be modified
     :type modify: bool
+    :param needs_io: Whether memory needs IO support
+    :type needs_io: bool
     """
 
     size: int = 0x1000
@@ -43,6 +45,7 @@ class Memory(TestStep):
     base_va: Optional[int] = None
     num_pages: Optional[int] = 1
     modify: bool = False
+    needs_io: bool = False
 
 
 @dataclass(frozen=True)
@@ -82,3 +85,16 @@ class ModifyPte(TestStep):
     memory: Optional[Memory] = None
     level: Optional[int] = None
     make_recursive: bool = False
+
+
+@dataclass(frozen=True)
+class ReadLeafPTE(TestStep):
+    """
+    Represents a read leaf PTE instruction in a test scenario.
+    Riescue to handle via jump to machine mode - return PTE entry as T2
+
+    :param memory: Memory to read leaf PTE from
+
+    """
+
+    memory: Optional[Memory] = None
