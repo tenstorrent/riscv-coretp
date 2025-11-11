@@ -714,7 +714,8 @@ def SID_SVADU_17_amo_with_tlb_invalidation():
     # Check if bit 6 or 7 is set
     load_immediate_mask_check = LoadImmediateStep(imm=(1 << 6) | (1 << 7))
     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
-    assert_not_equal = AssertNotEqual(src1=and_op, src2=0)
+    li_zero = LoadImmediateStep(imm=0)
+    assert_not_equal = AssertNotEqual(src1=and_op, src2=li_zero)
 
     return TestScenario.from_steps(
         id="22",
@@ -731,6 +732,7 @@ def SID_SVADU_17_amo_with_tlb_invalidation():
             read_leaf_pte,
             load_immediate_mask_check,
             and_op,
+            li_zero,
             assert_not_equal,
         ],
     )
@@ -818,7 +820,8 @@ def SID_SVADU_MP_3_hart_update_observe():
     # Check if bit 6 or 7 is set
     load_immediate_mask_check = LoadImmediateStep(imm=(1 << 6) | (1 << 7))
     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
-    assert_not_equal = AssertNotEqual(src1=and_op, src2=0)
+    li_zero = LoadImmediateStep(imm=0)
+    assert_not_equal = AssertNotEqual(src1=and_op, src2=li_zero)
 
     return TestScenario.from_steps(
         id="25",
@@ -838,6 +841,7 @@ def SID_SVADU_MP_3_hart_update_observe():
             read_leaf_pte,
             load_immediate_mask_check,
             and_op,
+            li_zero,
             assert_not_equal,
         ],
     )
