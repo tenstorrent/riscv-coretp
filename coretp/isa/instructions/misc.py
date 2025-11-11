@@ -548,6 +548,16 @@ fence_i = InstructionDef(
     formatter="fence.i",
 )
 
+sfence_vma = InstructionDef(
+    name="sfence.vma",
+    extension=Extension.SVINVAL,
+    xlen=Xlen.XLEN32,
+    category=Category.FENCE,
+    destination=None,
+    source=[],
+    formatter="sfence.vma",
+)
+
 
 mnret = InstructionDef(
     name="mnret",
@@ -1423,6 +1433,7 @@ misc_instrs = (
         fround_d,
         froundnx_d,
         fence_i,
+        sfence_vma,
         fleq_h,
         fli_h,
         fltq_h,
