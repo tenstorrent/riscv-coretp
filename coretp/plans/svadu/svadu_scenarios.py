@@ -770,7 +770,7 @@ def SID_SVADU_17_amo_with_tlb_invalidation():
 #         id="23",
 #         name="SID_SVADU_MP_1_pte_update_visible_across_harts",
 #         description="Multi-processor: PTE update visible with fence",
-#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], min_num_harts=2),
 #         steps=[
 #             mem,
 #             adue_bit,
@@ -827,7 +827,7 @@ def SID_SVADU_MP_3_hart_update_observe():
         id="25",
         name="SID_SVADU_MP_3_hart_update_observe",
         description="Multi-processor: Hart 1 updates, Hart 0 observes",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], min_num_harts=2),
         steps=[
             mem,
             adue_bit,
