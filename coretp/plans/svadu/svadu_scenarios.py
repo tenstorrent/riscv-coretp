@@ -111,6 +111,13 @@ def SID_SVADU_02_hardware_update_a_bit():
     # Enable SVADU
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
+    # check pte.a is 0
+    first_read_leaf_pte = ReadLeafPTE(memory=mem)
+    load_first_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
+    and_first_op = Arithmetic(op="and", src1=first_read_leaf_pte, src2=load_first_immediate_mask_check)
+    zero = LoadImmediateStep(imm=0)
+    assert_equal_first = AssertEqual(src1=and_first_op, src2=zero)
+
     # Perform load - should update A bit
     load_op = Load(memory=mem)
 
@@ -128,6 +135,11 @@ def SID_SVADU_02_hardware_update_a_bit():
         steps=[
             mem,
             enable_svadu,
+            first_read_leaf_pte,
+            load_first_immediate_mask_check,
+            and_first_op,
+            zero,
+            assert_equal_first,
             load_op,
             read_leaf_pte,
             load_immediate_mask_check,
@@ -153,6 +165,13 @@ def SID_SVADU_02_hardware_update_d_bit():
     # Enable SVADU
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
+    # check pte.d is 0
+    first_read_leaf_pte = ReadLeafPTE(memory=mem)
+    load_first_immediate_mask_check = LoadImmediateStep(imm=1 << 7)
+    and_first_op = Arithmetic(op="and", src1=first_read_leaf_pte, src2=load_first_immediate_mask_check)
+    zero = LoadImmediateStep(imm=0)
+    assert_equal_first = AssertEqual(src1=and_first_op, src2=zero)
+
     # Perform store - should update D bit
     store_val = LoadImmediateStep(imm=0xBEEF)
     store_op = Store(memory=mem, value=store_val)
@@ -171,6 +190,11 @@ def SID_SVADU_02_hardware_update_d_bit():
         steps=[
             mem,
             enable_svadu,
+            first_read_leaf_pte,
+            load_first_immediate_mask_check,
+            and_first_op,
+            zero,
+            assert_equal_first,
             store_val,
             store_op,
             read_leaf_pte,
