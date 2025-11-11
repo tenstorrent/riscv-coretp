@@ -42,8 +42,7 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
     )
 
     # Disable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)  # ADUE bit in menvcfg
-    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=adue_bit)
+    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1<<61)
 
     # Access memory with pte.a=0 should fault
     load_op = Load(memory=mem)
@@ -56,7 +55,6 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
-            adue_bit,
             disable_svadu,
             assert_load_fault,
         ],
@@ -76,8 +74,7 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
     )
 
     # Disable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=adue_bit)
+    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1<<61)
 
     # Store to memory with pte.d=0 should fault
     store_val = LoadImmediateStep(imm=0xDEAD)
@@ -91,7 +88,6 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
-            adue_bit,
             disable_svadu,
             store_val,
             assert_store_fault,
@@ -113,8 +109,7 @@ def SID_SVADU_02_hardware_update_a_bit():
     )
 
     # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
     # Perform load - should update A bit
     load_op = Load(memory=mem)
@@ -132,7 +127,6 @@ def SID_SVADU_02_hardware_update_a_bit():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
-            adue_bit,
             enable_svadu,
             load_op,
             read_leaf_pte,
@@ -157,8 +151,7 @@ def SID_SVADU_02_hardware_update_d_bit():
     )
 
     # Enable SVADU
-    adue_bit = LoadImmediateStep(imm=1 << 61)
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
     # Perform store - should update D bit
     store_val = LoadImmediateStep(imm=0xBEEF)
@@ -177,7 +170,6 @@ def SID_SVADU_02_hardware_update_d_bit():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
-            adue_bit,
             enable_svadu,
             store_val,
             store_op,
@@ -204,8 +196,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     )
 
 #     # Enable SVADU
-#     adue_bit = LoadImmediateStep(imm=1 << 61)
-#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
 #     # Access NC/IO memory with pte.a=0 should fault
 #     load_op = Load(memory=mem)
@@ -218,7 +209,6 @@ def SID_SVADU_02_hardware_update_d_bit():
 #         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
 #         steps=[
 #             mem,
-#             adue_bit,
 #             enable_svadu,
 #             load_op,
 #             assert_fault,
@@ -241,8 +231,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     )
 
 #     # Enable SVADU
-#     adue_bit = LoadImmediateStep(imm=1 << 61)
-#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
 #     # Store to NC/IO memory with pte.d=0 should fault
 #     store_val = LoadImmediateStep(imm=0xCAFE)
@@ -256,7 +245,6 @@ def SID_SVADU_02_hardware_update_d_bit():
 #         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
 #         steps=[
 #             mem,
-#             adue_bit,
 #             enable_svadu,
 #             store_val,
 #             store_op,
@@ -279,8 +267,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 # #     )
 
 # #     # Enable SVADU
-# #     adue_bit = LoadImmediateStep(imm=1 << 61)
-# #     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+# #     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
 # #     # Load should fault due to missing READ permission
 # #     load_op = Load(memory=mem)
@@ -300,7 +287,6 @@ def SID_SVADU_02_hardware_update_d_bit():
 # #         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
 # #         steps=[
 # #             mem,
-# #             adue_bit,
 # #             enable_svadu,
 # #             assert_fault,
 # #             read_leaf_pte,
@@ -635,8 +621,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     )
 
 #     # Enable SVADU
-#     adue_bit = LoadImmediateStep(imm=1 << 61)
-#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
 #     # Vector load
 #     vec_load = Load(memory=mem, extension=Extension.V)
@@ -701,8 +686,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     )
 
 #     # Enable SVADU
-#     adue_bit = LoadImmediateStep(imm=1 << 61)
-#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
 #     # AMO operation
 #     amo_op = MemAccess(memory=mem, extension=Extension.A)
@@ -752,8 +736,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 # #     )
 
 # #     # Enable SVADU
-# #     adue_bit = LoadImmediateStep(imm=1 << 61)
-# #     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+# #     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
 # #     # Hart 0: Load
 # #     hart_0_entry = Hart(hart_index=0)
@@ -802,8 +785,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     )
 
 #     # Enable SVADU
-#     adue_bit = LoadImmediateStep(imm=1 << 61)
-#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=adue_bit)
+#     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
 
 #     # Hart 0: MemAccess
 #     hart_0_entry = Hart(hart_index=0)
