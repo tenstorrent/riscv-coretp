@@ -39,6 +39,7 @@ class Memory(TestStep):
     size: int = 0x1000
     page_size: PageSize = PageSize.SIZE_4K
     flags: PageFlags = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE
+    exclude_flags: Optional[PageFlags] = None
     page_cross_en: bool = False
     alignment: Optional[int] = None
     base_pa: Optional[int] = None

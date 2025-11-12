@@ -38,6 +38,7 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,
         modify=True,
     )
 
@@ -70,6 +71,7 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED,
+        exclude_flags=PageFlags.DIRTY,
         modify=True,
     )
 
@@ -105,6 +107,7 @@ def SID_SVADU_02_hardware_update_a_bit():
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,
         modify=True,
     )
 
@@ -159,6 +162,7 @@ def SID_SVADU_02_hardware_update_d_bit():
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,
         modify=True,
     )
 
