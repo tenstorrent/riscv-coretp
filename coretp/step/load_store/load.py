@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Optional, Any
 from coretp.step.load_store import MemoryOp
 from coretp.step.memory import Memory
+from coretp.rv_enums import Extension
 
 
 @dataclass(frozen=True)
@@ -29,3 +30,4 @@ class Load(MemoryOp):
     offset: int = 0
     op: Optional[str] = None
     access_size: Optional[int] = None
+    extension: Optional[Extension] = None

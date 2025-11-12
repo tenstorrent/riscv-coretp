@@ -107,12 +107,8 @@ class InstructionCatalog:
             predicates.append(lambda i: any(s.type == source_type for s in i.source))
         if exclude_extensions is not None:
             predicates.append(lambda i: not (i.extension & exclude_extensions))
-            for i in self._instructions:
-                if i.extension & exclude_extensions:
-                    print(f"instruction {i.name} has extension {i.extension} which is in exclude_extensions {exclude_extensions}")
         if xlen is not None:
             predicates.append(lambda i: i.xlen == xlen)
-
         if not predicates:
             instruction_defintions = self._instructions
         else:

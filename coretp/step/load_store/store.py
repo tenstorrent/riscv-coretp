@@ -8,6 +8,7 @@ from typing import Optional, Union
 from coretp.step.step import TestStep
 from coretp.step.load_store import MemoryOp
 from coretp.step.memory import Memory
+from coretp.rv_enums import Extension
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ class Store(MemoryOp):
     offset: int = 0
     value: Optional[Union[TestStep, int]] = None
     op: Optional[str] = None
+    extension: Optional[Extension] = None
 
     def deps(self) -> list[Optional[TestStep]]:
         deps = []
