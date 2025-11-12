@@ -20,7 +20,8 @@ class TestEnv:
     hart_count: int = 1
     hypervisor: bool = False
     virtualized: bool = False
-
+    deleg_excp_to: PrivilegeMode = PrivilegeMode.M
+    
     def get_max_va_bits(self) -> int:
         """
         Helper to get the maximum number of bits for a virtual address
