@@ -43,7 +43,7 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
     )
 
     # Disable SVADU
-    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1<<61)
+    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1 << 61)
 
     # Access memory with pte.a=0 should fault
     load_op = Load(memory=mem)
@@ -76,7 +76,7 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
     )
 
     # Disable SVADU
-    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1<<61)
+    disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1 << 61)
 
     # Store to memory with pte.d=0 should fault
     store_val = LoadImmediateStep(imm=0xDEAD)
@@ -112,7 +112,7 @@ def SID_SVADU_02_hardware_update_a_bit():
     )
 
     # Enable SVADU
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
+    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)
 
     # check pte.a is 0
     first_read_leaf_pte = ReadLeafPTE(memory=mem)
@@ -167,7 +167,7 @@ def SID_SVADU_02_hardware_update_d_bit():
     )
 
     # Enable SVADU
-    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1<<61)
+    enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)
 
     # check pte.d is 0
     first_read_leaf_pte = ReadLeafPTE(memory=mem)
