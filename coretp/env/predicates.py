@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Callable
 
 from .env import TestEnv
 from coretp.rv_enums import PrivilegeMode, PagingMode, PageSize
@@ -22,4 +23,5 @@ def machine_no_paging(env: TestEnv) -> bool:
         return True
 
 
-DEFAULT_PREDICATES = [machine_no_paging]
+def DEFAULT_PREDICATES() -> list[Callable[[TestEnv], bool]]:
+    return [machine_no_paging]

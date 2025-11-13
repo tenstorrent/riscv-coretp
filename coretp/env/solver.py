@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable
+from typing import Callable, Optional
 
 from .cfg import TestEnvCfg
 from .env import TestEnv
@@ -15,10 +15,12 @@ class TestEnvSolver:
 
     predicates are callable functions that return a boolean value and are used to filter valid TestEnv objects.
 
-    :param: predicates: list of predicates to apply to the TestEnvCfg objects. Default is DEFAULT_PREDICATES. Set to empty list to apply no predicates.
+    :param: predicates: list of predicates to apply to the TestEnvCfg objects. Default is None. Set to empty list to apply no predicates.
     """
 
-    def __init__(self, predicates: list[Callable[[TestEnv], bool]] = DEFAULT_PREDICATES, debug: bool = False):
+    def __init__(self, predicates: Optional[list[Callable[[TestEnv], bool]]] = None, debug: bool = False):
+        if predicates is None:
+            predicates = DEFAULT_PREDICATES()
         self._predicates = predicates
         self.debug = debug
 
