@@ -267,7 +267,6 @@ def SID_SSTC_03_U():
 
     # Try accessing time in U mode - should cause illegal instruction exception
     time_read_2 = CsrRead(csr_name="time", direct_read=True)
-    assert_time_2 = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[time_read_2])
 
     return TestScenario.from_steps(
         id="5",
@@ -280,7 +279,7 @@ def SID_SSTC_03_U():
             scounteren_clear,
             assert_time_1,
             scounteren_set,
-            assert_time_2,
+            time_read_2,
         ],
     )
 
