@@ -23,6 +23,7 @@ class TestEnvCfg:
     page_sizes: list[PageSize] = field(default_factory=lambda: [PageSize.SIZE_4K, PageSize.SIZE_2M, PageSize.SIZE_1G])
     min_num_harts: int = 1
     virtualized: list[bool] = field(default_factory=lambda: [True, False])
+    deleg_excp_to: list[PrivilegeMode] = field(default_factory=lambda: [PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U])
 
     def generate_all_cfgs(self) -> list[TestEnv]:
         """
@@ -32,6 +33,6 @@ class TestEnvCfg:
         """
 
         return [
-            TestEnv(reg_width=rw, priv=priv, hypervisor=hv, paging_mode=pm, page_size=frozenset(self.page_sizes), hart_count=self.min_num_harts, virtualized=v)
-            for rw, priv, hv, pm, v in product(self.reg_widths, self.priv_modes, self.hypervisor, self.paging_modes, self.virtualized)
+            TestEnv(reg_width=rw, priv=priv, hypervisor=hv, paging_mode=pm, page_size=frozenset(self.page_sizes), hart_count=self.min_num_harts, virtualized=v, deleg_excp_to=de)
+            for rw, priv, hv, pm, v, de in product(self.reg_widths, self.priv_modes, self.hypervisor, self.paging_modes, self.virtualized, self.deleg_excp_to)
         ]
