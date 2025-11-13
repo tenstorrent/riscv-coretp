@@ -22,4 +22,5 @@ def machine_no_paging(env: TestEnv) -> bool:
         return True
 
 
-DEFAULT_PREDICATES = [machine_no_paging]
+def DEFAULT_PREDICATES() -> list[Callable[[TestEnv], bool]]:
+    return [machine_no_paging]
