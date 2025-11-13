@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Callable
 
 from .env import TestEnv
 from coretp.rv_enums import PrivilegeMode, PagingMode, PageSize
