@@ -674,7 +674,6 @@ def SID_SVADU_14_vector_load_hardware_update():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
-            adue_bit,
             enable_svadu,
             vec_load,
             read_leaf_pte,
@@ -736,7 +735,6 @@ def SID_SVADU_17_amo_with_tlb_invalidation():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
-            adue_bit,
             enable_svadu,
             amo_op,
             sfence,
@@ -840,7 +838,6 @@ def SID_SVADU_MP_3_hart_update_observe():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], min_num_harts=2),
         steps=[
             mem,
-            adue_bit,
             enable_svadu,
             hart_0_entry,
             tlb_invalidate,
