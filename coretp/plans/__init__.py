@@ -15,5 +15,6 @@ from .zimop_zcmop import zimop_zcmop_scenarios
 from .zifencei import zifencei_scenarios
 from .zicbom_zicboz_zicbop import zicbom_zicboz_zicbop_scenarios
 from .zicntr_zihpm_sscounterenw import zicntr_zihpm_sscounterenw_scenarios
+from .sscofpmf import sscofpmf_scenarios
 
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]
