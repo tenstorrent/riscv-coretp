@@ -347,6 +347,9 @@ def SID_SSCOFPMF_09A_MHPMEVENT3_WRITES_NO_OVERFLOW():
     lcofip_value_zero = Arithmetic(op="and", src1=read_mip_zero, src2=lcofip_mask)
     assert_lcofip_clear_zero = AssertEqual(src1=lcofip_value_zero, src2=zero)
 
+    # Cleanup: ensure mhpmevent3 is cleared
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
     return TestScenario.from_steps(
         id="9a",
         name="SID_SSCOFPMF_09A_MHPMEVENT3_WRITES_NO_OVERFLOW",
@@ -372,6 +375,7 @@ def SID_SSCOFPMF_09A_MHPMEVENT3_WRITES_NO_OVERFLOW():
             read_mip_zero,
             lcofip_value_zero,
             assert_lcofip_clear_zero,
+            clear_mhpmevent3,
         ],
     )
 
@@ -417,6 +421,10 @@ def SID_SSCOFPMF_09B_MHPMCOUNTER3_WRITES_NO_OVERFLOW():
     lcofip_value_zero = Arithmetic(op="and", src1=read_mip_zero, src2=lcofip_mask)
     assert_lcofip_clear_zero = AssertEqual(src1=lcofip_value_zero, src2=zero)
 
+    # Cleanup: clear mhpmcounter3 and mhpmevent3
+    clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
     return TestScenario.from_steps(
         id="9b",
         name="SID_SSCOFPMF_09B_MHPMCOUNTER3_WRITES_NO_OVERFLOW",
@@ -443,6 +451,8 @@ def SID_SSCOFPMF_09B_MHPMCOUNTER3_WRITES_NO_OVERFLOW():
             read_mip_zero,
             lcofip_value_zero,
             assert_lcofip_clear_zero,
+            clear_mhpmcounter3,
+            clear_mhpmevent3,
         ],
     )
 
@@ -494,6 +504,10 @@ def SID_SSCOFPMF_09C_MHPMCOUNTER3_REVERSE_WRITES_NO_OVERFLOW():
     lcofip_value_all_ones = Arithmetic(op="and", src1=read_mip_all_ones, src2=lcofip_mask)
     assert_lcofip_clear_all_ones = AssertEqual(src1=lcofip_value_all_ones, src2=zero)
 
+    # Cleanup: clear mhpmcounter3 and mhpmevent3
+    clear_mhpmcounter3_cleanup = CsrWrite(csr_name="mhpmcounter3", value=0)
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
     return TestScenario.from_steps(
         id="9c",
         name="SID_SSCOFPMF_09C_MHPMCOUNTER3_REVERSE_WRITES_NO_OVERFLOW",
@@ -522,6 +536,8 @@ def SID_SSCOFPMF_09C_MHPMCOUNTER3_REVERSE_WRITES_NO_OVERFLOW():
             read_mip_all_ones,
             lcofip_value_all_ones,
             assert_lcofip_clear_all_ones,
+            clear_mhpmcounter3_cleanup,
+            clear_mhpmevent3,
         ],
     )
 
@@ -595,9 +611,6 @@ def SID_SSCOFPMF_12B_SIP_LCOFIP_READ_WRITE():
     Note: In M-mode, sip writes only affect bits delegated via mideleg. We set mideleg[13]
     to enable sip[13] writes in M-mode.
     """
-    # Preserve original mideleg state
-    save_mideleg = CsrRead(csr_name="mideleg")
-
     # LCOFIP bit mask (bit 13)
     lcofip_mask = LoadImmediateStep(imm=1 << 13)
     # Mask for all bits except LCOFIP
@@ -630,9 +643,9 @@ def SID_SSCOFPMF_12B_SIP_LCOFIP_READ_WRITE():
     other_bits_after_set = Arithmetic(op="and", src1=read_sip_after_set, src2=all_bits_mask)
     assert_other_bits_unchanged = AssertEqual(src1=other_bits_after_set, src2=other_bits_after_clear)
 
-    # Clear sip to default state and restore mideleg
+    # Cleanup: clear sip and revert mideleg bit
     clear_sip = CsrWrite(csr_name="sip", value=0)
-    restore_mideleg = CsrWrite(csr_name="mideleg", value=save_mideleg)
+    clear_mideleg_lcofip = CsrWrite(csr_name="mideleg", clear_mask=1 << 13)
 
     return TestScenario.from_steps(
         id="12b",
@@ -640,7 +653,6 @@ def SID_SSCOFPMF_12B_SIP_LCOFIP_READ_WRITE():
         description="sip.LCOFIP can be cleared and set without affecting other interrupt pending bits.",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
         steps=[
-            save_mideleg,
             lcofip_mask,
             all_bits_mask,
             set_mideleg_lcofip,
@@ -657,6 +669,136 @@ def SID_SSCOFPMF_12B_SIP_LCOFIP_READ_WRITE():
             other_bits_after_set,
             assert_other_bits_unchanged,
             clear_sip,
-            restore_mideleg,
+            clear_mideleg_lcofip,
+        ],
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_08A_SCOUNTOVF_SHADOW_COPY_ENABLED():
+    """
+    Scenario 8a: scountovf[x] contains read-only shadow copies of mhpmeventx.OF bits
+    when mcounteren[x] or scounteren[x] is set.
+    """
+    # Counter 3 bit position in scountovf (bit 3)
+    counter3_bit = LoadImmediateStep(imm=1 << 3)
+    zero = LoadImmediateStep(imm=0)
+
+    # Enable counter 3 in both mcounteren and scounteren
+    enable_counter3_m = CsrWrite(csr_name="mcounteren", set_mask=1 << 3)
+    enable_counter3_s = CsrWrite(csr_name="scounteren", set_mask=1 << 3)
+
+    # Clear OF bit in mhpmevent3 first
+    of_mask = LoadImmediateStep(imm=1 << 63)
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
+    # Read scountovf and verify bit 3 is clear
+    read_scountovf_clear = CsrRead(csr_name="scountovf")
+    scountovf_bit3_clear = Arithmetic(op="and", src1=read_scountovf_clear, src2=counter3_bit)
+    assert_scountovf_clear = AssertEqual(src1=scountovf_bit3_clear, src2=zero)
+
+    # Set OF bit in mhpmevent3
+    set_of_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=1 << 63)
+
+    # Read mhpmevent3 to verify OF bit is set
+    read_mhpmevent3 = CsrRead(csr_name="mhpmevent3")
+    mhpmevent3_of = Arithmetic(op="and", src1=read_mhpmevent3, src2=of_mask)
+    of_bit_set = LoadImmediateStep(imm=1 << 63)
+    assert_of_set = AssertEqual(src1=mhpmevent3_of, src2=of_bit_set)
+
+    # Read scountovf and verify bit 3 reflects the OF bit
+    read_scountovf_set = CsrRead(csr_name="scountovf")
+    scountovf_bit3_set = Arithmetic(op="and", src1=read_scountovf_set, src2=counter3_bit)
+    assert_scountovf_shadow = AssertEqual(src1=scountovf_bit3_set, src2=counter3_bit)
+
+    # Cleanup: clear mhpmevent3 and restore counteren registers
+    clear_mhpmevent3_cleanup = CsrWrite(csr_name="mhpmevent3", value=0)
+    restore_mcounteren = CsrWrite(csr_name="mcounteren", value=0x0)
+    restore_scounteren = CsrWrite(csr_name="scounteren", value=0x0)
+
+    return TestScenario.from_steps(
+        id="8a",
+        name="SID_SSCOFPMF_08A_SCOUNTOVF_SHADOW_COPY_ENABLED",
+        description="scountovf[3] reflects mhpmevent3.OF when mcounteren[3] or scounteren[3] is set.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
+        steps=[
+            counter3_bit,
+            zero,
+            enable_counter3_m,
+            enable_counter3_s,
+            of_mask,
+            clear_mhpmevent3,
+            read_scountovf_clear,
+            scountovf_bit3_clear,
+            assert_scountovf_clear,
+            set_of_mhpmevent3,
+            read_mhpmevent3,
+            mhpmevent3_of,
+            of_bit_set,
+            assert_of_set,
+            read_scountovf_set,
+            scountovf_bit3_set,
+            assert_scountovf_shadow,
+            clear_mhpmevent3_cleanup,
+            restore_mcounteren,
+            restore_scounteren,
+        ],
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_08B_SCOUNTOVF_READ_ONLY_ZERO_DISABLED():
+    """
+    Scenario 8b: scountovf[x] reads zero when mcounteren[x] or scounteren[x] is cleared.
+
+    This test verifies that when mcounteren[x] and scounteren[x] are disabled,
+    scountovf[x] reads zero even if mhpmevent[x].OF is set.
+    """
+    # Counter 3 bit position in scountovf (bit 3)
+    counter3_bit = LoadImmediateStep(imm=8)
+    zero = LoadImmediateStep(imm=0)
+
+    # Disable counter 3 in mcounteren and scounteren
+    disable_counter3_m = CsrWrite(csr_name="mcounteren", value=0)
+    disable_counter3_s = CsrWrite(csr_name="scounteren", value=0)
+
+    # Set OF bit in mhpmevent3 (bit 63)
+    set_of_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=1 << 63)
+
+    # Read mhpmevent3 to verify OF bit is set
+    read_mhpmevent3 = CsrRead(csr_name="mhpmevent3")
+    of_mask = LoadImmediateStep(imm=1 << 63)
+    mhpmevent3_of = Arithmetic(op="and", src1=read_mhpmevent3, src2=of_mask)
+    of_bit_set = LoadImmediateStep(imm=1 << 63)
+    assert_of_set = AssertEqual(src1=mhpmevent3_of, src2=of_bit_set)
+
+    # Read scountovf - bit 3 should be ZERO (counteren is disabled)
+    read_scountovf = CsrRead(csr_name="scountovf")
+    scountovf_bit3 = Arithmetic(op="and", src1=read_scountovf, src2=counter3_bit)
+    assert_scountovf_zero = AssertEqual(src1=scountovf_bit3, src2=zero)
+
+    # Cleanup: clear mhpmevent3
+    clear_mhpmevent3_cleanup = CsrWrite(csr_name="mhpmevent3", value=0)
+
+    return TestScenario.from_steps(
+        id="8b",
+        name="SID_SSCOFPMF_08B_SCOUNTOVF_READ_ONLY_ZERO_DISABLED",
+        description="scountovf[3] reads zero when mcounteren[3] and scounteren[3] are disabled, even if mhpmevent3.OF is set.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        steps=[
+            counter3_bit,
+            zero,
+            disable_counter3_m,
+            disable_counter3_s,
+            set_of_mhpmevent3,
+            read_mhpmevent3,
+            of_mask,
+            mhpmevent3_of,
+            of_bit_set,
+            assert_of_set,
+            read_scountovf,
+            scountovf_bit3,
+            assert_scountovf_zero,
+            clear_mhpmevent3_cleanup,
         ],
     )
