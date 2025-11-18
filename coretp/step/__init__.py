@@ -3,6 +3,7 @@
 
 from .step import TestStep
 from .memory import Memory, CodePage, ModifyPte, ReadLeafPTE
+from .memory_attributes import QueryPMPSpace, QueryPMASpace
 
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
@@ -18,6 +19,8 @@ __all__ = [
     "CodePage",
     "ModifyPte",
     "ReadLeafPTE",
+    "QueryPMPSpace",
+    "QueryPMASpace",
     "Call",
     "TestStep",
     "Call",

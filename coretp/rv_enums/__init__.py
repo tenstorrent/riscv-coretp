@@ -7,6 +7,7 @@ from .privilege import PrivilegeMode
 from .instruction import Category, OperandType
 from .register import RegisterClass
 from .exception_cause import ExceptionCause
+from .memory_type import MemoryType
 
 __all__ = [
     "Xlen",
@@ -20,4 +21,5 @@ __all__ = [
     "OperandType",
     "RegisterClass",
     "ExceptionCause",
+    "MemoryType",
 ]
