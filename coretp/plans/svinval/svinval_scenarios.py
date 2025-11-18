@@ -20,6 +20,7 @@ from coretp.step import (
     ModifyPte,
     MemAccess,
     ReadLeafPTE,
+    WriteLeafPTE,
     Hart,
     HartExit,
 )
@@ -48,10 +49,7 @@ def SID_SVINVAL_01_02_opcode_coverage_S():
         id="1",
         name="SID_SVINVAL_01_opcode_coverage",
         description="SINVAL.VMA - All variants, SFENCE.W.INVAL, SFENCE.INVAL.IR opcode coverage",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.S]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
         steps=[
             sinval_vma_basic,
             sfence_w_inval,
@@ -60,6 +58,7 @@ def SID_SVINVAL_01_02_opcode_coverage_S():
             assert_success,
         ],
     )
+
 
 @svinval_scenario
 def SID_SVINVAL_01_02_opcode_coverage_U():
@@ -79,10 +78,7 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
         id="1",
         name="SID_SVINVAL_01_opcode_coverage",
         description="SINVAL.VMA - All variants, SFENCE.W.INVAL, SFENCE.INVAL.IR opcode coverage",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.U]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
         steps=[
             sfence_w_inval,
             sfence_inval_ir,
@@ -90,6 +86,7 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
             assert_success,
         ],
     )
+
 
 @svinval_scenario
 def SID_SVINVAL_03_invalidation_sequence_1():
@@ -104,11 +101,32 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
         modify=True,
     )
+    
+    # Random read to bring PTE into TLB
+    random_load = Load(memory=mem)
+    
+    # Exception check on random store (should fault - no W bit)
+    random_store_val = LoadImmediateStep(imm=0xDEAD)
+    random_store = Store(memory=mem, value=random_store_val)
+    assert_store_fault_1 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store])
+    
+    # Read PTE, set W bit to 1, write it back
     read_leaf_pte_1 = ReadLeafPTE(memory=mem)
-    mv_store_1 = Arithmetic(op="mv", src1=read_leaf_pte_1)
+    w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
+    pte_with_w = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
+    mv_store_pte = Arithmetic(op="mv", src1=pte_with_w)
+    write_leaf_pte = WriteLeafPTE(memory=mem)
+    
+    # Exception check on random store (should still fault - TLB has old PTE cached)
+    random_store_2 = Store(memory=mem, value=random_store_val)
+    assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
+    
+    read_leaf_pte_2 = ReadLeafPTE(memory=mem)
+    mv_store_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
 
     # 2. SFENCE.W.INVAL
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
@@ -117,29 +135,41 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     sinval_vma = MemAccess(op="sinval.vma", memory=mem)
     # 4. SFENCE.INVAL.IR
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
-    read_leaf_pte_2 = ReadLeafPTE(memory=mem)
+    
+    # Verify page table is properly invalidated with a store
+    verify_store = Store(memory=mem, value=random_store_val)
+    
+    read_leaf_pte_3 = ReadLeafPTE(memory=mem)
+    mv_store_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
 
-    mv_store_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
-
-    assert_not_equal = AssertNotEqual(src1=mv_store_1, src2=mv_store_2)
+    assert_not_equal = AssertNotEqual(src1=mv_store_pte, src2=mv_store_3)
 
     return TestScenario.from_steps(
         id="3",
         name="SID_SVINVAL_03_invalidation_sequence_1",
         description="SINVAL.VMA invalidation sequence-1 with PTE modification",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.S]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
         steps=[
             mem,
+            random_load,
+            random_store_val,
+            random_store,
+            assert_store_fault_1,
             read_leaf_pte_1,
-            mv_store_1,
+            w_bit_mask,
+            pte_with_w,
+            mv_store_pte,
+            write_leaf_pte,
+            random_store_2,
+            assert_store_fault_2,
+            read_leaf_pte_2,
+            mv_store_2,
             sfence_w_inval,
             sinval_vma,
             sfence_inval_ir,
-            read_leaf_pte_2,
-            mv_store_2,
+            verify_store,
+            read_leaf_pte_3,
+            mv_store_3,
             assert_not_equal,
         ],
     )
@@ -158,29 +188,64 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     mem1 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
         modify=True,
     )
     mem2 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
         modify=True,
     )
     mem3 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
         modify=True,
     )
 
-    # 1. Modify multiple PTEs
+    # Random reads to bring PTEs into TLB
+    random_load_1 = Load(memory=mem1)
+    random_load_2 = Load(memory=mem2)
+    random_load_3 = Load(memory=mem3)
+    
+    # Exception checks on random stores (should fault - no W bit)
+    random_store_val = LoadImmediateStep(imm=0xDEAD)
+    random_store_1 = Store(memory=mem1, value=random_store_val)
+    assert_store_fault_1 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1])
+    random_store_2 = Store(memory=mem2, value=random_store_val)
+    assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
+    random_store_3 = Store(memory=mem3, value=random_store_val)
+    assert_store_fault_3 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3])
+    
+    # Read PTEs, set W bit to 1, write them back
+    w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
+    
     read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
-    mv_store_1 = Arithmetic(op="mv", src1=read_leaf_pte_1)
+    pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
+    mv_store_pte_1 = Arithmetic(op="mv", src1=pte_with_w_1)
+    write_leaf_pte_1 = WriteLeafPTE(memory=mem1)
+    
     read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
-    mv_store_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
+    pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask)
+    mv_store_pte_2 = Arithmetic(op="mv", src1=pte_with_w_2)
+    write_leaf_pte_2 = WriteLeafPTE(memory=mem2)
+    
     read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
-    mv_store_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
+    pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask)
+    mv_store_pte_3 = Arithmetic(op="mv", src1=pte_with_w_3)
+    write_leaf_pte_3 = WriteLeafPTE(memory=mem3)
+    
+    # Exception checks on random stores (should still fault - TLB has old PTE cached)
+    random_store_1_2 = Store(memory=mem1, value=random_store_val)
+    assert_store_fault_1_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1_2])
+    random_store_2_2 = Store(memory=mem2, value=random_store_val)
+    assert_store_fault_2_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2_2])
+    random_store_3_2 = Store(memory=mem3, value=random_store_val)
+    assert_store_fault_3_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3_2])
 
     # 2. SFENCE.W.INVAL
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
@@ -192,6 +257,11 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
 
     # 4. SFENCE.INVAL.IR
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+    
+    # Verify page tables are properly invalidated with stores
+    verify_store_1 = Store(memory=mem1, value=random_store_val)
+    verify_store_2 = Store(memory=mem2, value=random_store_val)
+    verify_store_3 = Store(memory=mem3, value=random_store_val)
 
     # 5. Access all VAs
     post_read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
@@ -201,33 +271,56 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     post_read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
     post_mv_store_3 = Arithmetic(op="mv", src1=post_read_leaf_pte_3)
 
-    assert_not_equal_1 = AssertNotEqual(src1=mv_store_1, src2=post_mv_store_1)
-    assert_not_equal_2 = AssertNotEqual(src1=mv_store_2, src2=post_mv_store_2)
-    assert_not_equal_3 = AssertNotEqual(src1=mv_store_3, src2=post_mv_store_3)
+    assert_not_equal_1 = AssertNotEqual(src1=mv_store_pte_1, src2=post_mv_store_1)
+    assert_not_equal_2 = AssertNotEqual(src1=mv_store_pte_2, src2=post_mv_store_2)
+    assert_not_equal_3 = AssertNotEqual(src1=mv_store_pte_3, src2=post_mv_store_3)
 
     return TestScenario.from_steps(
         id="4",
         name="SID_SVINVAL_04_invalidation_sequence_2_multiple_vas",
         description="SINVAL.VMA invalidation sequence-2 with multiple VAs",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.S]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
         steps=[
             mem1,
             mem2,
             mem3,
+            random_load_1,
+            random_load_2,
+            random_load_3,
+            random_store_val,
+            random_store_1,
+            assert_store_fault_1,
+            random_store_2,
+            assert_store_fault_2,
+            random_store_3,
+            assert_store_fault_3,
+            w_bit_mask,
             read_leaf_pte_1,
-            mv_store_1,
+            pte_with_w_1,
+            mv_store_pte_1,
+            write_leaf_pte_1,
             read_leaf_pte_2,
-            mv_store_2,
+            pte_with_w_2,
+            mv_store_pte_2,
+            write_leaf_pte_2,
             read_leaf_pte_3,
-            mv_store_3,
+            pte_with_w_3,
+            mv_store_pte_3,
+            write_leaf_pte_3,
+            random_store_1_2,
+            assert_store_fault_1_2,
+            random_store_2_2,
+            assert_store_fault_2_2,
+            random_store_3_2,
+            assert_store_fault_3_2,
             sfence_w_inval,
             sinval_vma1,
             sinval_vma2,
             sinval_vma3,
             sfence_inval_ir,
+            verify_store_1,
+            verify_store_2,
+            verify_store_3,
             post_read_leaf_pte_1,
             post_mv_store_1,
             post_read_leaf_pte_2,
@@ -250,13 +343,29 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
         modify=True,
     )
 
-    # 1. Modify PTE
+    # Random read to bring PTE into TLB
+    random_load = Load(memory=mem)
+    
+    # Exception check on random store (should fault - no W bit)
+    random_store_val = LoadImmediateStep(imm=0xDEAD)
+    random_store = Store(memory=mem, value=random_store_val)
+    assert_store_fault_1 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store])
+    
+    # Read PTE, set W bit to 1, write it back
     read_leaf_pte = ReadLeafPTE(memory=mem)
-    mv_store = Arithmetic(op="mv", src1=read_leaf_pte)
+    w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
+    pte_with_w = Arithmetic(op="or", src1=read_leaf_pte, src2=w_bit_mask)
+    mv_store_pte = Arithmetic(op="mv", src1=pte_with_w)
+    write_leaf_pte = WriteLeafPTE(memory=mem)
+    
+    # Exception check on random store (should still fault - TLB has old PTE cached)
+    random_store_2 = Store(memory=mem, value=random_store_val)
+    assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
 
     # 2. SFENCE.W.INVAL followed by random ops
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
@@ -268,35 +377,47 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     # 4. Random ops followed by SFENCE.INVAL.IR
     random_arithmetic_2 = Arithmetic()
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+    
+    # Verify page table is properly invalidated with a store
+    verify_store = Store(memory=mem, value=random_store_val)
 
     # 5. Access VA1
     read_leaf_pte_2 = ReadLeafPTE(memory=mem)
     mv_store_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
 
-    assert_not_equal = AssertNotEqual(src1=mv_store, src2=mv_store_2)
+    assert_not_equal = AssertNotEqual(src1=mv_store_pte, src2=mv_store_2)
 
     return TestScenario.from_steps(
         id="5",
         name="SID_SVINVAL_05_non_consecutive_invalidation",
         description="SINVAL.VMA invalidation with non-consecutive instructions",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.S]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
         steps=[
             mem,
+            random_load,
+            random_store_val,
+            random_store,
+            assert_store_fault_1,
             read_leaf_pte,
-            mv_store,
+            w_bit_mask,
+            pte_with_w,
+            mv_store_pte,
+            write_leaf_pte,
+            random_store_2,
+            assert_store_fault_2,
             sfence_w_inval,
             random_arithmetic,
             sinval_vma,
             random_arithmetic_2,
             sfence_inval_ir,
+            verify_store,
             read_leaf_pte_2,
             mv_store_2,
             assert_not_equal,
         ],
     )
+
+
 @svinval_scenario
 def SID_SVINVAL_06_fault_in_usermode():
     """
@@ -316,10 +437,7 @@ def SID_SVINVAL_06_fault_in_usermode():
         id="6",
         name="SID_SVINVAL_06_fault_in_usermode",
         description="SINVAL.VMA in usermode should fault",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.U]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
         steps=[
             mem,
             assert_fault,
@@ -349,10 +467,7 @@ def SID_SVINVAL_07_fault_in_smode_with_tvm():
         id="7",
         name="SID_SVINVAL_07_fault_in_smode_with_tvm",
         description="SINVAL.VMA in S-mode when mstatus.TVM=1 should fault",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.S]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
         steps=[
             mem,
             set_tvm,
@@ -380,10 +495,7 @@ def SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir():
         id="8",
         name="SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir",
         description="SFENCE.W.INVAL/SFENCE.INVAL.IR should NOT fault in U-mode or S-mode with TVM=1",
-        env=TestEnvCfg(
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-            priv_modes=[PrivilegeMode.U, PrivilegeMode.S]
-        ),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
         steps=[
             set_tvm,
             sfence_w_inval_u,

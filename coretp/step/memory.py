@@ -89,12 +89,52 @@ class ModifyPte(TestStep):
 
 
 @dataclass(frozen=True)
+class ReadPTE(TestStep):
+    """
+    Represents a read PTE instruction in a test scenario.
+
+    :param memory: Memory to read PTE from
+    :param level: int level of PTE to read
+
+    """
+
+    memory: Optional[Memory] = None
+    level: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class WritePTE(TestStep):
+    """
+    Represents a write PTE instruction in a test scenario. t2 contains pte entry to write
+
+    :param memory: Memory to write PTE to
+    :param level: int level of PTE to write
+
+    """
+
+    memory: Optional[Memory] = None
+    level: Optional[int] = None
+
+
+@dataclass(frozen=True)
 class ReadLeafPTE(TestStep):
     """
     Represents a read leaf PTE instruction in a test scenario.
     Riescue to handle via jump to machine mode - return PTE entry as T2
 
     :param memory: Memory to read leaf PTE from
+
+    """
+
+    memory: Optional[Memory] = None
+
+
+@dataclass(frozen=True)
+class WriteLeafPTE(TestStep):
+    """
+    Represents a write leaf PTE instruction in a test scenario. t2 contains pte entry to write
+
+    :param memory: Memory to write leaf PTE to
 
     """
 
