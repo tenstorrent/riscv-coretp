@@ -45,6 +45,7 @@ class Memory(TestStep):
     base_pa: Optional[int] = None
     base_va: Optional[int] = None
     num_pages: Optional[int] = 1
+    or_mask: Optional[str] = None
     modify: bool = False
     needs_io: bool = False
 

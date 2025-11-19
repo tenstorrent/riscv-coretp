@@ -167,159 +167,160 @@ def SID_SVINVAL_03_invalidation_sequence_1():
         ],
     )
 
-# TODO: Re-enable once Riescue-C's Memory handling of VAs work
-# Requires: Force Set Bit (as Whisper ISS is direct mapped to 32 entries)
-# @svinval_scenario
-# def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
-#     """
-#     SINVAL.VMA invalidation sequence-2 with multiple VAs:
-#     1. Modify PTE of VA1:PA1, VA2:PA2, VA3:PA3 etc
-#     2. SFENCE.W.INVAL
-#     3. SINVAL.VMA_VA to all modified PTEs
-#     4. SFENCE.INVAL.IR
-#     5. access VA1, VA2, VA3 to see updated pte value
-#     """
-#     mem1 = Memory(
-#         size=0x1000,
-#         page_size=PageSize.SIZE_4K,
-#         flags=PageFlags.VALID | PageFlags.READ,
-#         exclude_flags=PageFlags.WRITE,
-#         modify=True,
-#     )
-#     mem2 = Memory(
-#         size=0x1000,
-#         page_size=PageSize.SIZE_4K,
-#         flags=PageFlags.VALID | PageFlags.READ,
-#         exclude_flags=PageFlags.WRITE,
-#         modify=True,
-#     )
-#     mem3 = Memory(
-#         size=0x1000,
-#         page_size=PageSize.SIZE_4K,
-#         flags=PageFlags.VALID | PageFlags.READ,
-#         exclude_flags=PageFlags.WRITE,
-#         modify=True,
-#     )
+@svinval_scenario
+def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
+    """
+    SINVAL.VMA invalidation sequence-2 with multiple VAs:
+    1. Modify PTE of VA1:PA1, VA2:PA2, VA3:PA3 etc
+    2. SFENCE.W.INVAL
+    3. SINVAL.VMA_VA to all modified PTEs
+    4. SFENCE.INVAL.IR
+    5. access VA1, VA2, VA3 to see updated pte value
+    """
+    mem1 = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
+        modify=True,
+        or_mask="0x1000"
+    )
+    mem2 = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
+        modify=True,
+        or_mask="0x2000"
+    )
+    mem3 = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ,
+        exclude_flags=PageFlags.WRITE,
+        modify=True,
+        or_mask="0x4000"
+    )
 
-#     # Random reads to bring PTEs into TLB
-#     random_load_1 = Load(memory=mem1)
-#     random_load_2 = Load(memory=mem2)
-#     random_load_3 = Load(memory=mem3)
+    # Random reads to bring PTEs into TLB
+    random_load_1 = Load(memory=mem1)
+    random_load_2 = Load(memory=mem2)
+    random_load_3 = Load(memory=mem3)
     
-#     # Exception checks on random stores (should fault - no W bit)
-#     random_store_val = LoadImmediateStep(imm=0xDEAD)
-#     random_store_1 = Store(memory=mem1, value=random_store_val)
-#     assert_store_fault_1 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1])
-#     random_store_2 = Store(memory=mem2, value=random_store_val)
-#     assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
-#     random_store_3 = Store(memory=mem3, value=random_store_val)
-#     assert_store_fault_3 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3])
+    # Exception checks on random stores (should fault - no W bit)
+    random_store_val = LoadImmediateStep(imm=0xDEAD)
+    random_store_1 = Store(memory=mem1, value=random_store_val)
+    assert_store_fault_1 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1])
+    random_store_2 = Store(memory=mem2, value=random_store_val)
+    assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
+    random_store_3 = Store(memory=mem3, value=random_store_val)
+    assert_store_fault_3 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3])
     
-#     # Read PTEs, set W bit to 1, write them back
-#     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
+    # Read PTEs, set W bit to 1, write them back
+    w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     
-#     read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
-#     hold_for_comparison_1 = Arithmetic(op="mv", src1=read_leaf_pte_1)
-#     pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
-#     write_leaf_pte_1 = WriteLeafPTE(memory=mem1, src=pte_with_w_1)
+    read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
+    hold_for_comparison_1 = Arithmetic(op="mv", src1=read_leaf_pte_1)
+    pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
+    write_leaf_pte_1 = WriteLeafPTE(memory=mem1, src=pte_with_w_1)
     
-#     read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
-#     hold_for_comparison_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
-#     pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask)
-#     write_leaf_pte_2 = WriteLeafPTE(memory=mem2, src=pte_with_w_2)
+    read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
+    hold_for_comparison_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
+    pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask)
+    write_leaf_pte_2 = WriteLeafPTE(memory=mem2, src=pte_with_w_2)
     
-#     read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
-#     hold_for_comparison_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
-#     pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask)
-#     write_leaf_pte_3 = WriteLeafPTE(memory=mem3, src=pte_with_w_3)
+    read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
+    hold_for_comparison_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
+    pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask)
+    write_leaf_pte_3 = WriteLeafPTE(memory=mem3, src=pte_with_w_3)
     
-#     # Exception checks on random stores (should still fault - TLB has old PTE cached)
-#     random_store_1_2 = Store(memory=mem1, value=random_store_val)
-#     assert_store_fault_1_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1_2])
-#     random_store_2_2 = Store(memory=mem2, value=random_store_val)
-#     assert_store_fault_2_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2_2])
-#     random_store_3_2 = Store(memory=mem3, value=random_store_val)
-#     assert_store_fault_3_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3_2])
+    # Exception checks on random stores (should still fault - TLB has old PTE cached)
+    random_store_1_2 = Store(memory=mem1, value=random_store_val)
+    assert_store_fault_1_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1_2])
+    random_store_2_2 = Store(memory=mem2, value=random_store_val)
+    assert_store_fault_2_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2_2])
+    random_store_3_2 = Store(memory=mem3, value=random_store_val)
+    assert_store_fault_3_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3_2])
 
-#     # 2. SFENCE.W.INVAL
-#     sfence_w_inval = Arithmetic(op="sfence.w.inval")
+    # 2. SFENCE.W.INVAL
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
 
-#     # 3. SINVAL.VMA for each VA
-#     sinval_vma1 = MemAccess(op="sinval.vma", memory=mem1, src2=0)
-#     sinval_vma2 = MemAccess(op="sinval.vma", memory=mem2, src2=0)
-#     sinval_vma3 = MemAccess(op="sinval.vma", memory=mem3, src2=0)
+    # 3. SINVAL.VMA for each VA
+    sinval_vma1 = MemAccess(op="sinval.vma", memory=mem1, src2=0)
+    sinval_vma2 = MemAccess(op="sinval.vma", memory=mem2, src2=0)
+    sinval_vma3 = MemAccess(op="sinval.vma", memory=mem3, src2=0)
 
-#     # 4. SFENCE.INVAL.IR
-#     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+    # 4. SFENCE.INVAL.IR
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
     
-#     # Verify page tables are properly invalidated with stores
-#     verify_store_1 = Store(memory=mem1, value=random_store_val)
-#     verify_store_2 = Store(memory=mem2, value=random_store_val)
-#     verify_store_3 = Store(memory=mem3, value=random_store_val)
+    # Verify page tables are properly invalidated with stores
+    verify_store_1 = Store(memory=mem1, value=random_store_val)
+    verify_store_2 = Store(memory=mem2, value=random_store_val)
+    verify_store_3 = Store(memory=mem3, value=random_store_val)
 
-#     # 5. Access all VAs
-#     post_read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
-#     post_mv_store_1 = Arithmetic(op="mv", src1=post_read_leaf_pte_1)
-#     post_read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
-#     post_mv_store_2 = Arithmetic(op="mv", src1=post_read_leaf_pte_2)
-#     post_read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
-#     post_mv_store_3 = Arithmetic(op="mv", src1=post_read_leaf_pte_3)
+    # 5. Access all VAs
+    post_read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
+    post_mv_store_1 = Arithmetic(op="mv", src1=post_read_leaf_pte_1)
+    post_read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
+    post_mv_store_2 = Arithmetic(op="mv", src1=post_read_leaf_pte_2)
+    post_read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
+    post_mv_store_3 = Arithmetic(op="mv", src1=post_read_leaf_pte_3)
 
-#     assert_not_equal_1 = AssertNotEqual(src1=hold_for_comparison_1, src2=post_mv_store_1)
-#     assert_not_equal_2 = AssertNotEqual(src1=hold_for_comparison_2, src2=post_mv_store_2)
-#     assert_not_equal_3 = AssertNotEqual(src1=hold_for_comparison_3, src2=post_mv_store_3)
+    assert_not_equal_1 = AssertNotEqual(src1=hold_for_comparison_1, src2=post_mv_store_1)
+    assert_not_equal_2 = AssertNotEqual(src1=hold_for_comparison_2, src2=post_mv_store_2)
+    assert_not_equal_3 = AssertNotEqual(src1=hold_for_comparison_3, src2=post_mv_store_3)
 
-#     return TestScenario.from_steps(
-#         id="4",
-#         name="SID_SVINVAL_04_invalidation_sequence_2_multiple_vas",
-#         description="SINVAL.VMA invalidation sequence-2 with multiple VAs",
-#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
-#         steps=[
-#             mem1,
-#             mem2,
-#             mem3,
-#             random_load_1,
-#             random_load_2,
-#             random_load_3,
-#             random_store_val,
-#             assert_store_fault_1,
-#             assert_store_fault_2,
-#             assert_store_fault_3,
-#             w_bit_mask,
-#             read_leaf_pte_1,
-#             hold_for_comparison_1,
-#             pte_with_w_1,
-#             write_leaf_pte_1,
-#             read_leaf_pte_2,
-#             hold_for_comparison_2,
-#             pte_with_w_2,
-#             write_leaf_pte_2,
-#             read_leaf_pte_3,
-#             hold_for_comparison_3,
-#             pte_with_w_3,
-#             write_leaf_pte_3,
-#             assert_store_fault_1_2,
-#             assert_store_fault_2_2,
-#             assert_store_fault_3_2,
-#             sfence_w_inval,
-#             sinval_vma1,
-#             sinval_vma2,
-#             sinval_vma3,
-#             sfence_inval_ir,
-#             verify_store_1,
-#             verify_store_2,
-#             verify_store_3,
-#             post_read_leaf_pte_1,
-#             post_mv_store_1,
-#             post_read_leaf_pte_2,
-#             post_mv_store_2,
-#             post_read_leaf_pte_3,
-#             post_mv_store_3,
-#             assert_not_equal_1,
-#             assert_not_equal_2,
-#             assert_not_equal_3,
-#         ],
-#     )
+    return TestScenario.from_steps(
+        id="4",
+        name="SID_SVINVAL_04_invalidation_sequence_2_multiple_vas",
+        description="SINVAL.VMA invalidation sequence-2 with multiple VAs",
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
+        steps=[
+            mem1,
+            mem2,
+            mem3,
+            random_load_1,
+            random_load_2,
+            random_load_3,
+            random_store_val,
+            assert_store_fault_1,
+            assert_store_fault_2,
+            assert_store_fault_3,
+            w_bit_mask,
+            read_leaf_pte_1,
+            hold_for_comparison_1,
+            pte_with_w_1,
+            write_leaf_pte_1,
+            read_leaf_pte_2,
+            hold_for_comparison_2,
+            pte_with_w_2,
+            write_leaf_pte_2,
+            read_leaf_pte_3,
+            hold_for_comparison_3,
+            pte_with_w_3,
+            write_leaf_pte_3,
+            assert_store_fault_1_2,
+            assert_store_fault_2_2,
+            assert_store_fault_3_2,
+            sfence_w_inval,
+            sinval_vma1,
+            sinval_vma2,
+            sinval_vma3,
+            sfence_inval_ir,
+            verify_store_1,
+            verify_store_2,
+            verify_store_3,
+            post_read_leaf_pte_1,
+            post_mv_store_1,
+            post_read_leaf_pte_2,
+            post_mv_store_2,
+            post_read_leaf_pte_3,
+            post_mv_store_3,
+            assert_not_equal_1,
+            assert_not_equal_2,
+            assert_not_equal_3,
+        ],
+    )
 
 
 @svinval_scenario
