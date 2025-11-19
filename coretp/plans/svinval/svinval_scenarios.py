@@ -36,7 +36,7 @@ def SID_SVINVAL_01_02_opcode_coverage_S():
     """
     # Test SINVAL.VMA variants (S-mode, various paging modes)
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
-    sinval_vma_basic = MemAccess(op="sinval.vma", memory=mem)
+    sinval_vma_basic = MemAccess(op="sinval.vma", memory=mem, src2=0)
     # Test SFENCE.W.INVAL and SFENCE.INVAL.IR (all privilege modes)
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
@@ -128,7 +128,7 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
 
     # 3. SINVAL.VMA
-    sinval_vma = MemAccess(op="sinval.vma", memory=mem)
+    sinval_vma = MemAccess(op="sinval.vma", memory=mem, src2=0)
     # 4. SFENCE.INVAL.IR
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
     
@@ -239,9 +239,9 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
 
     # 3. SINVAL.VMA for each VA
-    sinval_vma1 = MemAccess(op="sinval.vma", memory=mem1)
-    sinval_vma2 = MemAccess(op="sinval.vma", memory=mem2)
-    sinval_vma3 = MemAccess(op="sinval.vma", memory=mem3)
+    sinval_vma1 = MemAccess(op="sinval.vma", memory=mem1, src2=0)
+    sinval_vma2 = MemAccess(op="sinval.vma", memory=mem2, src2=0)
+    sinval_vma3 = MemAccess(op="sinval.vma", memory=mem3, src2=0)
 
     # 4. SFENCE.INVAL.IR
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
@@ -350,7 +350,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     random_arithmetic = Arithmetic()
 
     # 3. SINVAL.VMA
-    sinval_vma = MemAccess(op="sinval.vma", memory=mem)
+    sinval_vma = MemAccess(op="sinval.vma", memory=mem, src2=0)
 
     # 4. Random ops followed by SFENCE.INVAL.IR
     random_arithmetic_2 = Arithmetic()
@@ -405,7 +405,7 @@ def SID_SVINVAL_06_fault_in_usermode():
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
         modify=True,
     )
-    sinval_instr = MemAccess(op="sinval.vma", memory=mem)
+    sinval_instr = MemAccess(op="sinval.vma", memory=mem, src2=0)
     assert_fault = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sinval_instr])
 
     return TestScenario.from_steps(
@@ -435,7 +435,7 @@ def SID_SVINVAL_07_fault_in_smode_with_tvm():
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
         modify=True,
     )
-    sinval_instr = MemAccess(op="sinval.vma", memory=mem)
+    sinval_instr = MemAccess(op="sinval.vma", memory=mem, src2=0)
     assert_fault = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sinval_instr])
 
     return TestScenario.from_steps(
