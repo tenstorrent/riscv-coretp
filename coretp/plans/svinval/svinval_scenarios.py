@@ -105,22 +105,22 @@ def SID_SVINVAL_03_invalidation_sequence_1():
         exclude_flags=PageFlags.WRITE,
         modify=True,
     )
-    
+
     # Random read to bring PTE into TLB
     random_load = Load(memory=mem)
-    
+
     # Exception check on random store (should fault - no W bit)
     random_store_val = LoadImmediateStep(imm=0xDEAD)
     random_store = Store(memory=mem, value=random_store_val)
     assert_store_fault_1 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store])
-    
+
     # Read PTE, set W bit to 1, write it back
     read_leaf_pte_1 = ReadLeafPTE(memory=mem)
     hold_for_comparison = Arithmetic(op="mv", src1=read_leaf_pte_1)
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
     write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
-    
+
     # Exception check on random store (should still fault - TLB has old PTE cached)
     random_store_2 = Store(memory=mem, value=random_store_val)
     assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
@@ -132,10 +132,10 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     sinval_vma = MemAccess(op="sinval.vma", memory=mem, src2=0)
     # 4. SFENCE.INVAL.IR
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
-    
+
     # Verify page table is properly invalidated with a store
     verify_store = Store(memory=mem, value=random_store_val)
-    
+
     read_leaf_pte_3 = ReadLeafPTE(memory=mem)
     mv_store_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
 
@@ -167,6 +167,7 @@ def SID_SVINVAL_03_invalidation_sequence_1():
         ],
     )
 
+
 @svinval_scenario
 def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     """
@@ -177,36 +178,15 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     4. SFENCE.INVAL.IR
     5. access VA1, VA2, VA3 to see updated pte value
     """
-    mem1 = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,
-        exclude_flags=PageFlags.WRITE,
-        modify=True,
-        or_mask="0x1000"
-    )
-    mem2 = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,
-        exclude_flags=PageFlags.WRITE,
-        modify=True,
-        or_mask="0x2000"
-    )
-    mem3 = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ,
-        exclude_flags=PageFlags.WRITE,
-        modify=True,
-        or_mask="0x4000"
-    )
+    mem1 = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ, exclude_flags=PageFlags.WRITE, modify=True, or_mask="0x1000")
+    mem2 = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ, exclude_flags=PageFlags.WRITE, modify=True, or_mask="0x2000")
+    mem3 = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ, exclude_flags=PageFlags.WRITE, modify=True, or_mask="0x4000")
 
     # Random reads to bring PTEs into TLB
     random_load_1 = Load(memory=mem1)
     random_load_2 = Load(memory=mem2)
     random_load_3 = Load(memory=mem3)
-    
+
     # Exception checks on random stores (should fault - no W bit)
     random_store_val = LoadImmediateStep(imm=0xDEAD)
     random_store_1 = Store(memory=mem1, value=random_store_val)
@@ -215,25 +195,25 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
     random_store_3 = Store(memory=mem3, value=random_store_val)
     assert_store_fault_3 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3])
-    
+
     # Read PTEs, set W bit to 1, write them back
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
-    
+
     read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
     hold_for_comparison_1 = Arithmetic(op="mv", src1=read_leaf_pte_1)
     pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
     write_leaf_pte_1 = WriteLeafPTE(memory=mem1, src=pte_with_w_1)
-    
+
     read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
     hold_for_comparison_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
     pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask)
     write_leaf_pte_2 = WriteLeafPTE(memory=mem2, src=pte_with_w_2)
-    
+
     read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
     hold_for_comparison_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
     pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask)
     write_leaf_pte_3 = WriteLeafPTE(memory=mem3, src=pte_with_w_3)
-    
+
     # Exception checks on random stores (should still fault - TLB has old PTE cached)
     random_store_1_2 = Store(memory=mem1, value=random_store_val)
     assert_store_fault_1_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1_2])
@@ -252,7 +232,7 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
 
     # 4. SFENCE.INVAL.IR
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
-    
+
     # Verify page tables are properly invalidated with stores
     verify_store_1 = Store(memory=mem1, value=random_store_val)
     verify_store_2 = Store(memory=mem2, value=random_store_val)
@@ -339,19 +319,19 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
 
     # Random read to bring PTE into TLB
     random_load = Load(memory=mem)
-    
+
     # Exception check on random store (should fault - no W bit)
     random_store_val = LoadImmediateStep(imm=0xDEAD)
     random_store = Store(memory=mem, value=random_store_val)
     assert_store_fault_1 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store])
-    
+
     # Read PTE, set W bit to 1, write it back
     read_leaf_pte = ReadLeafPTE(memory=mem)
     hold_for_comparison = Arithmetic(op="mv", src1=read_leaf_pte)
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte, src2=w_bit_mask)
     write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
-    
+
     # Exception check on random store (should still fault - TLB has old PTE cached)
     random_store_2 = Store(memory=mem, value=random_store_val)
     assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
@@ -366,7 +346,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     # 4. Random ops followed by SFENCE.INVAL.IR
     random_arithmetic_2 = Arithmetic()
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
-    
+
     # Verify page table is properly invalidated with a store
     verify_store = Store(memory=mem, value=random_store_val)
 

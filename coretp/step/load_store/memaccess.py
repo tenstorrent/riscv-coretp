@@ -3,13 +3,11 @@
 
 
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Optional, Union
 from coretp.step.load_store import MemoryOp
 from coretp.step.memory import Memory
 from coretp.rv_enums import Extension
-from typing import Optional, Union
 from ..step import TestStep
-
 
 
 @dataclass(frozen=True)
