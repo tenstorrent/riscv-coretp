@@ -3,10 +3,11 @@
 
 
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Optional, Union
 from coretp.step.load_store import MemoryOp
 from coretp.step.memory import Memory
 from coretp.rv_enums import Extension
+from ..step import TestStep
 
 
 @dataclass(frozen=True)
@@ -30,4 +31,5 @@ class MemAccess(MemoryOp):
     memory: Optional[Memory] = None
     offset: int = 0
     op: Optional[str] = None
+    src2: Optional[Union[TestStep, int]] = None
     extension: Optional[Extension] = None

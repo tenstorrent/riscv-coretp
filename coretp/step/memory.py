@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
 from .step import TestStep
 from coretp.rv_enums import PageSize, PageFlags
@@ -45,6 +45,7 @@ class Memory(TestStep):
     base_pa: Optional[int] = None
     base_va: Optional[int] = None
     num_pages: Optional[int] = 1
+    or_mask: Optional[str] = None
     modify: bool = False
     needs_io: bool = False
 
@@ -89,6 +90,35 @@ class ModifyPte(TestStep):
 
 
 @dataclass(frozen=True)
+class ReadPTE(TestStep):
+    """
+    Represents a read PTE instruction in a test scenario.
+
+    :param memory: Memory to read PTE from
+    :param level: int level of PTE to read
+
+    """
+
+    memory: Optional[Memory] = None
+    level: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class WritePTE(TestStep):
+    """
+    Represents a write PTE instruction in a test scenario. t2 contains pte entry to write
+
+    :param memory: Memory to write PTE to
+    :param level: int level of PTE to write
+
+    """
+
+    memory: Optional[Memory] = None
+    level: Optional[int] = None
+    src: Optional[Union[TestStep, int]] = None
+
+
+@dataclass(frozen=True)
 class ReadLeafPTE(TestStep):
     """
     Represents a read leaf PTE instruction in a test scenario.
@@ -99,3 +129,16 @@ class ReadLeafPTE(TestStep):
     """
 
     memory: Optional[Memory] = None
+
+
+@dataclass(frozen=True)
+class WriteLeafPTE(TestStep):
+    """
+    Represents a write leaf PTE instruction in a test scenario. t2 contains pte entry to write
+
+    :param memory: Memory to write leaf PTE to
+
+    """
+
+    memory: Optional[Memory] = None
+    src: Optional[Union[TestStep, int]] = None
