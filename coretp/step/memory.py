@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
 from .step import TestStep
 from coretp.rv_enums import PageSize, PageFlags
@@ -114,6 +114,7 @@ class WritePTE(TestStep):
 
     memory: Optional[Memory] = None
     level: Optional[int] = None
+    src: Optional[Union[TestStep, int]] = None
 
 
 @dataclass(frozen=True)
@@ -139,3 +140,4 @@ class WriteLeafPTE(TestStep):
     """
 
     memory: Optional[Memory] = None
+    src: Optional[Union[TestStep, int]] = None

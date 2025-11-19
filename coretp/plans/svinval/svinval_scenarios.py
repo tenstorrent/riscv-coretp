@@ -118,15 +118,11 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     read_leaf_pte_1 = ReadLeafPTE(memory=mem)
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
-    mv_store_pte = Arithmetic(op="mv", src1=pte_with_w)
-    write_leaf_pte = WriteLeafPTE(memory=mem)
+    write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
     
     # Exception check on random store (should still fault - TLB has old PTE cached)
     random_store_2 = Store(memory=mem, value=random_store_val)
     assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
-    
-    read_leaf_pte_2 = ReadLeafPTE(memory=mem)
-    mv_store_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
 
     # 2. SFENCE.W.INVAL
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
@@ -142,7 +138,7 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     read_leaf_pte_3 = ReadLeafPTE(memory=mem)
     mv_store_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
 
-    assert_not_equal = AssertNotEqual(src1=mv_store_pte, src2=mv_store_3)
+    assert_not_equal = AssertNotEqual(src1=pte_with_w, src2=mv_store_3)
 
     return TestScenario.from_steps(
         id="3",
@@ -157,11 +153,8 @@ def SID_SVINVAL_03_invalidation_sequence_1():
             read_leaf_pte_1,
             w_bit_mask,
             pte_with_w,
-            mv_store_pte,
             write_leaf_pte,
             assert_store_fault_2,
-            read_leaf_pte_2,
-            mv_store_2,
             sfence_w_inval,
             sinval_vma,
             sfence_inval_ir,
@@ -224,18 +217,15 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     
     read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
     pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
-    mv_store_pte_1 = Arithmetic(op="mv", src1=pte_with_w_1)
-    write_leaf_pte_1 = WriteLeafPTE(memory=mem1)
+    write_leaf_pte_1 = WriteLeafPTE(memory=mem1, src=pte_with_w_1)
     
     read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
     pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask)
-    mv_store_pte_2 = Arithmetic(op="mv", src1=pte_with_w_2)
-    write_leaf_pte_2 = WriteLeafPTE(memory=mem2)
+    write_leaf_pte_2 = WriteLeafPTE(memory=mem2, src=pte_with_w_2)
     
     read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
     pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask)
-    mv_store_pte_3 = Arithmetic(op="mv", src1=pte_with_w_3)
-    write_leaf_pte_3 = WriteLeafPTE(memory=mem3)
+    write_leaf_pte_3 = WriteLeafPTE(memory=mem3, src=pte_with_w_3)
     
     # Exception checks on random stores (should still fault - TLB has old PTE cached)
     random_store_1_2 = Store(memory=mem1, value=random_store_val)
@@ -269,9 +259,9 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     post_read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
     post_mv_store_3 = Arithmetic(op="mv", src1=post_read_leaf_pte_3)
 
-    assert_not_equal_1 = AssertNotEqual(src1=mv_store_pte_1, src2=post_mv_store_1)
-    assert_not_equal_2 = AssertNotEqual(src1=mv_store_pte_2, src2=post_mv_store_2)
-    assert_not_equal_3 = AssertNotEqual(src1=mv_store_pte_3, src2=post_mv_store_3)
+    assert_not_equal_1 = AssertNotEqual(src1=pte_with_w_1, src2=post_mv_store_1)
+    assert_not_equal_2 = AssertNotEqual(src1=pte_with_w_2, src2=post_mv_store_2)
+    assert_not_equal_3 = AssertNotEqual(src1=pte_with_w_3, src2=post_mv_store_3)
 
     return TestScenario.from_steps(
         id="4",
@@ -292,15 +282,12 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
             w_bit_mask,
             read_leaf_pte_1,
             pte_with_w_1,
-            mv_store_pte_1,
             write_leaf_pte_1,
             read_leaf_pte_2,
             pte_with_w_2,
-            mv_store_pte_2,
             write_leaf_pte_2,
             read_leaf_pte_3,
             pte_with_w_3,
-            mv_store_pte_3,
             write_leaf_pte_3,
             assert_store_fault_1_2,
             assert_store_fault_2_2,
@@ -352,8 +339,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     read_leaf_pte = ReadLeafPTE(memory=mem)
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte, src2=w_bit_mask)
-    mv_store_pte = Arithmetic(op="mv", src1=pte_with_w)
-    write_leaf_pte = WriteLeafPTE(memory=mem)
+    write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
     
     # Exception check on random store (should still fault - TLB has old PTE cached)
     random_store_2 = Store(memory=mem, value=random_store_val)
@@ -377,7 +363,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     read_leaf_pte_2 = ReadLeafPTE(memory=mem)
     mv_store_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
 
-    assert_not_equal = AssertNotEqual(src1=mv_store_pte, src2=mv_store_2)
+    assert_not_equal = AssertNotEqual(src1=pte_with_w, src2=mv_store_2)
 
     return TestScenario.from_steps(
         id="5",
@@ -392,7 +378,6 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
             read_leaf_pte,
             w_bit_mask,
             pte_with_w,
-            mv_store_pte,
             write_leaf_pte,
             assert_store_fault_2,
             sfence_w_inval,
