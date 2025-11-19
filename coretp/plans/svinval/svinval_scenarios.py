@@ -116,6 +116,7 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     
     # Read PTE, set W bit to 1, write it back
     read_leaf_pte_1 = ReadLeafPTE(memory=mem)
+    hold_for_comparison = Arithmetic(op="mv", src1=read_leaf_pte_1)
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
     write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
@@ -138,7 +139,7 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     read_leaf_pte_3 = ReadLeafPTE(memory=mem)
     mv_store_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
 
-    assert_not_equal = AssertNotEqual(src1=pte_with_w, src2=mv_store_3)
+    assert_not_equal = AssertNotEqual(src1=hold_for_comparison, src2=mv_store_3)
 
     return TestScenario.from_steps(
         id="3",
@@ -151,6 +152,7 @@ def SID_SVINVAL_03_invalidation_sequence_1():
             random_store_val,
             assert_store_fault_1,
             read_leaf_pte_1,
+            hold_for_comparison,
             w_bit_mask,
             pte_with_w,
             write_leaf_pte,
@@ -216,14 +218,17 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     
     read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
+    hold_for_comparison_1 = Arithmetic(op="mv", src1=read_leaf_pte_1)
     pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
     write_leaf_pte_1 = WriteLeafPTE(memory=mem1, src=pte_with_w_1)
     
     read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
+    hold_for_comparison_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
     pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask)
     write_leaf_pte_2 = WriteLeafPTE(memory=mem2, src=pte_with_w_2)
     
     read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
+    hold_for_comparison_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
     pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask)
     write_leaf_pte_3 = WriteLeafPTE(memory=mem3, src=pte_with_w_3)
     
@@ -259,9 +264,9 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     post_read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
     post_mv_store_3 = Arithmetic(op="mv", src1=post_read_leaf_pte_3)
 
-    assert_not_equal_1 = AssertNotEqual(src1=pte_with_w_1, src2=post_mv_store_1)
-    assert_not_equal_2 = AssertNotEqual(src1=pte_with_w_2, src2=post_mv_store_2)
-    assert_not_equal_3 = AssertNotEqual(src1=pte_with_w_3, src2=post_mv_store_3)
+    assert_not_equal_1 = AssertNotEqual(src1=hold_for_comparison_1, src2=post_mv_store_1)
+    assert_not_equal_2 = AssertNotEqual(src1=hold_for_comparison_2, src2=post_mv_store_2)
+    assert_not_equal_3 = AssertNotEqual(src1=hold_for_comparison_3, src2=post_mv_store_3)
 
     return TestScenario.from_steps(
         id="4",
@@ -281,12 +286,15 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
             assert_store_fault_3,
             w_bit_mask,
             read_leaf_pte_1,
+            hold_for_comparison_1,
             pte_with_w_1,
             write_leaf_pte_1,
             read_leaf_pte_2,
+            hold_for_comparison_2,
             pte_with_w_2,
             write_leaf_pte_2,
             read_leaf_pte_3,
+            hold_for_comparison_3,
             pte_with_w_3,
             write_leaf_pte_3,
             assert_store_fault_1_2,
@@ -337,6 +345,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     
     # Read PTE, set W bit to 1, write it back
     read_leaf_pte = ReadLeafPTE(memory=mem)
+    hold_for_comparison = Arithmetic(op="mv", src1=read_leaf_pte)
     w_bit_mask = LoadImmediateStep(imm=1 << 2)  # W bit is bit 2
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte, src2=w_bit_mask)
     write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
@@ -363,7 +372,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     read_leaf_pte_2 = ReadLeafPTE(memory=mem)
     mv_store_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
 
-    assert_not_equal = AssertNotEqual(src1=pte_with_w, src2=mv_store_2)
+    assert_not_equal = AssertNotEqual(src1=hold_for_comparison, src2=mv_store_2)
 
     return TestScenario.from_steps(
         id="5",
@@ -376,6 +385,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
             random_store_val,
             assert_store_fault_1,
             read_leaf_pte,
+            hold_for_comparison,
             w_bit_mask,
             pte_with_w,
             write_leaf_pte,
