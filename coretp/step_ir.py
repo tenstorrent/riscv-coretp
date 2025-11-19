@@ -75,7 +75,7 @@ class _IrBuilder:
 
         # gather inputs from previously processed steps
         # FIXME: hack until StepIR classes are implemented and mapped from TestStep classes
-        for fname in ["inputs", "src1", "src2", "offset", "memory", "cause", "value", "target"]:
+        for fname in ["inputs", "src1", "src2", "offset", "memory", "cause", "value", "target", "src"]:
             val = getattr(step, fname, None)
             if val is not None:
                 if isinstance(val, list):
