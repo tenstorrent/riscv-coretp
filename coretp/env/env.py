@@ -18,8 +18,7 @@ class TestEnv:
     paging_mode: PagingMode = PagingMode.DISABLED
     page_size: frozenset[PageSize] = field(default_factory=lambda: frozenset({PageSize.SIZE_4K}))
     hart_count: int = 1
-    hypervisor: bool = False
-    virtualized: bool = False
+    virtualized: bool = False  #: Whether the test environment is virtualized or in bare metal (hypervisor) mode
     deleg_excp_to: PrivilegeMode = PrivilegeMode.M
 
     def get_max_va_bits(self) -> int:
