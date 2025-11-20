@@ -1132,24 +1132,25 @@ def SID_ZICBO_50_ZIC64B_01():
 
     # 4. Verify VA to VA+63 == 0
     # Check multiple locations within the cache line to ensure all bytes are zeroed
+    zero_value = LoadImmediateStep(imm=0)
     load_va_0 = Load(op="ld", memory=mem, offset=0)
-    assert_zero_0 = AssertEqual(src1=load_va_0, src2=0)
+    assert_zero_0 = AssertEqual(src1=load_va_0, src2=zero_value)
 
     load_va_32 = Load(op="ld", memory=mem, offset=32)
-    assert_zero_32 = AssertEqual(src1=load_va_32, src2=0)
+    assert_zero_32 = AssertEqual(src1=load_va_32, src2=zero_value)
 
     load_va_56 = Load(op="ld", memory=mem, offset=56)
-    assert_zero_56 = AssertEqual(src1=load_va_56, src2=0)
+    assert_zero_56 = AssertEqual(src1=load_va_56, src2=zero_value)
 
     # 5. Verify VA+64 is non-zero
     load_va_plus_64 = Load(op="ld", memory=mem, offset=64)
-    assert_not_zero = AssertNotEqual(src1=load_va_plus_64, src2=0)
+    assert_not_zero = AssertNotEqual(src1=load_va_plus_64, src2=zero_value)
 
     load_va_plus_64_2 = Load(op="ld", memory=mem, offset=96)
-    assert_not_zero_2 = AssertNotEqual(src1=load_va_plus_64_2, src2=0)
+    assert_not_zero_2 = AssertNotEqual(src1=load_va_plus_64_2, src2=zero_value)
 
     load_va_plus_64_3 = Load(op="ld", memory=mem, offset=120)
-    assert_not_zero_3 = AssertNotEqual(src1=load_va_plus_64_3, src2=0)
+    assert_not_zero_3 = AssertNotEqual(src1=load_va_plus_64_3, src2=zero_value)
 
     return TestScenario.from_steps(
         id="50",
@@ -1168,6 +1169,7 @@ def SID_ZICBO_50_ZIC64B_01():
             store_va_plus_64_2,
             store_va_plus_64_3,
             cbo_zero,
+            zero_value,
             load_va_0,
             assert_zero_0,
             load_va_32,
