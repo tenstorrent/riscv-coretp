@@ -68,7 +68,9 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
     """
     # Test SFENCE.W.INVAL and SFENCE.INVAL.IR (all privilege modes)
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
+    assert_sfence_w_inval = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_w_inval])
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+    assert_sfence_inval_ir = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_inval_ir])
 
     # Simple assertion to verify execution
     one = LoadImmediateStep(imm=1)
@@ -80,8 +82,8 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
         description="SINVAL.VMA - All variants, SFENCE.W.INVAL, SFENCE.INVAL.IR opcode coverage",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
         steps=[
-            sfence_w_inval,
-            sfence_inval_ir,
+            assert_sfence_w_inval,
+            assert_sfence_inval_ir,
             one,
             assert_success,
         ],
