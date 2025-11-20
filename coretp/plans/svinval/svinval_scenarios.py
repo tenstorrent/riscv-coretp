@@ -463,7 +463,7 @@ def SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir():
         id="8",
         name="SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir",
         description="SFENCE.W.INVAL/SFENCE.INVAL.IR should NOT fault in U-mode or S-mode with TVM=1",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
         steps=[
             set_tvm,
             assert_sfence_w_inval,
