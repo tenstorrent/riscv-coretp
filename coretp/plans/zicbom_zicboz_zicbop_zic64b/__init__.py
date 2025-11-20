@@ -5,10 +5,10 @@
 
 from ..test_plan_registry import new_test_plan
 
-zicbom_zicboz_zicbop_scenario = new_test_plan(
-    name="zicbom_zicboz_zicbop",
+zicbom_zicboz_zicbop_zic64b_scenario = new_test_plan(
+    name="zicbom_zicboz_zicbop_zic64b",
     description="Covers ZICBOM/ZICBOZ/ZICBOP cache management operation scenarios",
     tags=["zicbom", "zicboz", "zicbop", "cache", "cmo"],
 )
 
-__all__ = ["zicbom_zicboz_zicbop_scenario"]
+__all__ = ["zicbom_zicboz_zicbop_zic64b_scenario"]

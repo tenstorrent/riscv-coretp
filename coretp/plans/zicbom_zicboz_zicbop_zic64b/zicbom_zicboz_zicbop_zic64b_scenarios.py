@@ -6,10 +6,10 @@ from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, Exce
 from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, MemAccess, LoadImmediateStep
 from coretp.step import Hart, HartExit, Directive
 
-from . import zicbom_zicboz_zicbop_scenario
+from . import zicbom_zicboz_zicbop_zic64b_scenario
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_001():
     """
     Cover cbo.inval when menvcfg.CBIE = 00 from all lower privilege modes
@@ -43,7 +43,7 @@ def SID_ZICBO_001():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_002():
     """
     Cover cbo.inval when senvcfg.CBIE = 00 from U-mode
@@ -77,7 +77,7 @@ def SID_ZICBO_002():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_003():
     """
     Cover cbo.clean, cbo.flush when menvcfg.CBCFE = 00 from all lower privilege modes
@@ -115,7 +115,7 @@ def SID_ZICBO_003():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_004():
     """
     Cover cbo.clean, cbo.flush when senvcfg.CBCFE = 00 from U-mode
@@ -152,7 +152,7 @@ def SID_ZICBO_004():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_005():
     """
     Cover cbo.zero when menvcfg.CBZE = 00 from all lower privilege modes
@@ -186,7 +186,7 @@ def SID_ZICBO_005():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_006():
     """
     Cover cbo.zero when senvcfg.CBZE = 00 from U-mode
@@ -220,7 +220,7 @@ def SID_ZICBO_006():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_007():
     """
     Cover cbo.inval from VS,VU-mode when henvcfg.CBIE==00
@@ -254,7 +254,7 @@ def SID_ZICBO_007():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_008():
     """
     Cover cbo.clean, cbo.flush from VS,VU-mode when henvcfg.CBCFE==00
@@ -291,7 +291,7 @@ def SID_ZICBO_008():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_009():
     """
     Cover cbo.zero from VS,VU-mode when henvcfg.CBZE==00
@@ -325,7 +325,7 @@ def SID_ZICBO_009():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_010():
     """
     Cover cbo.inval from VU-mode when senvcfg.CBIE==00
@@ -359,7 +359,7 @@ def SID_ZICBO_010():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_011():
     """
     Cover cbo.clean, cbo.flush from VU-mode when senvcfg.CBCFE==00
@@ -396,7 +396,7 @@ def SID_ZICBO_011():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_012():
     """
     Cover cbo.zero from VU-mode when senvcfg.CBZE==00
@@ -430,7 +430,7 @@ def SID_ZICBO_012():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_013():
     """
     Ensure Zicbop instructions don't lead to any form of traps
@@ -461,7 +461,7 @@ def SID_ZICBO_013():
     )
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_014():
 #     """
 #     prefetch.i with imm[4:0] !=0 does not have any side effects
@@ -489,7 +489,7 @@ def SID_ZICBO_013():
 #     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_015():
     """
     prefetch.i with imm[11:5] !=0
@@ -516,7 +516,7 @@ def SID_ZICBO_015():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_016():
     """
     prefetch.r and prefetch.w with imm[11:0]
@@ -556,7 +556,7 @@ def SID_ZICBO_016():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_017():
     """
     Ensure Zicboz is executable at different privilege modes if relevant xENVCFG bits permit it
@@ -591,7 +591,7 @@ def SID_ZICBO_017():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_018():
     """
     Ensure all bytes of cache block are zeroed in UP
@@ -634,7 +634,7 @@ def SID_ZICBO_018():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_019():
     """
     Ensure all bytes of cache block are zeroed to right PA (VA aliasing)
@@ -690,7 +690,7 @@ def SID_ZICBO_019():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_020():
     """
     Ensure rs1 is adjusted cache block size and cbo.zero is performed
@@ -745,7 +745,7 @@ def SID_ZICBO_020():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_021():
     """
     Ensure all bytes of cache block are zeroed in MP
@@ -797,7 +797,7 @@ def SID_ZICBO_021():
     )
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_022():
     """
     Ensure cbo.zero is treated as a store for the exception purpose
@@ -841,94 +841,94 @@ def SID_ZICBO_022():
     )
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_023():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_024():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_025():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_026():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_027():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_028():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_029():
 #     # unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_030():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_031():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_032():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_033():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_034():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_035():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_036():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_037():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_038():
 #     # Unable to be tested
 #     return
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_039():
     """
     Ensure constrained loop into same address does not get affected by any zicbo instruction
@@ -976,42 +976,42 @@ def SID_ZICBO_039():
     )
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_040():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_041():
 #     # Unable to be tested
 #     return
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_042():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_043():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_044():
 #     # Unable to be tested
 #     return
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_045():
 #     # Unable to be tested
 #     return
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_047():
     mem = Memory(
         size=0x1000,
@@ -1048,13 +1048,13 @@ def SID_ZICBO_047():
     )
 
 
-# @zicbom_zicboz_zicbop_scenario
+# @zicbom_zicboz_zicbop_zic64b_scenario
 # def SID_ZICBO_048():
 #     # Unable to be tested
 #     return
 
 
-@zicbom_zicboz_zicbop_scenario
+@zicbom_zicboz_zicbop_zic64b_scenario
 def SID_ZICBO_049():
     """
     Execute LR to VA1:PA, Execute CMO to VA1 between LR and SC, Execute SC to VA1:PA, Verify CMO interaction with LR/SC
@@ -1096,5 +1096,91 @@ def SID_ZICBO_049():
             cmo_op,
             sc_op,
             load_verify,
+        ],
+    )
+
+
+@zicbom_zicboz_zicbop_zic64b_scenario
+def SID_ZICBO_50_ZIC64B_01():
+    """
+    Test CBO.ZERO with 64-byte cache line: Store to VA and VA+64, CBO.ZERO to VA, verify VA to VA+63 are zeroed and VA+64 remains non-zero
+    """
+    # Enable cache operations
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
+
+    # Set up memory region
+    mem = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
+    )
+
+    # 1. Store to VA non-zero value
+    store_va = Store(memory=mem, value=0xDEADBEEF, offset=0)
+    store_va_2 = Store(memory=mem, value=0xDEADBEEF, offset=32)
+    store_va_3 = Store(memory=mem, value=0xDEADBEEF, offset=56)
+
+    # 2. Store to VA+64 non-zero value
+    store_va_plus_64 = Store(memory=mem, value=0xCAFEBABE, offset=64)
+    store_va_plus_64_2 = Store(memory=mem, value=0xCAFEBABE, offset=96)
+    store_va_plus_64_3 = Store(memory=mem, value=0xCAFEBABE, offset=120)
+
+    # 3. CBO.ZERO to VA
+    cbo_zero = MemAccess(op="cbo.zero", memory=mem, offset=0)
+
+    # 4. Verify VA to VA+63 == 0
+    # Check multiple locations within the cache line to ensure all bytes are zeroed
+    zero_value = LoadImmediateStep(imm=0)
+    load_va_0 = Load(op="ld", memory=mem, offset=0)
+    assert_zero_0 = AssertEqual(src1=load_va_0, src2=zero_value)
+
+    load_va_32 = Load(op="ld", memory=mem, offset=32)
+    assert_zero_32 = AssertEqual(src1=load_va_32, src2=zero_value)
+
+    load_va_56 = Load(op="ld", memory=mem, offset=56)
+    assert_zero_56 = AssertEqual(src1=load_va_56, src2=zero_value)
+
+    # 5. Verify VA+64 is non-zero
+    load_va_plus_64 = Load(op="ld", memory=mem, offset=64)
+    assert_not_zero = AssertNotEqual(src1=load_va_plus_64, src2=zero_value)
+
+    load_va_plus_64_2 = Load(op="ld", memory=mem, offset=96)
+    assert_not_zero_2 = AssertNotEqual(src1=load_va_plus_64_2, src2=zero_value)
+
+    load_va_plus_64_3 = Load(op="ld", memory=mem, offset=120)
+    assert_not_zero_3 = AssertNotEqual(src1=load_va_plus_64_3, src2=zero_value)
+
+    return TestScenario.from_steps(
+        id="50",
+        name="SID_ZICBO_50_ZIC64B_01",
+        description="Test CBO.ZERO with 64-byte cache line: Store to VA and VA+64, CBO.ZERO to VA, verify VA to VA+63 are zeroed and VA+64 remains non-zero",
+        env=TestEnvCfg(),
+        steps=[
+            menvcfg_write,
+            senvcfg_write,
+            henvcfg_write,
+            mem,
+            store_va,
+            store_va_2,
+            store_va_3,
+            store_va_plus_64,
+            store_va_plus_64_2,
+            store_va_plus_64_3,
+            cbo_zero,
+            zero_value,
+            load_va_0,
+            assert_zero_0,
+            load_va_32,
+            assert_zero_32,
+            load_va_56,
+            assert_zero_56,
+            load_va_plus_64,
+            assert_not_zero,
+            load_va_plus_64_2,
+            assert_not_zero_2,
+            load_va_plus_64_3,
+            assert_not_zero_3,
         ],
     )
