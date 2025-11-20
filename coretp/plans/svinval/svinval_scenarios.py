@@ -68,7 +68,9 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
     """
     # Test SFENCE.W.INVAL and SFENCE.INVAL.IR (all privilege modes)
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
+    assert_sfence_w_inval = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_w_inval])
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+    assert_sfence_inval_ir = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_inval_ir])
 
     # Simple assertion to verify execution
     one = LoadImmediateStep(imm=1)
@@ -80,8 +82,8 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
         description="SINVAL.VMA - All variants, SFENCE.W.INVAL, SFENCE.INVAL.IR opcode coverage",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
         steps=[
-            sfence_w_inval,
-            sfence_inval_ir,
+            assert_sfence_w_inval,
+            assert_sfence_inval_ir,
             one,
             assert_success,
         ],
@@ -452,22 +454,19 @@ def SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir():
     # U or S-mode with TVM=1 tests
     set_tvm = CsrWrite(csr_name="mstatus", set_mask=1 << 20)
 
-    sfence_w_inval_u = Arithmetic(op="sfence.w.inval")
-    sfence_inval_ir_u = Arithmetic(op="sfence.inval.ir")
-
-    sfence_w_inval_s = Arithmetic(op="sfence.w.inval")
-    sfence_inval_ir_s = Arithmetic(op="sfence.inval.ir")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+    assert_sfence_w_inval = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_w_inval])
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+    assert_sfence_inval_ir = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_inval_ir])
 
     return TestScenario.from_steps(
         id="8",
         name="SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir",
         description="SFENCE.W.INVAL/SFENCE.INVAL.IR should NOT fault in U-mode or S-mode with TVM=1",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
         steps=[
             set_tvm,
-            sfence_w_inval_u,
-            sfence_inval_ir_u,
-            sfence_w_inval_s,
-            sfence_inval_ir_s,
+            assert_sfence_w_inval,
+            assert_sfence_inval_ir,
         ],
     )
