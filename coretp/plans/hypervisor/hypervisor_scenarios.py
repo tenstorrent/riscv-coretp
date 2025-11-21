@@ -5,7 +5,7 @@ from coretp import TestScenario, TestEnvCfg
 from coretp.rv_enums import PageSize, PageFlags, PrivilegeMode, ExceptionCause
 from coretp.step import Memory, Load, CodePage, Arithmetic, CsrWrite, CsrRead, AssertException, AssertEqual, AssertNotEqual, LoadImmediateStep, LoadAddressStep, Directive, System
 
-from . import hypervisor
+from . import hypervisor_scenario
 
 
 def test_env(priv: str, virtualized: bool = True) -> TestEnvCfg:
@@ -28,7 +28,7 @@ def test_env(priv: str, virtualized: bool = True) -> TestEnvCfg:
     )
 
 
-@hypervisor
+@hypervisor_scenario
 def SID_HPMODE_001():
     """
     HS mode works - start in HS mode and check registers exist
@@ -56,7 +56,7 @@ def SID_HPMODE_001():
     )
 
 
-@hypervisor
+@hypervisor_scenario
 def SID_HPCSR_001():
     """
     Make sure all H-CSRs are accessible from HS mode
@@ -70,8 +70,8 @@ def SID_HPCSR_001():
     for csr in h_csrs:
         val = CsrRead(csr_name=csr)
         steps.append(val)
-        steps.append(CsrWrite(csr_name=csr, value=val))
-        readback = CsrRead(csr_name=csr)
+        steps.append(CsrWrite(csr_name=csr, value=val, direct_write=True))
+        readback = CsrRead(csr_name=csr, direct_read=True)
         steps.append(readback)
         assert_equal = AssertEqual(src1=readback, src2=val)
         steps.append(assert_equal)
@@ -85,7 +85,7 @@ def SID_HPCSR_001():
     )
 
 
-@hypervisor
+@hypervisor_scenario
 def SID_HPCSR_002():
     """
     Make sure all H-CSRs are accessible from M mode
@@ -99,8 +99,8 @@ def SID_HPCSR_002():
     for csr in h_csrs:
         val = CsrRead(csr_name=csr)
         steps.append(val)
-        steps.append(CsrWrite(csr_name=csr, value=val))
-        readback = CsrRead(csr_name=csr)
+        steps.append(CsrWrite(csr_name=csr, value=val, direct_write=True))
+        readback = CsrRead(csr_name=csr, direct_read=True)
         steps.append(readback)
         assert_equal = AssertEqual(src1=readback, src2=val)
         steps.append(assert_equal)
@@ -114,7 +114,7 @@ def SID_HPCSR_002():
     )
 
 
-@hypervisor
+@hypervisor_scenario
 def SID_HPCSR_003():
     """
     Make sure accessing all H-CSRs takes an illegal trap in VS mode
@@ -138,7 +138,7 @@ def SID_HPCSR_003():
     )
 
 
-@hypervisor
+@hypervisor_scenario
 def SID_HPCSR_004():
     """
     Make sure accessing all H-CSRs takes an illegal trap in VU mode
@@ -162,7 +162,7 @@ def SID_HPCSR_004():
     )
 
 
-@hypervisor
+@hypervisor_scenario
 def SID_HPCSR_005():
     """
     Make sure accessing all H-CSRs takes an illegal trap in HU mode
@@ -193,7 +193,7 @@ def SID_HPCSR_005():
 # This requires some sort of branching instructions in the steps
 # SkipCondition or something.
 # ideally this would just compare the value of MISA after the write and the expected value
-# @hypervisor
+# @hypervisor_scenario
 # def SID_HPCSR_006():
 #     """
 #     Make sure accessing all H-CSRs takes an illegal trap in regular S or U modes
