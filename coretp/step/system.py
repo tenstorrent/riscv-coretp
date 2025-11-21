@@ -7,11 +7,11 @@ from .step import TestStep
 
 
 @dataclass(frozen=True)
-class Directive(TestStep):
+class System(TestStep):
     """
-    Represents the usage of a directive in a test scenario. Required string
+    Represents a system instruction in a test scenario. E.g. mret, ecall, etc.
 
-    :param directive: The directive to use
+    :param instruction: The instruction to use
     """
 
-    directive: str = ""
+    instruction: str = ""

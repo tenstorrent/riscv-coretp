@@ -281,7 +281,7 @@ def SID_ZICBO_008():
         id="8",
         name="SID_ZICBO_008",
         description="Cover cbo.clean, cbo.flush from VS,VU-mode when henvcfg.CBCFE==00",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
             mem,
             henvcfg_write,
@@ -350,7 +350,7 @@ def SID_ZICBO_010():
         id="10",
         name="SID_ZICBO_010",
         description="Cover cbo.inval from VU-mode when senvcfg.CBIE==00",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
             mem,
             senvcfg_write,

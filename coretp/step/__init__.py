@@ -11,6 +11,7 @@ from .csr import CsrWrite, CsrRead
 from .assertion import AssertEqual, AssertNotEqual, AssertException
 from .hart import Hart, HartExit
 from .directive import Directive
+from .system import System
 
 __all__ = [
     "TestStep",
@@ -37,4 +38,5 @@ __all__ = [
     "Hart",
     "HartExit",
     "Directive",
+    "System",
 ]
