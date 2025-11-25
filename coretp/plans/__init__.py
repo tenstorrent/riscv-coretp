@@ -18,5 +18,6 @@ from .zicbom_zicboz_zicbop_zic64b import zicbom_zicboz_zicbop_zic64b_scenarios
 from .zicntr_zihpm_sscounterenw import zicntr_zihpm_sscounterenw_scenarios
 from .sscofpmf import sscofpmf_scenarios
 from .hypervisor import hypervisor_scenarios
+from .ssu64xl import ssu64xl_scenarios
 
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]
