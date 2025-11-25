@@ -79,7 +79,7 @@ def SID_SSU64XL_02():
     Read vsstatus.uxl/hstatus/uxl, verify it is 0b10
     """
     # Read vsstatus.UXL field
-    vsstatus_val = CsrRead(csr_name="vsstatus", direct_read=True)
+    vsstatus_val = CsrRead(csr_name="vsstatus")
     # Extract UXL field (bits 33:32)
     uxl_mask = LoadImmediateStep(imm=0x300000000)  # bits 33:32
     uxl_extracted_vs = Arithmetic(op="and", src1=vsstatus_val, src2=uxl_mask)
@@ -91,7 +91,7 @@ def SID_SSU64XL_02():
     assert_uxl_vs = AssertEqual(src1=uxl_value_vs, src2=expected_uxl)
 
     # Read hstatus.UXL field (bits 33:32)
-    hstatus_val = CsrRead(csr_name="hstatus", direct_read=True)
+    hstatus_val = CsrRead(csr_name="hstatus")
     uxl_extracted_h = Arithmetic(op="and", src1=hstatus_val, src2=uxl_mask)
     uxl_value_h = Arithmetic(op="srl", src1=uxl_extracted_h, src2=shift_amount)
     # Verify it is also 0b10
