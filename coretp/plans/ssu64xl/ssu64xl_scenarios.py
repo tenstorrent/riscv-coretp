@@ -11,7 +11,7 @@ from . import ssu64xl_scenario
 def test_env_u_mode() -> TestEnvCfg:
     """Test environment with U-mode support"""
     return TestEnvCfg(
-        priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+        priv_modes=[PrivilegeMode.U],
         virtualized=[False],
     )
 
@@ -19,13 +19,13 @@ def test_env_u_mode() -> TestEnvCfg:
 def test_env_u_mode_virtualized() -> TestEnvCfg:
     """Test environment with U-mode support in virtualized mode"""
     return TestEnvCfg(
-        priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+        priv_modes=[PrivilegeMode.U],
         virtualized=[True],
     )
 
 
 @ssu64xl_scenario
-def SID_SIDU64XL_01():
+def SID_SSU64XL_01():
     """
     Covers WARL behaviour of MSTATUS.UXL/SSTATUS.UXL == 0b10 (Must have U mode)
     Read mstatus/sstatus.UXL 0b10, verify it is 0b10
@@ -53,7 +53,7 @@ def SID_SIDU64XL_01():
 
     return TestScenario.from_steps(
         id="1",
-        name="SID_SIDU64XL_01",
+        name="SID_SSU64XL_01",
         description="Covers WARL behaviour of MSTATUS.UXL/SSTATUS.UXL == 0b10 (Must have U mode)",
         env=test_env_u_mode(),
         steps=[
@@ -73,7 +73,7 @@ def SID_SIDU64XL_01():
 
 
 @ssu64xl_scenario
-def SID_SIDU64XL_02():
+def SID_SSU64XL_02():
     """
     Covers WARL behavior of VSSTATUS.UXL/HSTATUS.UXL == 0b10
     Read vsstatus.uxl/hstatus/uxl, verify it is 0b10
@@ -99,7 +99,7 @@ def SID_SIDU64XL_02():
 
     return TestScenario.from_steps(
         id="2",
-        name="SID_SIDU64XL_02",
+        name="SID_SSU64XL_02",
         description="Covers WARL behavior of VSSTATUS.UXL/HSTATUS.UXL == 0b10",
         env=test_env_u_mode_virtualized(),
         steps=[
@@ -119,7 +119,7 @@ def SID_SIDU64XL_02():
 
 
 @ssu64xl_scenario
-def SID_SIDU64XL_03():
+def SID_SSU64XL_03():
     """
     UXL bit check - underflow CSR and do 64 checks with SRLI,
     verifying LSB is bit 1 (except after the 64th bit, where it is bit 0)
@@ -148,7 +148,7 @@ def SID_SIDU64XL_03():
 
     return TestScenario.from_steps(
         id="3",
-        name="SID_SIDU64XL_03",
+        name="SID_SSU64XL_03",
         description="UXL bit check - underflow CSR and do 64 checks with SRLI, verifying LSB is bit 1",
         env=test_env_u_mode(),
         steps=steps,
