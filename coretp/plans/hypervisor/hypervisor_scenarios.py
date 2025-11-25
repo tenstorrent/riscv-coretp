@@ -3,7 +3,7 @@
 
 from coretp import TestScenario, TestEnvCfg
 from coretp.rv_enums import PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import Memory, Load, CodePage, Arithmetic, CsrWrite, CsrRead, AssertException, AssertEqual, AssertNotEqual, LoadImmediateStep, LoadAddressStep, Directive, System
+from coretp.step import Memory, Load, CodePage, Arithmetic, CsrWrite, CsrRead, AssertException, AssertEqual, AssertNotEqual, LoadImmediateStep, LoadAddressStep, Directive, System, Comment
 
 from . import hypervisor_scenario
 
@@ -34,7 +34,7 @@ def SID_HPMODE_001():
     HS mode works - start in HS mode and check registers exist
     """
 
-    # Verify we are in HS mode
+    comment_1 = Comment(comment="Verify we are in HS mode")
     misa_read = CsrRead(csr_name="misa")
     check_misa = AssertEqual(src1=misa_read, src2=0x80)
     hstatus_val = CsrRead(csr_name="hstatus")
@@ -47,6 +47,7 @@ def SID_HPMODE_001():
         description="MISA[7] Hypervisor extension is set; hstatus is readable and nonzero",
         env=test_env("S", virtualized=False),
         steps=[
+            comment_1,
             misa_read,
             check_misa,
             hstatus_val,
@@ -61,12 +62,15 @@ def SID_HPCSR_001():
     """
     Make sure all H-CSRs are accessible from HS mode
     """
-    # List of all hypervisor CSRs to test
+    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
+    steps.append(comment_1)
 
-    # For each CSR, read, write back, read again, and verify
+    comment_2 = Comment(comment="For each CSR, read, write back, read again, and verify")
+    steps.append(comment_2)
+
     for csr in h_csrs:
         val = CsrRead(csr_name=csr)
         steps.append(val)
@@ -90,12 +94,15 @@ def SID_HPCSR_002():
     """
     Make sure all H-CSRs are accessible from M mode
     """
-    # List of all hypervisor CSRs to test
+    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
+    steps.append(comment_1)
 
-    # For each CSR, read, write back, read again, and verify
+    comment_2 = Comment(comment="For each CSR, read, write back, read again, and verify")
+    steps.append(comment_2)
+
     for csr in h_csrs:
         val = CsrRead(csr_name=csr)
         steps.append(val)
@@ -119,12 +126,15 @@ def SID_HPCSR_003():
     """
     Make sure accessing all H-CSRs takes an illegal trap in VS mode
     """
-    # List of all hypervisor CSRs to test
+    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
+    steps.append(comment_1)
 
-    # For each CSR, attempt to access and expect illegal instruction exception
+    comment_2 = Comment(comment="For each CSR, attempt to access and expect illegal instruction exception")
+    steps.append(comment_2)
+
     for csr in h_csrs:
         assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[CsrRead(csr_name=csr, direct_read=True)])
         steps.append(assert_exception)
@@ -143,12 +153,15 @@ def SID_HPCSR_004():
     """
     Make sure accessing all H-CSRs takes an illegal trap in VU mode
     """
-    # List of all hypervisor CSRs to test
+    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
+    steps.append(comment_1)
 
-    # For each CSR, attempt to access and expect illegal instruction exception
+    comment_2 = Comment(comment="For each CSR, attempt to access and expect illegal instruction exception")
+    steps.append(comment_2)
+
     for csr in h_csrs:
         assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[CsrRead(csr_name=csr, direct_read=True)])
         steps.append(assert_exception)
@@ -167,12 +180,15 @@ def SID_HPCSR_005():
     """
     Make sure accessing all H-CSRs takes an illegal trap in HU mode
     """
-    # List of all hypervisor CSRs to test
+    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
+    steps.append(comment_1)
 
-    # For each CSR, attempt to access and expect illegal instruction exception
+    comment_2 = Comment(comment="For each CSR, attempt to access and expect illegal instruction exception")
+    steps.append(comment_2)
+
     for csr in h_csrs:
         assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[CsrRead(csr_name=csr, direct_read=True)])
         steps.append(assert_exception)

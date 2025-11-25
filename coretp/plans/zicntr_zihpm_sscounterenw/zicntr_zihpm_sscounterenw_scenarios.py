@@ -3,7 +3,7 @@
 
 from coretp import TestScenario, TestEnvCfg
 from coretp.rv_enums import PrivilegeMode, ExceptionCause
-from coretp.step import CsrWrite, CsrRead, AssertException
+from coretp.step import CsrWrite, CsrRead, AssertException, Comment
 
 from . import zicntr_zihpm_sscounterenw_scenario
 
@@ -39,7 +39,8 @@ def SID_XCOUNTEREN_01_U():
     steps.append(CsrWrite(csr_name="mcounteren", set_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", set_mask=all_fields_mask))
 
-    # Test each CSR in U mode - all should succeed
+    comment_1 = Comment(comment="Test each CSR in U mode - all should succeed")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
@@ -64,7 +65,8 @@ def SID_XCOUNTEREN_01_S():
     steps.append(CsrWrite(csr_name="mcounteren", set_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", set_mask=all_fields_mask))
 
-    # Test each CSR in S mode - all should succeed
+    comment_1 = Comment(comment="Test each CSR in S mode - all should succeed")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
@@ -89,7 +91,8 @@ def SID_XCOUNTEREN_01_M():
     steps.append(CsrWrite(csr_name="mcounteren", set_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", set_mask=all_fields_mask))
 
-    # Test each CSR in M mode - all should succeed
+    comment_1 = Comment(comment="Test each CSR in M mode - all should succeed")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
@@ -120,7 +123,8 @@ def SID_XCOUNTEREN_02_U():
     steps.append(CsrWrite(csr_name="mcounteren", set_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_fields_mask))
 
-    # Test each CSR in U mode - all should fail
+    comment_1 = Comment(comment="Test each CSR in U mode - all should fail")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
@@ -146,7 +150,8 @@ def SID_XCOUNTEREN_02_S():
     steps.append(CsrWrite(csr_name="mcounteren", set_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_fields_mask))
 
-    # Test each CSR in S mode - all should succeed
+    comment_1 = Comment(comment="Test each CSR in S mode - all should succeed")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
@@ -171,7 +176,8 @@ def SID_XCOUNTEREN_02_M():
     steps.append(CsrWrite(csr_name="mcounteren", set_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_fields_mask))
 
-    # Test each CSR in M mode - all should succeed
+    comment_1 = Comment(comment="Test each CSR in M mode - all should succeed")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         steps.append(CsrRead(csr_name=csr_name))
 
@@ -202,7 +208,8 @@ def SID_XCOUNTEREN_03_U():
     steps.append(CsrWrite(csr_name="mcounteren", clear_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", set_mask=all_fields_mask))
 
-    # Test each CSR in U mode - all should fail
+    comment_1 = Comment(comment="Test each CSR in U mode - all should fail")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
@@ -228,7 +235,8 @@ def SID_XCOUNTEREN_03_S():
     steps.append(CsrWrite(csr_name="mcounteren", clear_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", set_mask=all_fields_mask))
 
-    # Test each CSR in S mode - all should fail
+    comment_1 = Comment(comment="Test each CSR in S mode - all should fail")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         read_s = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_s]))
@@ -254,7 +262,8 @@ def SID_XCOUNTEREN_03_M():
     steps.append(CsrWrite(csr_name="mcounteren", clear_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", set_mask=all_fields_mask))
 
-    # Test each CSR in M mode - all should succeed
+    comment_1 = Comment(comment="Test each CSR in M mode - all should succeed")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         steps.append(CsrRead(csr_name=csr_name))
 
@@ -285,7 +294,8 @@ def SID_XCOUNTEREN_04_U():
     steps.append(CsrWrite(csr_name="mcounteren", clear_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_fields_mask))
 
-    # Test each CSR in U mode - all should fail
+    comment_1 = Comment(comment="Test each CSR in U mode - all should fail")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
@@ -311,7 +321,8 @@ def SID_XCOUNTEREN_04_S():
     steps.append(CsrWrite(csr_name="mcounteren", clear_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_fields_mask))
 
-    # Test each CSR in S mode - all should fail
+    comment_1 = Comment(comment="Test each CSR in S mode - all should fail")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         read_s = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_s]))
@@ -337,7 +348,8 @@ def SID_XCOUNTEREN_04_M():
     steps.append(CsrWrite(csr_name="mcounteren", clear_mask=all_fields_mask))
     steps.append(CsrWrite(csr_name="scounteren", clear_mask=all_fields_mask))
 
-    # Test each CSR in M mode - all should succeed
+    comment_1 = Comment(comment="Test each CSR in M mode - all should succeed")
+    steps.append(comment_1)
     for _, (_, csr_name) in COUNTER_FIELDS.items():
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
@@ -370,14 +382,17 @@ def SID_XCOUNTEREN_05_U():
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
-        # Set only this field in mcounteren, clear all others
+        comment_1 = Comment(comment="Set only this field in mcounteren, clear all others")
+        steps.append(comment_1)
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
-        # Test the enabled CSR in U mode - should fail
+        comment_2 = Comment(comment="Test the enabled CSR in U mode - should fail")
+        steps.append(comment_2)
         read_u = CsrRead(csr_name=csr_name, direct_read=True)
         steps.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_u]))
 
-        # Test other CSRs in U mode - should also fail
+        comment_3 = Comment(comment="Test other CSRs in U mode - should also fail")
+        steps.append(comment_3)
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
                 other_read_u = CsrRead(csr_name=other_csr_name, direct_read=True)
@@ -406,13 +421,16 @@ def SID_XCOUNTEREN_05_S():
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
-        # Set only this field in mcounteren, clear all others
+        comment_1 = Comment(comment="Set only this field in mcounteren, clear all others")
+        steps.append(comment_1)
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
-        # Test the enabled CSR in S mode - should succeed
+        comment_2 = Comment(comment="Test the enabled CSR in S mode - should succeed")
+        steps.append(comment_2)
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
-        # Test other CSRs in S mode - should fail
+        comment_3 = Comment(comment="Test other CSRs in S mode - should fail")
+        steps.append(comment_3)
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
                 other_read_s = CsrRead(csr_name=other_csr_name, direct_read=True)
@@ -439,13 +457,16 @@ def SID_XCOUNTEREN_05_M():
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
-        # Set only this field in mcounteren, clear all others
+        comment_1 = Comment(comment="Set only this field in mcounteren, clear all others")
+        steps.append(comment_1)
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
 
-        # Test the enabled CSR in M mode - should succeed
+        comment_2 = Comment(comment="Test the enabled CSR in M mode - should succeed")
+        steps.append(comment_2)
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
-        # Test other CSRs in M mode - should also succeed
+        comment_3 = Comment(comment="Test other CSRs in M mode - should also succeed")
+        steps.append(comment_3)
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
                 steps.append(CsrRead(csr_name=other_csr_name, direct_read=True))
@@ -478,14 +499,17 @@ def SID_XCOUNTEREN_06_U():
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
-        # Set only this field in both registers, clear all others
+        comment_1 = Comment(comment="Set only this field in both registers, clear all others")
+        steps.append(comment_1)
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
         steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
-        # Test the enabled CSR in U mode - should succeed
+        comment_2 = Comment(comment="Test the enabled CSR in U mode - should succeed")
+        steps.append(comment_2)
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
-        # Test other CSRs in U mode - should fail
+        comment_3 = Comment(comment="Test other CSRs in U mode - should fail")
+        steps.append(comment_3)
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
                 other_read_u = CsrRead(csr_name=other_csr_name, direct_read=True)
@@ -512,14 +536,17 @@ def SID_XCOUNTEREN_06_S():
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
-        # Set only this field in both registers, clear all others
+        comment_1 = Comment(comment="Set only this field in both registers, clear all others")
+        steps.append(comment_1)
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
         steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
-        # Test the enabled CSR in S mode - should succeed
+        comment_2 = Comment(comment="Test the enabled CSR in S mode - should succeed")
+        steps.append(comment_2)
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
-        # Test other CSRs in S mode - should fail
+        comment_3 = Comment(comment="Test other CSRs in S mode - should fail")
+        steps.append(comment_3)
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
                 other_read_s = CsrRead(csr_name=other_csr_name, direct_read=True)
@@ -545,14 +572,17 @@ def SID_XCOUNTEREN_06_M():
     for field_name, (bit_pos, csr_name) in COUNTER_FIELDS.items():
         field_bit = 1 << bit_pos
 
-        # Set only this field in both registers, clear all others
+        comment_1 = Comment(comment="Set only this field in both registers, clear all others")
+        steps.append(comment_1)
         steps.append(CsrWrite(csr_name="mcounteren", value=field_bit))
         steps.append(CsrWrite(csr_name="scounteren", value=field_bit))
 
-        # Test the enabled CSR in M mode - should succeed
+        comment_2 = Comment(comment="Test the enabled CSR in M mode - should succeed")
+        steps.append(comment_2)
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
 
-        # Test other CSRs in M mode - should also succeed
+        comment_3 = Comment(comment="Test other CSRs in M mode - should also succeed")
+        steps.append(comment_3)
         for other_field_name, (_, other_csr_name) in COUNTER_FIELDS.items():
             if other_field_name != field_name:
                 steps.append(CsrRead(csr_name=other_csr_name, direct_read=True))

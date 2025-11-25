@@ -12,6 +12,7 @@ from .assertion import AssertEqual, AssertNotEqual, AssertException
 from .hart import Hart, HartExit
 from .directive import Directive
 from .system import System
+from .comment import Comment
 
 __all__ = [
     "TestStep",
@@ -39,4 +40,5 @@ __all__ = [
     "HartExit",
     "Directive",
     "System",
+    "Comment",
 ]
