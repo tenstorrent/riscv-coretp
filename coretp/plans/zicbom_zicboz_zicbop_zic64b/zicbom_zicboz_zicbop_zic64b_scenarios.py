@@ -3,7 +3,7 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, MemAccess, LoadImmediateStep
+from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, MemAccess, LoadImmediateStep, Comment
 from coretp.step import Hart, HartExit, Directive
 
 from . import zicbom_zicboz_zicbop_zic64b_scenario
@@ -14,20 +14,21 @@ def SID_ZICBO_001():
     """
     Cover cbo.inval when menvcfg.CBIE = 00 from all lower privilege modes
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure menvcfg.CBIE = 00
-    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x30)  # Clear CBIE bits
+    comment_2 = Comment(comment="Configure menvcfg.CBIE = 00")
+    comment_3 = Comment(comment="Clear CBIE bits")
+    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x30)
 
-    # Execute cbo.inval instruction
+    comment_4 = Comment(comment="Execute cbo.inval instruction")
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
-    # Check for illegal instruction exception
+    comment_5 = Comment(comment="Check for illegal instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
@@ -36,8 +37,14 @@ def SID_ZICBO_001():
         description="Cover cbo.inval when menvcfg.CBIE = 00 from all lower privilege modes",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             menvcfg_write,
+            comment_4,
+            cbo_inval,
+            comment_5,
             assert_exception,
         ],
     )
@@ -48,20 +55,21 @@ def SID_ZICBO_002():
     """
     Cover cbo.inval when senvcfg.CBIE = 00 from U-mode
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure senvcfg.CBIE = 00
-    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x30)  # Clear CBIE bits
+    comment_2 = Comment(comment="Configure senvcfg.CBIE = 00")
+    comment_3 = Comment(comment="Clear CBIE bits")
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x30)
 
-    # Execute cbo.inval instruction
+    comment_4 = Comment(comment="Execute cbo.inval instruction")
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
-    # Check for illegal instruction exception
+    comment_5 = Comment(comment="Check for illegal instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
@@ -70,8 +78,14 @@ def SID_ZICBO_002():
         description="Cover cbo.inval when senvcfg.CBIE = 00 from U-mode",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             senvcfg_write,
+            comment_4,
+            cbo_inval,
+            comment_5,
             assert_exception,
         ],
     )
@@ -82,22 +96,23 @@ def SID_ZICBO_003():
     """
     Cover cbo.clean, cbo.flush when menvcfg.CBCFE = 00 from all lower privilege modes
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure menvcfg.CBCFE = 00
-    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x40)  # Clear CBCFE bits
+    comment_2 = Comment(comment="Configure menvcfg.CBCFE = 00")
+    comment_3 = Comment(comment="Clear CBCFE bits")
+    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x40)
 
-    # Execute cbo.clean instruction
+    comment_4 = Comment(comment="Execute cbo.clean instruction")
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
-    # Execute cbo.flush instruction
+    comment_5 = Comment(comment="Execute cbo.flush instruction")
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
-    # Check for illegal instruction exception for both
+    comment_6 = Comment(comment="Check for illegal instruction exception for both")
     assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
     assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
@@ -107,8 +122,16 @@ def SID_ZICBO_003():
         description="Cover cbo.clean, cbo.flush when menvcfg.CBCFE = 00 from all lower privilege modes",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             menvcfg_write,
+            comment_4,
+            cbo_clean,
+            comment_5,
+            cbo_flush,
+            comment_6,
             assert_exception_clean,
             assert_exception_flush,
         ],
@@ -120,21 +143,22 @@ def SID_ZICBO_004():
     """
     Cover cbo.clean, cbo.flush when senvcfg.CBCFE = 00 from U-mode
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure senvcfg.CBCFE = 00
-    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x40)  # Clear CBCFE bits
+    comment_2 = Comment(comment="Configure senvcfg.CBCFE = 00")
+    comment_3 = Comment(comment="Clear CBCFE bits")
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x40)
 
-    # Execute cbo.clean and cbo.flush instructions
+    comment_4 = Comment(comment="Execute cbo.clean and cbo.flush instructions")
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
-    # Check for illegal instruction exception
+    comment_5 = Comment(comment="Check for illegal instruction exception")
     assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
     assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
@@ -144,8 +168,15 @@ def SID_ZICBO_004():
         description="Cover cbo.clean, cbo.flush when senvcfg.CBCFE = 00 from U-mode",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             senvcfg_write,
+            comment_4,
+            cbo_clean,
+            cbo_flush,
+            comment_5,
             assert_exception_clean,
             assert_exception_flush,
         ],
@@ -157,20 +188,21 @@ def SID_ZICBO_005():
     """
     Cover cbo.zero when menvcfg.CBZE = 00 from all lower privilege modes
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure menvcfg.CBZE = 00
-    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x80)  # Clear CBZE bit
+    comment_2 = Comment(comment="Configure menvcfg.CBZE = 00")
+    comment_3 = Comment(comment="Clear CBZE bit")
+    menvcfg_write = CsrWrite(csr_name="menvcfg", clear_mask=0x80)
 
-    # Execute cbo.zero instruction
+    comment_4 = Comment(comment="Execute cbo.zero instruction")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Check for illegal instruction exception
+    comment_5 = Comment(comment="Check for illegal instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
@@ -179,8 +211,14 @@ def SID_ZICBO_005():
         description="Cover cbo.zero when menvcfg.CBZE = 00 from all lower privilege modes",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U, PrivilegeMode.S]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             menvcfg_write,
+            comment_4,
+            cbo_zero,
+            comment_5,
             assert_exception,
         ],
     )
@@ -191,20 +229,21 @@ def SID_ZICBO_006():
     """
     Cover cbo.zero when senvcfg.CBZE = 00 from U-mode
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure senvcfg.CBZE = 00
-    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x80)  # Clear CBZE bit
+    comment_2 = Comment(comment="Configure senvcfg.CBZE = 00")
+    comment_3 = Comment(comment="Clear CBZE bit")
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x80)
 
-    # Execute cbo.zero instruction
+    comment_4 = Comment(comment="Execute cbo.zero instruction")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Check for illegal instruction exception
+    comment_5 = Comment(comment="Check for illegal instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
@@ -213,8 +252,14 @@ def SID_ZICBO_006():
         description="Cover cbo.zero when senvcfg.CBZE = 00 from U-mode",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             senvcfg_write,
+            comment_4,
+            cbo_zero,
+            comment_5,
             assert_exception,
         ],
     )
@@ -225,20 +270,21 @@ def SID_ZICBO_007():
     """
     Cover cbo.inval from VS,VU-mode when henvcfg.CBIE==00
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure henvcfg.CBIE = 00
-    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x30)  # Clear CBIE bits
+    comment_2 = Comment(comment="Configure henvcfg.CBIE = 00")
+    comment_3 = Comment(comment="Clear CBIE bits")
+    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x30)
 
-    # Execute cbo.inval instruction
+    comment_4 = Comment(comment="Execute cbo.inval instruction")
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
-    # Check for virtual instruction exception
+    comment_5 = Comment(comment="Check for virtual instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
@@ -247,8 +293,14 @@ def SID_ZICBO_007():
         description="Cover cbo.inval from VS,VU-mode when henvcfg.CBIE==00",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             henvcfg_write,
+            comment_4,
+            cbo_inval,
+            comment_5,
             assert_exception,
         ],
     )
@@ -259,21 +311,22 @@ def SID_ZICBO_008():
     """
     Cover cbo.clean, cbo.flush from VS,VU-mode when henvcfg.CBCFE==00
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure henvcfg.CBCFE = 00
-    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x40)  # Clear CBCFE bits
+    comment_2 = Comment(comment="Configure henvcfg.CBCFE = 00")
+    comment_3 = Comment(comment="Clear CBCFE bits")
+    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x40)
 
-    # Execute cbo.clean and cbo.flush instructions
+    comment_4 = Comment(comment="Execute cbo.clean and cbo.flush instructions")
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
-    # Check for virtual instruction exception
+    comment_5 = Comment(comment="Check for virtual instruction exception")
     assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
     assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
@@ -283,8 +336,15 @@ def SID_ZICBO_008():
         description="Cover cbo.clean, cbo.flush from VS,VU-mode when henvcfg.CBCFE==00",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             henvcfg_write,
+            comment_4,
+            cbo_clean,
+            cbo_flush,
+            comment_5,
             assert_exception_clean,
             assert_exception_flush,
         ],
@@ -296,20 +356,21 @@ def SID_ZICBO_009():
     """
     Cover cbo.zero from VS,VU-mode when henvcfg.CBZE==00
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure henvcfg.CBZE = 00
-    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x80)  # Clear CBZE bit
+    comment_2 = Comment(comment="Configure henvcfg.CBZE = 00")
+    comment_3 = Comment(comment="Clear CBZE bit")
+    henvcfg_write = CsrWrite(csr_name="henvcfg", clear_mask=0x80)
 
-    # Execute cbo.zero instruction
+    comment_4 = Comment(comment="Execute cbo.zero instruction")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Check for virtual instruction exception
+    comment_5 = Comment(comment="Check for virtual instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
@@ -318,8 +379,14 @@ def SID_ZICBO_009():
         description="Cover cbo.zero from VS,VU-mode when henvcfg.CBZE==00",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             henvcfg_write,
+            comment_4,
+            cbo_zero,
+            comment_5,
             assert_exception,
         ],
     )
@@ -330,20 +397,21 @@ def SID_ZICBO_010():
     """
     Cover cbo.inval from VU-mode when senvcfg.CBIE==00
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure senvcfg.CBIE = 00
-    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x30)  # Clear CBIE bits
+    comment_2 = Comment(comment="Configure senvcfg.CBIE = 00")
+    comment_3 = Comment(comment="Clear CBIE bits")
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x30)
 
-    # Execute cbo.inval instruction
+    comment_4 = Comment(comment="Execute cbo.inval instruction")
     cbo_inval = MemAccess(op="cbo.inval", memory=mem)
 
-    # Check for virtual instruction exception
+    comment_5 = Comment(comment="Check for virtual instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_inval])
 
     return TestScenario.from_steps(
@@ -352,8 +420,14 @@ def SID_ZICBO_010():
         description="Cover cbo.inval from VU-mode when senvcfg.CBIE==00",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             senvcfg_write,
+            comment_4,
+            cbo_inval,
+            comment_5,
             assert_exception,
         ],
     )
@@ -364,21 +438,22 @@ def SID_ZICBO_011():
     """
     Cover cbo.clean, cbo.flush from VU-mode when senvcfg.CBCFE==00
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure senvcfg.CBCFE = 00
-    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x40)  # Clear CBCFE bits
+    comment_2 = Comment(comment="Configure senvcfg.CBCFE = 00")
+    comment_3 = Comment(comment="Clear CBCFE bits")
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x40)
 
-    # Execute cbo.clean and cbo.flush instructions
+    comment_4 = Comment(comment="Execute cbo.clean and cbo.flush instructions")
     cbo_clean = MemAccess(op="cbo.clean", memory=mem)
     cbo_flush = MemAccess(op="cbo.flush", memory=mem)
 
-    # Check for virtual instruction exception
+    comment_5 = Comment(comment="Check for virtual instruction exception")
     assert_exception_clean = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_clean])
     assert_exception_flush = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_flush])
 
@@ -388,8 +463,15 @@ def SID_ZICBO_011():
         description="Cover cbo.clean, cbo.flush from VU-mode when senvcfg.CBCFE==00",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             senvcfg_write,
+            comment_4,
+            cbo_clean,
+            cbo_flush,
+            comment_5,
             assert_exception_clean,
             assert_exception_flush,
         ],
@@ -401,20 +483,21 @@ def SID_ZICBO_012():
     """
     Cover cbo.zero from VU-mode when senvcfg.CBZE==00
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure senvcfg.CBZE = 00
-    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x80)  # Clear CBZE bit
+    comment_2 = Comment(comment="Configure senvcfg.CBZE = 00")
+    comment_3 = Comment(comment="Clear CBZE bit")
+    senvcfg_write = CsrWrite(csr_name="senvcfg", clear_mask=0x80)
 
-    # Execute cbo.zero instruction
+    comment_4 = Comment(comment="Execute cbo.zero instruction")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Check for virtual instruction exception
+    comment_5 = Comment(comment="Check for virtual instruction exception")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[cbo_zero])
 
     return TestScenario.from_steps(
@@ -423,8 +506,14 @@ def SID_ZICBO_012():
         description="Cover cbo.zero from VU-mode when senvcfg.CBZE==00",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             senvcfg_write,
+            comment_4,
+            cbo_zero,
+            comment_5,
             assert_exception,
         ],
     )
@@ -435,14 +524,14 @@ def SID_ZICBO_013():
     """
     Ensure Zicbop instructions don't lead to any form of traps
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Execute prefetch instructions (these should not trap)
+    comment_2 = Comment(comment="Execute prefetch instructions (these should not trap)")
     prefetch_i = MemAccess(op="prefetch.i", memory=mem)
     prefetch_r = MemAccess(op="prefetch.r", memory=mem)
     prefetch_w = MemAccess(op="prefetch.w", memory=mem)
@@ -453,7 +542,9 @@ def SID_ZICBO_013():
         description="Ensure Zicbop instructions don't lead to any form of traps",
         env=TestEnvCfg(),
         steps=[
+            comment_1,
             mem,
+            comment_2,
             prefetch_i,
             prefetch_r,
             prefetch_w,
@@ -494,15 +585,16 @@ def SID_ZICBO_015():
     """
     prefetch.i with imm[11:5] !=0
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Execute prefetch.i with non-zero imm[11:5]
-    prefetch_i = MemAccess(op="prefetch.i", memory=mem, offset=0x7E0)  # imm[11:5] != 0
+    comment_2 = Comment(comment="Execute prefetch.i with non-zero imm[11:5]")
+    comment_3 = Comment(comment="imm[11:5] != 0")
+    prefetch_i = MemAccess(op="prefetch.i", memory=mem, offset=0x7E0)
 
     return TestScenario.from_steps(
         id="15",
@@ -510,7 +602,10 @@ def SID_ZICBO_015():
         description="prefetch.i with imm[11:5] !=0",
         env=TestEnvCfg(),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             prefetch_i,
         ],
     )
@@ -521,23 +616,23 @@ def SID_ZICBO_016():
     """
     prefetch.r and prefetch.w with imm[11:0]
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Execute prefetch.r and prefetch.w with various imm values
+    comment_2 = Comment(comment="Execute prefetch.r and prefetch.w with various imm values")
     prefetch_r_0 = MemAccess(op="prefetch.r", memory=mem, offset=0x0)
     prefetch_r_1 = MemAccess(op="prefetch.r", memory=mem, offset=0x7E0)
-    # prefetch_r_2 = MemAccess(op="prefetch.r", memory=mem, offset=0x1F)
-    # NOTE: compilers will fail out on imm[11:0] !=0, so unfortunately this test is not executable
+    comment_3 = Comment(comment='prefetch_r_2 = MemAccess(op="prefetch.r", memory=mem, offset=0x1F)')
+    comment_4 = Comment(comment="NOTE: compilers will fail out on imm[11:0] !=0, so unfortunately this test is not executable")
 
     prefetch_w_0 = MemAccess(op="prefetch.w", memory=mem, offset=0x0)
     prefetch_w_1 = MemAccess(op="prefetch.w", memory=mem, offset=0x7E0)
-    # prefetch_w_2 = MemAccess(op="prefetch.w", memory=mem, offset=0x1F)
-    # NOTE: compilers will fail out on imm[11:0] !=0, so unfortunately this test is not executable
+    comment_5 = Comment(comment='prefetch_w_2 = MemAccess(op="prefetch.w", memory=mem, offset=0x1F)')
+    comment_6 = Comment(comment="NOTE: compilers will fail out on imm[11:0] !=0, so unfortunately this test is not executable")
 
     return TestScenario.from_steps(
         id="16",
@@ -545,13 +640,17 @@ def SID_ZICBO_016():
         description="prefetch.r and prefetch.w with imm[11:0]",
         env=TestEnvCfg(),
         steps=[
+            comment_1,
             mem,
+            comment_2,
             prefetch_r_0,
             prefetch_r_1,
-            # prefetch_r_2,
+            comment_3,
+            comment_4,
             prefetch_w_0,
             prefetch_w_1,
-            # prefetch_w_2,
+            comment_5,
+            comment_6,
         ],
     )
 
@@ -561,19 +660,22 @@ def SID_ZICBO_017():
     """
     Ensure Zicboz is executable at different privilege modes if relevant xENVCFG bits permit it
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Configure xENVCFG bits to permit execution
-    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0x80)  # Set CBZE bit
-    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0x80)  # Set CBZE bit
-    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0x80)  # Set CBZE bit
+    comment_2 = Comment(comment="Configure xENVCFG bits to permit execution")
+    comment_3 = Comment(comment="Set CBZE bit")
+    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0x80)
+    comment_4 = Comment(comment="Set CBZE bit")
+    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0x80)
+    comment_5 = Comment(comment="Set CBZE bit")
+    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0x80)
 
-    # Execute cbo.zero instruction
+    comment_6 = Comment(comment="Execute cbo.zero instruction")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
     return TestScenario.from_steps(
@@ -582,10 +684,16 @@ def SID_ZICBO_017():
         description="Ensure Zicboz is executable at different privilege modes if relevant xENVCFG bits permit it",
         env=TestEnvCfg(),
         steps=[
+            comment_1,
             mem,
+            comment_2,
+            comment_3,
             menvcfg_write,
+            comment_4,
             senvcfg_write,
+            comment_5,
             henvcfg_write,
+            comment_6,
             cbo_zero,
         ],
     )
@@ -599,20 +707,20 @@ def SID_ZICBO_018():
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Store data to memory
+    comment_2 = Comment(comment="Store data to memory")
     store_data = Store(memory=mem, value=0xDEADBEEF, offset=0)
 
-    # Execute cbo.zero
+    comment_3 = Comment(comment="Execute cbo.zero")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Read back and verify zeros
+    comment_4 = Comment(comment="Read back and verify zeros")
     load_verify = Load(op="lw", memory=mem, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
 
@@ -625,9 +733,13 @@ def SID_ZICBO_018():
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
+            comment_1,
             mem,
+            comment_2,
             store_data,
+            comment_3,
             cbo_zero,
+            comment_4,
             load_verify,
             assert_zero,
         ],
@@ -643,27 +755,29 @@ def SID_ZICBO_019():
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
-    # Set up memory regions for aliasing
+    comment_1 = Comment(comment="Set up memory regions for aliasing")
     mem_va1 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        base_pa=0x10000,  # Same physical address
+        # Same physical address
+        base_pa=0x10000,
     )
     mem_va2 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        base_pa=0x10000,  # Same physical address, different VA
+        # Same physical address, different VA
+        base_pa=0x10000,
     )
 
-    # Store data to VA1
+    comment_4 = Comment(comment="Store data to VA1")
     store_data = Store(memory=mem_va1, value=0xDEADBEEF, offset=0)
 
-    # Execute cbo.zero to VA1
+    comment_5 = Comment(comment="Execute cbo.zero to VA1")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem_va1)
 
-    # Read back from both VAs and verify zeros
+    comment_6 = Comment(comment="Read back from both VAs and verify zeros")
     load_va1 = Load(op="lw", memory=mem_va1, offset=0)
     load_va2 = Load(op="lw", memory=mem_va2, offset=0)
     assert_zero_va1 = AssertEqual(src1=load_va1, src2=0)
@@ -678,10 +792,14 @@ def SID_ZICBO_019():
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
+            comment_1,
             mem_va1,
             mem_va2,
+            comment_4,
             store_data,
+            comment_5,
             cbo_zero,
+            comment_6,
             load_va1,
             load_va2,
             assert_zero_va1,
@@ -698,27 +816,31 @@ def SID_ZICBO_020():
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
-    # Set up memory regions for aliasing
+    comment_1 = Comment(comment="Set up memory regions for aliasing")
+    comment_2 = Comment(comment="Same physical address")
     mem_va1 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        base_pa=0x10000,  # Same physical address
+        base_pa=0x10000,
     )
+    comment_3 = Comment(comment="Same physical address, different VA")
     mem_va2 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        base_pa=0x10000,  # Same physical address, different VA
+        base_pa=0x10000,
     )
 
-    # Store data to memory
-    store_data = Store(memory=mem_va1, value=0xDEADBEEF, offset=0x1)  # Unaligned offset
+    comment_4 = Comment(comment="Store data to memory")
+    comment_5 = Comment(comment="Unaligned offset")
+    store_data = Store(memory=mem_va1, value=0xDEADBEEF, offset=0x1)
 
-    # Execute cbo.zero with unaligned address
-    cbo_zero = MemAccess(op="cbo.zero", memory=mem_va1)  # Unaligned address
+    comment_6 = Comment(comment="Execute cbo.zero with unaligned address")
+    comment_7 = Comment(comment="Unaligned address")
+    cbo_zero = MemAccess(op="cbo.zero", memory=mem_va1)
 
-    # Read back and verify zeros (should be aligned to cache block boundary)
+    comment_8 = Comment(comment="Read back and verify zeros (should be aligned to cache block boundary)")
     load_verify = Load(op="lw", memory=mem_va1, offset=0)
     load_verify_va2 = Load(op="lw", memory=mem_va2, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
@@ -733,10 +855,18 @@ def SID_ZICBO_020():
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
+            comment_1,
+            comment_2,
             mem_va1,
+            comment_3,
             mem_va2,
+            comment_4,
+            comment_5,
             store_data,
+            comment_6,
+            comment_7,
             cbo_zero,
+            comment_8,
             load_verify,
             load_verify_va2,
             assert_zero,
@@ -753,23 +883,23 @@ def SID_ZICBO_021():
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Hart 0: Store data and synchronize
+    comment_2 = Comment(comment="Hart 0: Store data and synchronize")
     hart0 = Hart(hart_index=0)
     store_data = Store(memory=mem, value=0xDEADBEEF, offset=0)
     sync1 = HartExit(sync=True)
-    # Hart 1: Execute cbo.zero and synchronize
+    comment_3 = Comment(comment="Hart 1: Execute cbo.zero and synchronize")
     hart1 = Hart(hart_index=1)
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
     sync2 = HartExit(sync=True)
 
-    # Hart 0: Read back and verify zeros
+    comment_4 = Comment(comment="Hart 0: Read back and verify zeros")
     hart0_2 = Hart(hart_index=0)
     load_verify = Load(op="lw", memory=mem, offset=0)
     assert_zero = AssertEqual(src1=load_verify, src2=0)
@@ -783,13 +913,17 @@ def SID_ZICBO_021():
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
+            comment_1,
             mem,
+            comment_2,
             hart0,
             store_data,
             sync1,
+            comment_3,
             hart1,
             cbo_zero,
             sync2,
+            comment_4,
             hart0_2,
             load_verify,
             assert_zero,
@@ -805,24 +939,25 @@ def SID_ZICBO_022():
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
-    # Set up memory region with restricted access
+    comment_1 = Comment(comment="Set up memory region with restricted access")
+    comment_2 = Comment(comment="No write permission")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.READ,  # No write permission
+        flags=PageFlags.READ,
     )
 
-    # FIXME: add pmp configuratoin to create access fault
-    # # Execute cbo.zero instruction
-    # cbo_zero = MemAccess(op="cbo.zero", memory=mem)
+    comment_3 = Comment(comment="FIXME: add pmp configuratoin to create access fault")
+    comment_4 = Comment(comment="# Execute cbo.zero instruction")
+    comment_5 = Comment(comment='cbo_zero = MemAccess(op="cbo.zero", memory=mem)')
 
-    # # Check for store page fault exception
-    # assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])
+    comment_6 = Comment(comment="# Check for store page fault exception")
+    comment_7 = Comment(comment="assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[cbo_zero])")
 
-    # Execute reverse cbo.zero instruction
+    comment_8 = Comment(comment="Execute reverse cbo.zero instruction")
     cbo_zero_page_fault = MemAccess(op="cbo.zero", memory=mem)
 
-    # Check for store page fault exception
+    comment_9 = Comment(comment="Check for store page fault exception")
     assert_exception_page_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[cbo_zero_page_fault])
 
     return TestScenario.from_steps(
@@ -834,8 +969,17 @@ def SID_ZICBO_022():
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
+            comment_1,
+            comment_2,
             mem,
-            # assert_exception,
+            comment_3,
+            comment_4,
+            comment_5,
+            comment_6,
+            comment_7,
+            comment_8,
+            cbo_zero_page_fault,
+            comment_9,
             assert_exception_page_fault,
         ],
     )
@@ -936,7 +1080,7 @@ def SID_ZICBO_039():
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
@@ -944,18 +1088,18 @@ def SID_ZICBO_039():
     )
 
     hart_exit = HartExit(sync=True)
-    # Hart 0: Store data and synchronize
+    comment_2 = Comment(comment="Hart 0: Store data and synchronize")
     hart0 = Hart(hart_index=0)
 
     load_reserve = MemAccess(op="lr.w", memory=mem, offset=0)
     store_conditional = MemAccess(op="sc.w", memory=mem, offset=0)
 
-    # Hart 1: Execute cbo.zero and synchronize
-    # FIXME: add random cmo operation instead
+    comment_3 = Comment(comment="Hart 1: Execute cbo.zero and synchronize")
+    comment_4 = Comment(comment="FIXME: add random cmo operation instead")
     hart1 = Hart(hart_index=1)
     cbo_zero = MemAccess(op="cbo.zero", memory=mem)
 
-    # Hart 0: Read back and verify zero
+    comment_5 = Comment(comment="Hart 0: Read back and verify zero")
     return TestScenario.from_steps(
         id="39",
         name="SID_ZICBO_039",
@@ -965,13 +1109,18 @@ def SID_ZICBO_039():
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
+            comment_1,
             mem,
             hart_exit,
+            comment_2,
             hart0,
             load_reserve,
             store_conditional,
+            comment_3,
+            comment_4,
             hart1,
             cbo_zero,
+            comment_5,
         ],
     )
 
@@ -1059,27 +1208,27 @@ def SID_ZICBO_049():
     """
     Execute LR to VA1:PA, Execute CMO to VA1 between LR and SC, Execute SC to VA1:PA, Verify CMO interaction with LR/SC
     """
-    # Set up memory region
+    comment_1 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # Execute LR (Load Reserved)
+    comment_2 = Comment(comment="Execute LR (Load Reserved)")
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     lr_op = MemAccess(op="lr.w", memory=mem)
 
-    # Execute CMO between LR and SC
-    # FIXME: add random cmo operation after LR and before SC
+    comment_3 = Comment(comment="Execute CMO between LR and SC")
+    comment_4 = Comment(comment="FIXME: add random cmo operation after LR and before SC")
     cmo_op = MemAccess(op="cbo.flush", memory=mem)
 
-    # Execute SC (Store Conditional) - should succeed or fail based on reservation
+    comment_5 = Comment(comment="Execute SC (Store Conditional) - should succeed or fail based on reservation")
     sc_op = MemAccess(op="sc.w", memory=mem)
 
-    # Verify the result
+    comment_6 = Comment(comment="Verify the result")
     load_verify = Load(memory=mem, offset=0)
 
     return TestScenario.from_steps(
@@ -1088,13 +1237,19 @@ def SID_ZICBO_049():
         description="Execute LR to VA1:PA, Execute CMO to VA1 between LR and SC, Execute SC to VA1:PA, Verify CMO interaction with LR/SC",
         env=TestEnvCfg(),
         steps=[
+            comment_1,
             mem,
+            comment_2,
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
             lr_op,
+            comment_3,
+            comment_4,
             cmo_op,
+            comment_5,
             sc_op,
+            comment_6,
             load_verify,
         ],
     )
@@ -1105,33 +1260,33 @@ def SID_ZICBO_50_ZIC64B_01():
     """
     Test CBO.ZERO with 64-byte cache line: Store to VA and VA+64, CBO.ZERO to VA, verify VA to VA+63 are zeroed and VA+64 remains non-zero
     """
-    # Enable cache operations
+    comment_1 = Comment(comment="Enable cache operations")
     menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
 
-    # Set up memory region
+    comment_2 = Comment(comment="Set up memory region")
     mem = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
 
-    # 1. Store to VA non-zero value
+    comment_3 = Comment(comment="1. Store to VA non-zero value")
     store_va = Store(memory=mem, value=0xDEADBEEF, offset=0)
     store_va_2 = Store(memory=mem, value=0xDEADBEEF, offset=32)
     store_va_3 = Store(memory=mem, value=0xDEADBEEF, offset=56)
 
-    # 2. Store to VA+64 non-zero value
+    comment_4 = Comment(comment="2. Store to VA+64 non-zero value")
     store_va_plus_64 = Store(memory=mem, value=0xCAFEBABE, offset=64)
     store_va_plus_64_2 = Store(memory=mem, value=0xCAFEBABE, offset=96)
     store_va_plus_64_3 = Store(memory=mem, value=0xCAFEBABE, offset=120)
 
-    # 3. CBO.ZERO to VA
+    comment_5 = Comment(comment="3. CBO.ZERO to VA")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem, offset=0)
 
-    # 4. Verify VA to VA+63 == 0
-    # Check multiple locations within the cache line to ensure all bytes are zeroed
+    comment_6 = Comment(comment="4. Verify VA to VA+63 == 0")
+    comment_7 = Comment(comment="Check multiple locations within the cache line to ensure all bytes are zeroed")
     zero_value = LoadImmediateStep(imm=0)
     load_va_0 = Load(op="ld", memory=mem, offset=0)
     assert_zero_0 = AssertEqual(src1=load_va_0, src2=zero_value)
@@ -1142,7 +1297,7 @@ def SID_ZICBO_50_ZIC64B_01():
     load_va_56 = Load(op="ld", memory=mem, offset=56)
     assert_zero_56 = AssertEqual(src1=load_va_56, src2=zero_value)
 
-    # 5. Verify VA+64 is non-zero
+    comment_8 = Comment(comment="5. Verify VA+64 is non-zero")
     load_va_plus_64 = Load(op="ld", memory=mem, offset=64)
     assert_not_zero = AssertNotEqual(src1=load_va_plus_64, src2=zero_value)
 
@@ -1158,17 +1313,24 @@ def SID_ZICBO_50_ZIC64B_01():
         description="Test CBO.ZERO with 64-byte cache line: Store to VA and VA+64, CBO.ZERO to VA, verify VA to VA+63 are zeroed and VA+64 remains non-zero",
         env=TestEnvCfg(),
         steps=[
+            comment_1,
             menvcfg_write,
             senvcfg_write,
             henvcfg_write,
+            comment_2,
             mem,
+            comment_3,
             store_va,
             store_va_2,
             store_va_3,
+            comment_4,
             store_va_plus_64,
             store_va_plus_64_2,
             store_va_plus_64_3,
+            comment_5,
             cbo_zero,
+            comment_6,
+            comment_7,
             zero_value,
             load_va_0,
             assert_zero_0,
@@ -1176,6 +1338,7 @@ def SID_ZICBO_50_ZIC64B_01():
             assert_zero_32,
             load_va_56,
             assert_zero_56,
+            comment_8,
             load_va_plus_64,
             assert_not_zero,
             load_va_plus_64_2,

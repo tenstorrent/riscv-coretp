@@ -4,7 +4,7 @@
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension
 from coretp.step import (
-    TestStep,
+    Comment,
     Memory,
     Load,
     Store,
@@ -42,10 +42,10 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
         modify=True,
     )
 
-    # Disable SVADU
+    comment_1 = Comment(comment="Disable SVADU")
     disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1 << 61)
 
-    # Access memory with pte.a=0 should fault
+    comment_2 = Comment(comment="Access memory with pte.a=0 should fault")
     load_op = Load(memory=mem)
     assert_load_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[load_op])
 
@@ -56,7 +56,10 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
+            comment_1,
             disable_svadu,
+            comment_2,
+            load_op,
             assert_load_fault,
         ],
     )
@@ -75,10 +78,10 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
         modify=True,
     )
 
-    # Disable SVADU
+    comment_1 = Comment(comment="Disable SVADU")
     disable_svadu = CsrWrite(csr_name="menvcfg", clear_mask=1 << 61)
 
-    # Store to memory with pte.d=0 should fault
+    comment_2 = Comment(comment="Store to memory with pte.d=0 should fault")
     store_val = LoadImmediateStep(imm=0xDEAD)
     store_op = Store(memory=mem, value=store_val)
     assert_store_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[store_op])
@@ -90,8 +93,11 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
+            comment_1,
             disable_svadu,
+            comment_2,
             store_val,
+            store_op,
             assert_store_fault,
         ],
     )
@@ -111,21 +117,21 @@ def SID_SVADU_02_hardware_update_a_bit():
         modify=True,
     )
 
-    # Enable SVADU
+    comment_1 = Comment(comment="Enable SVADU")
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)
 
-    # check pte.a is 0
+    comment_2 = Comment(comment="check pte.a is 0")
     first_read_leaf_pte = ReadLeafPTE(memory=mem)
     load_first_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
     and_first_op = Arithmetic(op="and", src1=first_read_leaf_pte, src2=load_first_immediate_mask_check)
     zero = LoadImmediateStep(imm=0)
     assert_equal_first = AssertEqual(src1=and_first_op, src2=zero)
 
-    # Perform load - should update A bit
+    comment_3 = Comment(comment="Perform load - should update A bit")
     load_op = Load(memory=mem)
 
     read_leaf_pte = ReadLeafPTE(memory=mem)
-    # A bit is bit 6 in the PTE entry
+    comment_4 = Comment(comment="A bit is bit 6 in the PTE entry")
     load_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
     assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
@@ -137,14 +143,18 @@ def SID_SVADU_02_hardware_update_a_bit():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
+            comment_1,
             enable_svadu,
+            comment_2,
             first_read_leaf_pte,
             load_first_immediate_mask_check,
             and_first_op,
             zero,
             assert_equal_first,
+            comment_3,
             load_op,
             read_leaf_pte,
+            comment_4,
             load_immediate_mask_check,
             and_op,
             assert_equal,
@@ -166,22 +176,22 @@ def SID_SVADU_02_hardware_update_d_bit():
         modify=True,
     )
 
-    # Enable SVADU
+    comment_1 = Comment(comment="Enable SVADU")
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)
 
-    # check pte.d is 0
+    comment_2 = Comment(comment="check pte.d is 0")
     first_read_leaf_pte = ReadLeafPTE(memory=mem)
     load_first_immediate_mask_check = LoadImmediateStep(imm=1 << 7)
     and_first_op = Arithmetic(op="and", src1=first_read_leaf_pte, src2=load_first_immediate_mask_check)
     zero = LoadImmediateStep(imm=0)
     assert_equal_first = AssertEqual(src1=and_first_op, src2=zero)
 
-    # Perform store - should update D bit
+    comment_3 = Comment(comment="Perform store - should update D bit")
     store_val = LoadImmediateStep(imm=0xBEEF)
     store_op = Store(memory=mem, value=store_val)
 
     read_leaf_pte = ReadLeafPTE(memory=mem)
-    # D bit is bit 7 in the PTE entry
+    comment_4 = Comment(comment="D bit is bit 7 in the PTE entry")
     load_immediate_mask_check = LoadImmediateStep(imm=1 << 7)
     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
     assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
@@ -193,15 +203,19 @@ def SID_SVADU_02_hardware_update_d_bit():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             mem,
+            comment_1,
             enable_svadu,
+            comment_2,
             first_read_leaf_pte,
             load_first_immediate_mask_check,
             and_first_op,
             zero,
             assert_equal_first,
+            comment_3,
             store_val,
             store_op,
             read_leaf_pte,
+            comment_4,
             load_immediate_mask_check,
             and_op,
             assert_equal,

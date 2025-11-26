@@ -3,7 +3,7 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, Hart, HartExit, Directive
+from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, Hart, HartExit, Directive, Comment
 
 from . import zifencei_scenario
 
@@ -16,10 +16,10 @@ def SID_ZIFENCEI_01():
     2. Fence.i
     3. Execute modified opcode
     """
-    # Set up memory region for instruction storage
+    comment_1 = Comment(comment="Set up memory region for instruction storage")
     mem = CodePage(code=[Arithmetic(), Arithmetic()])
 
-    # Execute the modified instruction
+    comment_2 = Comment(comment="Execute the modified instruction")
     call_instr = Call(target=mem)
     store_instr = Store(op="sw", memory=mem, value=0x13)
     fence_i = Arithmetic(op="fence.i")
@@ -31,7 +31,9 @@ def SID_ZIFENCEI_01():
         description="Synchronize the instruction and data streams for single hart",
         env=TestEnvCfg(),
         steps=[
+            comment_1,
             mem,
+            comment_2,
             call_instr,
             store_instr,
             fence_i,
@@ -53,14 +55,14 @@ def SID_ZIFENCEI_02():
     access again
     """
 
-    # Set up memory region for instruction storage
-    # hart 0 access
+    comment_1 = Comment(comment="Set up memory region for instruction storage")
+    comment_2 = Comment(comment="hart 0 access")
     hart0_gen0 = Hart(hart_index=0)
     mem = CodePage(code=[Arithmetic(), Arithmetic()])
     call_instr = Call(target=mem)
     store_instr = Store(op="sw", memory=mem, value=0x13)
 
-    # no sync, force new generator to call all instrs
+    comment_3 = Comment(comment="no sync, force new generator to call all instrs")
     hart_exit = HartExit(sync=False)
     fence_i = Arithmetic(op="fence.i")
     call_instr_2 = Call(target=mem)
@@ -70,7 +72,18 @@ def SID_ZIFENCEI_02():
         name="SID_ZIFENCEI_02",
         description="FENCE & FENCE.I needed for multiprocessor instruction and data stream synchronization",
         env=TestEnvCfg(min_num_harts=2),
-        steps=[hart0_gen0, mem, call_instr, store_instr, hart_exit, fence_i, call_instr_2],
+        steps=[
+            comment_1,
+            comment_2,
+            hart0_gen0,
+            mem,
+            call_instr,
+            store_instr,
+            comment_3,
+            hart_exit,
+            fence_i,
+            call_instr_2,
+        ],
     )
 
 
