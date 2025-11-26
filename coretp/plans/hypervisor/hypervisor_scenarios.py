@@ -62,11 +62,10 @@ def SID_HPCSR_001():
     """
     Make sure all H-CSRs are accessible from HS mode
     """
-    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
+    # List of all hypervisor CSRs to test
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
-    steps.append(comment_1)
 
     comment_2 = Comment(comment="For each CSR, read, write back, read again, and verify")
     steps.append(comment_2)
@@ -94,11 +93,10 @@ def SID_HPCSR_002():
     """
     Make sure all H-CSRs are accessible from M mode
     """
-    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
+    # List of all hypervisor CSRs to test
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
-    steps.append(comment_1)
 
     comment_2 = Comment(comment="For each CSR, read, write back, read again, and verify")
     steps.append(comment_2)
@@ -126,11 +124,10 @@ def SID_HPCSR_003():
     """
     Make sure accessing all H-CSRs takes an illegal trap in VS mode
     """
-    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
+    # List of all hypervisor CSRs to test
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
-    steps.append(comment_1)
 
     comment_2 = Comment(comment="For each CSR, attempt to access and expect illegal instruction exception")
     steps.append(comment_2)
@@ -153,11 +150,10 @@ def SID_HPCSR_004():
     """
     Make sure accessing all H-CSRs takes an illegal trap in VU mode
     """
-    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
+    # List of all hypervisor CSRs to test
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
-    steps.append(comment_1)
 
     comment_2 = Comment(comment="For each CSR, attempt to access and expect illegal instruction exception")
     steps.append(comment_2)
@@ -180,11 +176,10 @@ def SID_HPCSR_005():
     """
     Make sure accessing all H-CSRs takes an illegal trap in HU mode
     """
-    comment_1 = Comment(comment="List of all hypervisor CSRs to test")
+    # List of all hypervisor CSRs to test
     h_csrs = ["hstatus", "hedeleg", "hideleg", "hvip", "hip", "hie", "hgeip", "hgeie", "henvcfg", "henvcfgh", "hcounteren", "htimedelta", "htimedeltah", "htval", "htinst", "hgatp"]
 
     steps = []
-    steps.append(comment_1)
 
     comment_2 = Comment(comment="For each CSR, attempt to access and expect illegal instruction exception")
     steps.append(comment_2)
