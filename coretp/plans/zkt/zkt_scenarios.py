@@ -3,7 +3,7 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, LoadImmediateStep, AssertEqual, CsrRead, Comment
+from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, LoadImmediateStep, AssertEqual, CsrRead
 import random  # FIXME: use the random seed from the test plan runner if possible
 
 from . import zkt_scenario
@@ -154,8 +154,7 @@ def SID_ZKT_02():
 
     steps: list[TestStep] = []
 
-    comment_1 = Comment(comment="Loop 0: warm-up to condition uarch environment (in theory)")
-    steps.append(comment_1)
+    # Loop 0: warm-up to condition uarch environment (in theory)
     l0_init = LoadImmediateStep()
     tb_l0 = CsrRead(csr_name="time")
     cb_l0 = CsrRead(csr_name="cycle")
@@ -169,8 +168,7 @@ def SID_ZKT_02():
     di_l0 = Arithmetic(op="sub", src1=ia_l0, src2=ib_l0)
     steps += [l0_init, tb_l0, cb_l0, ib_l0] + chain0 + [ta_l0, ca_l0, ia_l0, dt_l0, dc_l0, di_l0]
 
-    comment_2 = Comment(comment="Loop 1")
-    steps.append(comment_2)
+    # Loop 1
     l1_init = LoadImmediateStep()
     tb_l1 = CsrRead(csr_name="time")
     cb_l1 = CsrRead(csr_name="cycle")
@@ -184,8 +182,7 @@ def SID_ZKT_02():
     di_l1 = Arithmetic(op="sub", src1=ia_l1, src2=ib_l1)
     steps += [l1_init, tb_l1, cb_l1, ib_l1] + chain1 + [ta_l1, ca_l1, ia_l1, dt_l1, dc_l1, di_l1]
 
-    comment_3 = Comment(comment="Loop 2")
-    steps.append(comment_3)
+    # Loop 2
     l2_init = LoadImmediateStep()
     tb_l2 = CsrRead(csr_name="time")
     cb_l2 = CsrRead(csr_name="cycle")
@@ -199,8 +196,7 @@ def SID_ZKT_02():
     di_l2 = Arithmetic(op="sub", src1=ia_l2, src2=ib_l2)
     steps += [l2_init, tb_l2, cb_l2, ib_l2] + chain2 + [ta_l2, ca_l2, ia_l2, dt_l2, dc_l2, di_l2]
 
-    comment_4 = Comment(comment="assert deltas equal, implies cycles/instret proportional to # of insts")
-    steps.append(comment_4)
+    # assert deltas equal, implies cycles/instret proportional to # of insts
     steps += [
         AssertEqual(src1=dc_l1, src2=dc_l2),
         AssertEqual(src1=di_l1, src2=di_l2),
@@ -443,7 +439,7 @@ def SID_ZKT_04():
     RiESCUE C: full compressed-immediate test is authored below but disabled until compressed ops are supported.
     """
 
-    comment_1 = Comment(comment="Temporary placeholder while compressed ops are unsupported")
+    # Temporary placeholder while compressed ops are unsupported
     placeholder1 = LoadImmediateStep(imm=0)
     placeholder2 = LoadImmediateStep(imm=0)
     assert_equal = AssertEqual(src1=placeholder1, src2=placeholder1)
@@ -453,7 +449,6 @@ def SID_ZKT_04():
         description="ZKT: compressed-immediate (placeholder; compressed ops disabled)",
         env=env_m(),
         steps=[
-            comment_1,
             placeholder1,
             placeholder2,
             assert_equal,
@@ -723,7 +718,7 @@ def SID_ZKT_06():
     RiESCUE C: full compressed-RR test is authored below but disabled until compressed ops are supported.
     """
 
-    comment_1 = Comment(comment="Temporary placeholder while compressed ops are unsupported")
+    # Temporary placeholder while compressed ops are unsupported
     placeholder1 = LoadImmediateStep(imm=0)
     placeholder2 = LoadImmediateStep(imm=0)
     assert_equal = AssertEqual(src1=placeholder1, src2=placeholder1)
@@ -733,7 +728,6 @@ def SID_ZKT_06():
         description="ZKT: compressed-RR (placeholder; compressed ops disabled)",
         env=env_m(),
         steps=[
-            comment_1,
             placeholder1,
             placeholder2,
             assert_equal,
