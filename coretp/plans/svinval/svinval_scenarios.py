@@ -216,21 +216,23 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
 
     comment_3 = Comment(comment="Read PTEs, set W bit to 1, write them back")
     comment_4 = Comment(comment="W bit is bit 2")
-    w_bit_mask = LoadImmediateStep(imm=1 << 2)
 
     read_leaf_pte_1 = ReadLeafPTE(memory=mem1)
     hold_for_comparison_1 = Arithmetic(op="mv", src1=read_leaf_pte_1)
-    pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
+    w_bit_mask_1 = LoadImmediateStep(imm=1 << 2)
+    pte_with_w_1 = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask_1)
     write_leaf_pte_1 = WriteLeafPTE(memory=mem1, src=pte_with_w_1)
 
     read_leaf_pte_2 = ReadLeafPTE(memory=mem2)
     hold_for_comparison_2 = Arithmetic(op="mv", src1=read_leaf_pte_2)
-    pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask)
+    w_bit_mask_2 = LoadImmediateStep(imm=1 << 2)
+    pte_with_w_2 = Arithmetic(op="or", src1=read_leaf_pte_2, src2=w_bit_mask_2)
     write_leaf_pte_2 = WriteLeafPTE(memory=mem2, src=pte_with_w_2)
 
     read_leaf_pte_3 = ReadLeafPTE(memory=mem3)
     hold_for_comparison_3 = Arithmetic(op="mv", src1=read_leaf_pte_3)
-    pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask)
+    w_bit_mask_3 = LoadImmediateStep(imm=1 << 2)
+    pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask_3)
     write_leaf_pte_3 = WriteLeafPTE(memory=mem3, src=pte_with_w_3)
 
     comment_5 = Comment(comment="Exception checks on random stores (should still fault - TLB has old PTE cached)")
@@ -289,17 +291,19 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
             assert_store_fault_3,
             comment_3,
             comment_4,
-            w_bit_mask,
             read_leaf_pte_1,
             hold_for_comparison_1,
+            w_bit_mask_1,
             pte_with_w_1,
             write_leaf_pte_1,
             read_leaf_pte_2,
             hold_for_comparison_2,
+            w_bit_mask_2,
             pte_with_w_2,
             write_leaf_pte_2,
             read_leaf_pte_3,
             hold_for_comparison_3,
+            w_bit_mask_3,
             pte_with_w_3,
             write_leaf_pte_3,
             comment_5,
