@@ -59,7 +59,6 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
             comment_1,
             disable_svadu,
             comment_2,
-            load_op,
             assert_load_fault,
         ],
     )
@@ -97,7 +96,6 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
             disable_svadu,
             comment_2,
             store_val,
-            store_op,
             assert_store_fault,
         ],
     )
