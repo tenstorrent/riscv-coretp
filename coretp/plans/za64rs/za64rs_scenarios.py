@@ -38,7 +38,7 @@ def SID_ZA64RS_01():
 
     # Test lr.w with misaligned address (offset not naturally aligned to 4 bytes)
     lr_w_unaligned = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        cause=ExceptionCause.LOAD_ACCESS_FAULT,
         code=[
             MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 4-byte access
         ],
@@ -46,7 +46,7 @@ def SID_ZA64RS_01():
 
     # Test lr.d with misaligned address (offset not naturally aligned to 8 bytes)
     lr_d_unaligned = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        cause=ExceptionCause.LOAD_ACCESS_FAULT,
         code=[
             MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 8-byte access
         ],
@@ -77,7 +77,7 @@ def SID_ZA64RS_02():
 
     # Test sc.w with misaligned address (offset not naturally aligned to 4 bytes)
     sc_w_unaligned = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        cause=ExceptionCause.STORE_AMO_ACCESS_FAULT,
         code=[
             MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 4-byte access
         ],
@@ -85,7 +85,7 @@ def SID_ZA64RS_02():
 
     # Test sc.d with misaligned address (offset not naturally aligned to 8 bytes)
     sc_d_unaligned = AssertException(
-        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        cause=ExceptionCause.STORE_AMO_ACCESS_FAULT,
         code=[
             MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 8-byte access
         ],
