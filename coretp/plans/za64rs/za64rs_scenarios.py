@@ -3,7 +3,26 @@
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, LoadImmediateStep, LoadAddressStep, CsrWrite, AssertException, Call, CsrRead, AssertEqual, AssertNotEqual, Hart, HartExit, Comment, MemAccess
+from coretp.step import (
+    TestStep,
+    Memory,
+    Load,
+    Store,
+    CodePage,
+    Arithmetic,
+    LoadImmediateStep,
+    LoadAddressStep,
+    CsrWrite,
+    AssertException,
+    Call,
+    CsrRead,
+    AssertEqual,
+    AssertNotEqual,
+    Hart,
+    HartExit,
+    Comment,
+    MemAccess,
+)
 
 from . import za64rs_scenario
 
@@ -21,16 +40,16 @@ def SID_ZA64RS_01():
     lr_w_unaligned = AssertException(
         cause=ExceptionCause.ILLEGAL_INSTRUCTION,
         code=[
-            MemAccess(op="lr.w", memory=mem, offset=1),  # offset 1 makes it unaligned for 4-byte access
-        ]
+            MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 4-byte access
+        ],
     )
 
     # Test lr.d with misaligned address (offset not naturally aligned to 8 bytes)
     lr_d_unaligned = AssertException(
         cause=ExceptionCause.ILLEGAL_INSTRUCTION,
         code=[
-            MemAccess(op="lr.d", memory=mem, offset=1),  # offset 1 makes it unaligned for 8-byte access
-        ]
+            MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 8-byte access
+        ],
     )
 
     return TestScenario.from_steps(
@@ -60,16 +79,16 @@ def SID_ZA64RS_02():
     sc_w_unaligned = AssertException(
         cause=ExceptionCause.ILLEGAL_INSTRUCTION,
         code=[
-            MemAccess(op="sc.w", memory=mem, offset=1),  # offset 1 makes it unaligned for 4-byte access
-        ]
+            MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 4-byte access
+        ],
     )
 
     # Test sc.d with misaligned address (offset not naturally aligned to 8 bytes)
     sc_d_unaligned = AssertException(
         cause=ExceptionCause.ILLEGAL_INSTRUCTION,
         code=[
-            MemAccess(op="sc.d", memory=mem, offset=1),  # offset 1 makes it unaligned for 8-byte access
-        ]
+            MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=1),  # offset 1 makes it unaligned for 8-byte access
+        ],
     )
 
     return TestScenario.from_steps(
@@ -103,14 +122,14 @@ def SID_ZA64RS_03_w():
     store_val = Store(op="sw", memory=mem, offset=32, value=0x12345678)
 
     # LR.W from offset 32
-    lr_instr = MemAccess(op="lr.w", memory=mem, offset=32)
+    lr_instr = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
 
     # SC.W to offset 96 (64+) - should fail
-    sc_fail = MemAccess(op="sc.w", memory=mem, offset=96)
+    sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
 
     # SC.W to same address as LR (offset 32) - should pass
-    sc_pass = MemAccess(op="sc.w", memory=mem, offset=32)
+    sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
     assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
 
     # Verify the value was written
@@ -154,14 +173,14 @@ def SID_ZA64RS_03_d():
     store_val = Store(op="sd", memory=mem, offset=32, value=0x123456789ABCDEF0)
 
     # LR.D from offset 32
-    lr_instr = MemAccess(op="lr.d", memory=mem, offset=32)
+    lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
 
     # SC.D to offset 96 (64+) - should fail
-    sc_fail = MemAccess(op="sc.d", memory=mem, offset=96)
+    sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
 
     # SC.D to same address as LR (offset 32) - should pass
-    sc_pass = MemAccess(op="sc.d", memory=mem, offset=32)
+    sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
     assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
 
     # Verify the value was written
@@ -206,24 +225,24 @@ def SID_ZA64RS_04_w():
 
     # First reservation set: offset 32 (within 0..63)
     store_val1 = Store(op="sw", memory=mem, offset=32, value=0x11111111)
-    lr_instr1 = MemAccess(op="lr.w", memory=mem, offset=32)
+    lr_instr1 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
 
     # Second reservation set: offset 160 (within 128..191)
     store_val2 = Store(op="sw", memory=mem, offset=160, value=0x22222222)
-    lr_instr2 = MemAccess(op="lr.w", memory=mem, offset=160)
+    lr_instr2 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=160)
 
     # SC.W to offset 96 (64..127) - should fail
-    sc_fail = MemAccess(op="sc.w", memory=mem, offset=96)
+    sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
 
     # SC.W to first LR address (offset 32) - should pass
-    sc_pass1 = MemAccess(op="sc.w", memory=mem, offset=32)
+    sc_pass1 = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
     assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=0)
     load_verify1 = Load(op="lw", memory=mem, offset=32)
     assert_value1 = AssertEqual(src1=load_verify1, src2=0x33333333)
 
     # SC.W to second LR address (offset 160) - should pass
-    sc_pass2 = MemAccess(op="sc.w", memory=mem, offset=160)
+    sc_pass2 = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=160)
     assert_sc_pass2 = AssertEqual(src1=sc_pass2, src2=0)
     load_verify2 = Load(op="lw", memory=mem, offset=160)
     assert_value2 = AssertEqual(src1=load_verify2, src2=0x44444444)
@@ -272,24 +291,24 @@ def SID_ZA64RS_04_d():
 
     # First reservation set: offset 32 (within 0..63)
     store_val1 = Store(op="sd", memory=mem, offset=32, value=0x1111111111111111)
-    lr_instr1 = MemAccess(op="lr.d", memory=mem, offset=32)
+    lr_instr1 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
 
     # Second reservation set: offset 160 (within 128..191)
     store_val2 = Store(op="sd", memory=mem, offset=160, value=0x2222222222222222)
-    lr_instr2 = MemAccess(op="lr.d", memory=mem, offset=160)
+    lr_instr2 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=160)
 
     # SC.D to offset 96 (64..127) - should fail
-    sc_fail = MemAccess(op="sc.d", memory=mem, offset=96)
+    sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
 
     # SC.D to first LR address (offset 32) - should pass
-    sc_pass1 = MemAccess(op="sc.d", memory=mem, offset=32)
+    sc_pass1 = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
     assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=0)
     load_verify1 = Load(op="ld", memory=mem, offset=32)
     assert_value1 = AssertEqual(src1=load_verify1, src2=0x3333333333333333)
 
     # SC.D to second LR address (offset 160) - should pass
-    sc_pass2 = MemAccess(op="sc.d", memory=mem, offset=160)
+    sc_pass2 = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=160)
     assert_sc_pass2 = AssertEqual(src1=sc_pass2, src2=0)
     load_verify2 = Load(op="ld", memory=mem, offset=160)
     assert_value2 = AssertEqual(src1=load_verify2, src2=0x4444444444444444)
@@ -337,14 +356,14 @@ def SID_ZA64RS_05_w():
     store_val = Store(op="sw", memory=mem, offset=96, value=0x12345678)
 
     # LR.W from offset 96
-    lr_instr = MemAccess(op="lr.w", memory=mem, offset=96)
+    lr_instr = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=96)
 
     # SC.W to offset 32 (0..63) - should fail
-    sc_fail = MemAccess(op="sc.w", memory=mem, offset=32)
+    sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
 
     # SC.W to same address as LR (offset 96) - should pass
-    sc_pass = MemAccess(op="sc.w", memory=mem, offset=96)
+    sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
     assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
 
     # Verify the value was written
@@ -388,14 +407,14 @@ def SID_ZA64RS_05_d():
     store_val = Store(op="sd", memory=mem, offset=96, value=0x123456789ABCDEF0)
 
     # LR.D from offset 96
-    lr_instr = MemAccess(op="lr.d", memory=mem, offset=96)
+    lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=96)
 
     # SC.D to offset 32 (0..63) - should fail
-    sc_fail = MemAccess(op="sc.d", memory=mem, offset=32)
+    sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
 
     # SC.D to same address as LR (offset 96) - should pass
-    sc_pass = MemAccess(op="sc.d", memory=mem, offset=96)
+    sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
     assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
 
     # Verify the value was written
