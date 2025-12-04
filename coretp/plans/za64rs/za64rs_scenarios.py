@@ -108,12 +108,10 @@ def SID_ZA64RS_02():
 @za64rs_scenario
 def SID_ZA64RS_03_w():
     """
-    LR.W anywhere 0..63, SC.W 64+ fail
-    Issue instructions in the following seq with word access:
-    SW addr+(0..63) (random value)
-    LR.W {same addr as store} -> must be aligned
-    SC.W addr1+(64..) -> should fail (RS2 will be non-zero)
-    SC.W (same address and size as LR) -> this should pass, do val compare
+    LR addr+(0..63) -> must be aligned
+    SC addr1+(64..) -> RS2 will be non-0
+    LR addr+(0..63) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
     """
     comment = Comment(comment="LR.W anywhere 0..63, SC.W 64+ fail")
     mem = Memory(size=0x1000, alignment=64)
@@ -154,12 +152,10 @@ def SID_ZA64RS_03_w():
 @za64rs_scenario
 def SID_ZA64RS_03_d():
     """
-    LR.D anywhere 0..63, SC.D 64+ fail
-    Issue instructions in the following seq with doubleword access:
-    SD addr+(0..63) (random value)
-    LR.D {same addr as store} -> must be aligned
-    SC.D addr1+(64..) -> should fail (RS2 will be non-zero)
-    SC.D (same address and size as LR) -> this should pass, do val compare
+    LR addr+(0..63) -> must be aligned
+    SC addr1+(64..) -> RS2 will be non-0
+    LR addr+(0..63) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
     """
     comment = Comment(comment="LR.D anywhere 0..63, SC.D 64+ fail")
     mem = Memory(size=0x1000, alignment=64)
@@ -197,15 +193,103 @@ def SID_ZA64RS_03_d():
         ],
     )
 
+
+@za64rs_scenario
+def SID_ZA64RS_03_lrw_scd():
+    """
+    LR addr+(0..63) -> must be aligned
+    SC addr1+(64..) -> RS2 will be non-0
+    LR addr+(0..63) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
+    """
+    comment = Comment(comment="LR.W anywhere 0..63, SC.W 64+ fail")
+    mem = Memory(size=0x1000, alignment=64)
+
+    # LR.W from offset 32
+    lr_instr_1 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
+
+    # SC.W to offset 96 (64+) - should fail
+    sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
+
+    lr_instr_2 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
+
+    # SC.W to same address as LR (offset 32) - should pass
+    sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
+
+    return TestScenario.from_steps(
+        id="3",
+        name="SID_ZA64RS_03_w",
+        description="LR.W anywhere 0..63, SC.W 64+ fail - word access",
+        env=TestEnvCfg(),
+        steps=[
+            comment,
+            mem,
+            zero_val,
+            lr_instr_1,
+            sc_fail,
+            assert_sc_fail,
+            lr_instr_2,
+            sc_pass,
+            assert_sc_pass,
+        ],
+    )
+
+
+@za64rs_scenario
+def SID_ZA64RS_03_lrd_scw():
+    """
+    LR addr+(0..63) -> must be aligned
+    SC addr1+(64..) -> RS2 will be non-0
+    LR addr+(0..63) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
+    """
+    comment = Comment(comment="LR.D anywhere 0..63, SC.D 64+ fail")
+    mem = Memory(size=0x1000, alignment=64)
+
+    zero_val = LoadImmediateStep(imm=0)
+
+    # LR.D from offset 32
+    lr_instr_1 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
+
+    # SC.D to offset 96 (64+) - should fail
+    sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
+
+    lr_instr_2 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
+
+    # SC.D to same address as LR (offset 32) - should pass
+    sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
+
+    return TestScenario.from_steps(
+        id="4",
+        name="SID_ZA64RS_03_d",
+        description="LR.D anywhere 0..63, SC.D 64+ fail - doubleword access",
+        env=TestEnvCfg(),
+        steps=[
+            comment,
+            mem,
+            zero_val,
+            lr_instr_1,
+            sc_fail,
+            assert_sc_fail,
+            lr_instr_2,
+            sc_pass,
+            assert_sc_pass,
+        ],
+    )
+
+
 @za64rs_scenario
 def SID_ZA64RS_04_w():
     """
-    LR.W anywhere 64..127. SC.W 0...63 fail
-    Issue instructions in the following seq with word access:
-    SW addr+(64..127)
-    LR.W {same addr as store} -> must be aligned
-    SC.W addr1+(0..63) -> should fail
-    SC.W (same address and size as LR) -> this should pass, do val compare
+    LR addr+(64..127) -> must be aligned
+    SC addr1+(0..63) -> RS2 will be non-0
+    LR addr+(64..127) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
     """
     comment = Comment(comment="LR.W anywhere 64..127. SC.W 0...63 fail")
     mem = Memory(size=0x1000, alignment=64)
@@ -245,12 +329,10 @@ def SID_ZA64RS_04_w():
 @za64rs_scenario
 def SID_ZA64RS_04_d():
     """
-    LR.D anywhere 64..127. SC.D 0...63 fail
-    Issue instructions in the following seq with doubleword access:
-    SD addr+(64..127)
-    LR.D {same addr as store} -> must be aligned
-    SC.D addr1+(0..63) -> should fail
-    SC.D (same address and size as LR) -> this should pass, do val compare
+    LR addr+(64..127) -> must be aligned
+    SC addr1+(0..63) -> RS2 will be non-0
+    LR addr+(64..127) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
     """
     comment = Comment(comment="LR.D anywhere 64..127. SC.D 0...63 fail")
     mem = Memory(size=0x1000, alignment=64)
@@ -266,6 +348,92 @@ def SID_ZA64RS_04_d():
     # SC.D to same address as LR (offset 96) - should pass
     lr_instr_2 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=96)
     sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
+
+    return TestScenario.from_steps(
+        id="8",
+        name="SID_ZA64RS_05_d",
+        description="LR.D anywhere 64..127. SC.D 0...63 fail - doubleword access",
+        env=TestEnvCfg(),
+        steps=[
+            comment,
+            mem,
+            zero_val,
+            lr_instr_1,
+            sc_fail,
+            assert_sc_fail,
+            lr_instr_2,
+            sc_pass,
+            assert_sc_pass,
+        ],
+    )
+
+
+@za64rs_scenario
+def SID_ZA64RS_04_lrw_scd():
+    """
+    LR addr+(64..127) -> must be aligned
+    SC addr1+(0..63) -> RS2 will be non-0
+    LR addr+(64..127) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
+    """
+    comment = Comment(comment="LR.W anywhere 64..127. SC.W 0...63 fail")
+    mem = Memory(size=0x1000, alignment=64)
+
+    # LR.W from offset 96
+    lr_instr_1 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=96)
+
+    # SC.W to offset 32 (0..63) - should fail
+    sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
+
+    # SC.W to same address as LR (offset 96) - should pass
+    lr_instr_2 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=96)
+    sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
+
+    return TestScenario.from_steps(
+        id="7",
+        name="SID_ZA64RS_05_w",
+        description="LR.W anywhere 64..127. SC.W 0...63 fail - word access",
+        env=TestEnvCfg(),
+        steps=[
+            comment,
+            mem,
+            zero_val,
+            lr_instr_1,
+            sc_fail,
+            assert_sc_fail,
+            lr_instr_2,
+            sc_pass,
+            assert_sc_pass,
+        ],
+    )
+
+
+@za64rs_scenario
+def SID_ZA64RS_04_lrd_scw():
+    """
+    LR addr+(64..127) -> must be aligned
+    SC addr1+(0..63) -> RS2 will be non-0
+    LR addr+(64..127) -> must be aligned
+    SC (same address and size as LR) -> this should pass, compare RS2 to 0
+    """
+    comment = Comment(comment="LR.D anywhere 64..127. SC.D 0...63 fail")
+    mem = Memory(size=0x1000, alignment=64)
+
+    # LR.D from offset 96
+    lr_instr_1 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=96)
+
+    # SC.D to offset 32 (0..63) - should fail
+    sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
+
+    # SC.D to same address as LR (offset 96) - should pass
+    lr_instr_2 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=96)
+    sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
     assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
 
     return TestScenario.from_steps(
