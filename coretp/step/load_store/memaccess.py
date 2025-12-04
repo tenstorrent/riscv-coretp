@@ -33,3 +33,4 @@ class MemAccess(MemoryOp):
     op: Optional[str] = None
     src2: Optional[Union[TestStep, int]] = None
     extension: Optional[Extension] = None
+    has_immediate: bool = False

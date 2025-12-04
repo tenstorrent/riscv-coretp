@@ -11,6 +11,7 @@ from .sstc import sstc_scenarios
 from .svadu import svadu_scenarios
 from .svade import svade_scenarios
 from .svinval import svinval_scenarios
+from .za64rs import za64rs_scenarios
 from .zicond import zicond_scenarios
 from .zkt import zkt_scenarios
 from .zimop_zcmop import zimop_zcmop_scenarios

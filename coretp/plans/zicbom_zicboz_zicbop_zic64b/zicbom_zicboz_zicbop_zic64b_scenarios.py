@@ -1074,8 +1074,8 @@ def SID_ZICBO_039():
     comment_2 = Comment(comment="Hart 0: Store data and synchronize")
     hart0 = Hart(hart_index=0)
 
-    load_reserve = MemAccess(op="lr.w", memory=mem, offset=0)
-    store_conditional = MemAccess(op="sc.w", memory=mem, offset=0)
+    load_reserve = MemAccess(op="lr.w", memory=mem)
+    store_conditional = MemAccess(op="sc.w", memory=mem)
 
     comment_3 = Comment(comment="Hart 1: Execute cbo.zero and synchronize")
     comment_4 = Comment(comment="FIXME: add random cmo operation instead")
