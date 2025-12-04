@@ -221,7 +221,7 @@ def SID_ZA64RS_03_lrw_scd():
 
     return TestScenario.from_steps(
         id="3",
-        name="SID_ZA64RS_03_w",
+        name="SID_ZA64RS_03_lrw_scd",
         description="LR.W anywhere 0..63, SC.W 64+ fail - word access",
         env=TestEnvCfg(),
         steps=[
@@ -266,7 +266,7 @@ def SID_ZA64RS_03_lrd_scw():
 
     return TestScenario.from_steps(
         id="4",
-        name="SID_ZA64RS_03_d",
+        name="SID_ZA64RS_03_lrd_scw",
         description="LR.D anywhere 0..63, SC.D 64+ fail - doubleword access",
         env=TestEnvCfg(),
         steps=[
@@ -395,7 +395,7 @@ def SID_ZA64RS_04_lrw_scd():
 
     return TestScenario.from_steps(
         id="7",
-        name="SID_ZA64RS_05_w",
+        name="SID_ZA64RS_04_lrw_scd",
         description="LR.W anywhere 64..127. SC.W 0...63 fail - word access",
         env=TestEnvCfg(),
         steps=[
@@ -438,7 +438,7 @@ def SID_ZA64RS_04_lrd_scw():
 
     return TestScenario.from_steps(
         id="8",
-        name="SID_ZA64RS_05_d",
+        name="SID_ZA64RS_04_lrd_scw",
         description="LR.D anywhere 64..127. SC.D 0...63 fail - doubleword access",
         env=TestEnvCfg(),
         steps=[
