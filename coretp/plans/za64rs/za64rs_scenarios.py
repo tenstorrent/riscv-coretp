@@ -119,12 +119,14 @@ def SID_ZA64RS_03_w():
     mem = Memory(size=0x1000, alignment=64)
 
     # LR.W from offset 32
-    lr_instr = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
+    lr_instr_1 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
 
     # SC.W to offset 96 (64+) - should fail
     sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
     zero_val = LoadImmediateStep(imm=0)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
+
+    lr_instr_2 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
 
     # SC.W to same address as LR (offset 32) - should pass
     sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
@@ -139,9 +141,10 @@ def SID_ZA64RS_03_w():
             comment,
             mem,
             zero_val,
-            lr_instr,
+            lr_instr_1,
             sc_fail,
             assert_sc_fail,
+            lr_instr_2,
             sc_pass,
             assert_sc_pass,
         ],
@@ -164,11 +167,13 @@ def SID_ZA64RS_03_d():
     zero_val = LoadImmediateStep(imm=0)
 
     # LR.D from offset 32
-    lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
+    lr_instr_1 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
 
     # SC.D to offset 96 (64+) - should fail
     sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
+
+    lr_instr_2 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
 
     # SC.D to same address as LR (offset 32) - should pass
     sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
@@ -183,129 +188,17 @@ def SID_ZA64RS_03_d():
             comment,
             mem,
             zero_val,
-            lr_instr,
+            lr_instr_1,
             sc_fail,
             assert_sc_fail,
+            lr_instr_2,
             sc_pass,
             assert_sc_pass,
         ],
     )
 
-
 @za64rs_scenario
 def SID_ZA64RS_04_w():
-    """
-    Multi reservation block. LR.W anywhere 0..63 and anywhere 128..191, SC.W 64..127 fail
-    Issue instructions in the following seq with word access:
-    SW addr+(0..63) (random value)
-    LR.W {same addr as prev store}
-    SW addr+(128..191) (random value)
-    LR.W {same addr as prev store}
-    SC.W addr1+(64..) -> should fail
-    SC.W (same address and size as LR 1) -> should pass, do val compare
-    SC.W (same address and size as LR 2) -> should pass, do val compare
-    """
-    comment = Comment(comment="Multi reservation block. LR.W 0..63 and 128..191, SC.W 64..127 fail")
-    mem = Memory(size=0x1000, alignment=64)
-
-    # First reservation set: offset 32 (within 0..63)
-    lr_instr1 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=32)
-
-    # Second reservation set: offset 160 (within 128..191)
-    lr_instr2 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=160)
-
-    # SC.W to offset 96 (64..127) - should fail
-    sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
-    zero_val = LoadImmediateStep(imm=0)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
-
-    # SC.W to first LR address (offset 32) - should pass
-    sc_pass1 = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
-    assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=zero_val)
-
-    # SC.W to second LR address (offset 160) - should pass
-    sc_pass2 = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=160)
-    assert_sc_pass2 = AssertEqual(src1=sc_pass2, src2=0)
-
-    return TestScenario.from_steps(
-        id="5",
-        name="SID_ZA64RS_04_w",
-        description="Multi reservation block LR.W 0..63 and 128..191, SC.W 64..127 fail - word access",
-        env=TestEnvCfg(),
-        steps=[
-            comment,
-            mem,
-            zero_val,
-            lr_instr1,
-            lr_instr2,
-            sc_fail,
-            assert_sc_fail,
-            sc_pass1,
-            assert_sc_pass1,
-            sc_pass2,
-            assert_sc_pass2,
-        ],
-    )
-
-
-@za64rs_scenario
-def SID_ZA64RS_04_d():
-    """
-    Multi reservation block. LR.D anywhere 0..63 and anywhere 128..191, SC.D 64..127 fail
-    Issue instructions in the following seq with doubleword access:
-    SD addr+(0..63) (random value)
-    LR.D {same addr as prev store}
-    SD addr+(128..191) (random value)
-    LR.D {same addr as prev store}
-    SC.D addr1+(64..) -> should fail
-    SC.D (same address and size as LR 1) -> should pass, do val compare
-    SC.D (same address and size as LR 2) -> should pass, do val compare
-    """
-    comment = Comment(comment="Multi reservation block. LR.D 0..63 and 128..191, SC.D 64..127 fail")
-    mem = Memory(size=0x1000, alignment=64)
-
-    # First reservation set: offset 32 (within 0..63)
-    lr_instr1 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
-
-    # Second reservation set: offset 160 (within 128..191)
-    lr_instr2 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=160)
-
-    # SC.D to offset 96 (64..127) - should fail
-    sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
-    zero_val = LoadImmediateStep(imm=0)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
-
-    # SC.D to first LR address (offset 32) - should pass
-    sc_pass1 = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
-    assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=zero_val)
-
-    # SC.D to second LR address (offset 160) - should pass
-    sc_pass2 = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=160)
-    assert_sc_pass2 = AssertEqual(src1=sc_pass2, src2=zero_val)
-
-    return TestScenario.from_steps(
-        id="6",
-        name="SID_ZA64RS_04_d",
-        description="Multi reservation block LR.D 0..63 and 128..191, SC.D 64..127 fail - doubleword access",
-        env=TestEnvCfg(),
-        steps=[
-            comment,
-            mem,
-            zero_val,
-            lr_instr1,
-            lr_instr2,
-            sc_fail,
-            assert_sc_fail,
-            sc_pass1,
-            assert_sc_pass1,
-            sc_pass2,
-            assert_sc_pass2,
-        ],
-    )
-
-
-@za64rs_scenario
-def SID_ZA64RS_05_w():
     """
     LR.W anywhere 64..127. SC.W 0...63 fail
     Issue instructions in the following seq with word access:
@@ -318,7 +211,7 @@ def SID_ZA64RS_05_w():
     mem = Memory(size=0x1000, alignment=64)
 
     # LR.W from offset 96
-    lr_instr = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=96)
+    lr_instr_1 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=96)
 
     # SC.W to offset 32 (0..63) - should fail
     sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
@@ -326,6 +219,7 @@ def SID_ZA64RS_05_w():
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.W to same address as LR (offset 96) - should pass
+    lr_instr_2 = MemAccess(op="lr.w", has_immediate=False, memory=mem, offset=96)
     sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
     assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
 
@@ -338,9 +232,10 @@ def SID_ZA64RS_05_w():
             comment,
             mem,
             zero_val,
-            lr_instr,
+            lr_instr_1,
             sc_fail,
             assert_sc_fail,
+            lr_instr_2,
             sc_pass,
             assert_sc_pass,
         ],
@@ -348,7 +243,7 @@ def SID_ZA64RS_05_w():
 
 
 @za64rs_scenario
-def SID_ZA64RS_05_d():
+def SID_ZA64RS_04_d():
     """
     LR.D anywhere 64..127. SC.D 0...63 fail
     Issue instructions in the following seq with doubleword access:
@@ -361,7 +256,7 @@ def SID_ZA64RS_05_d():
     mem = Memory(size=0x1000, alignment=64)
 
     # LR.D from offset 96
-    lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=96)
+    lr_instr_1 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=96)
 
     # SC.D to offset 32 (0..63) - should fail
     sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
@@ -369,6 +264,7 @@ def SID_ZA64RS_05_d():
     assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.D to same address as LR (offset 96) - should pass
+    lr_instr_2 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=96)
     sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
     assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
 
@@ -381,9 +277,10 @@ def SID_ZA64RS_05_d():
             comment,
             mem,
             zero_val,
-            lr_instr,
+            lr_instr_1,
             sc_fail,
             assert_sc_fail,
+            lr_instr_2,
             sc_pass,
             assert_sc_pass,
         ],
