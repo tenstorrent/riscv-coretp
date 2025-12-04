@@ -126,15 +126,17 @@ def SID_ZA64RS_03_w():
 
     # SC.W to offset 96 (64+) - should fail
     sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.W to same address as LR (offset 32) - should pass
     sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
-    assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
 
     # Verify the value was written
     load_verify = Load(op="lw", memory=mem, offset=32)
-    assert_value = AssertEqual(src1=load_verify, src2=0xDEADBEEF)
+    load_verify_val = LoadImmediateStep(imm=0xDEADBEEF)
+    assert_value = AssertEqual(src1=load_verify, src2=load_verify_val)
 
     return TestScenario.from_steps(
         id="3",
@@ -145,12 +147,15 @@ def SID_ZA64RS_03_w():
             comment,
             mem,
             store_val,
+            zero_val,
             lr_instr,
             sc_fail,
             assert_sc_fail,
+            zero_val,
             sc_pass,
             assert_sc_pass,
             load_verify,
+            load_verify_val,
             assert_value,
         ],
     )
@@ -171,21 +176,23 @@ def SID_ZA64RS_03_d():
 
     # Store initial value at offset 32 (within 0..63)
     store_val = Store(op="sd", memory=mem, offset=32, value=0x123456789ABCDEF0)
+    zero_val = LoadImmediateStep(imm=0)
 
     # LR.D from offset 32
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=32)
 
     # SC.D to offset 96 (64+) - should fail
     sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.D to same address as LR (offset 32) - should pass
     sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
-    assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
 
     # Verify the value was written
     load_verify = Load(op="ld", memory=mem, offset=32)
-    assert_value = AssertEqual(src1=load_verify, src2=0xDEADBEEFCAFEBABE)
+    load_verify_val = LoadImmediateStep(imm=0xDEADBEEFCAFEBABE)
+    assert_value = AssertEqual(src1=load_verify, src2=load_verify_val)
 
     return TestScenario.from_steps(
         id="4",
@@ -196,12 +203,14 @@ def SID_ZA64RS_03_d():
             comment,
             mem,
             store_val,
+            zero_val,
             lr_instr,
             sc_fail,
             assert_sc_fail,
             sc_pass,
             assert_sc_pass,
             load_verify,
+            load_verify_val,
             assert_value,
         ],
     )
@@ -233,19 +242,22 @@ def SID_ZA64RS_04_w():
 
     # SC.W to offset 96 (64..127) - should fail
     sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.W to first LR address (offset 32) - should pass
     sc_pass1 = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
-    assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=0)
+    assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=zero_val)
     load_verify1 = Load(op="lw", memory=mem, offset=32)
-    assert_value1 = AssertEqual(src1=load_verify1, src2=0x33333333)
+    load_verify_val1 = LoadImmediateStep(imm=0x33333333)
+    assert_value1 = AssertEqual(src1=load_verify1, src2=load_verify_val1)
 
     # SC.W to second LR address (offset 160) - should pass
     sc_pass2 = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=160)
     assert_sc_pass2 = AssertEqual(src1=sc_pass2, src2=0)
     load_verify2 = Load(op="lw", memory=mem, offset=160)
-    assert_value2 = AssertEqual(src1=load_verify2, src2=0x44444444)
+    load_verify_val2 = LoadImmediateStep(imm=0x44444444)
+    assert_value2 = AssertEqual(src1=load_verify2, src2=load_verify_val2)
 
     return TestScenario.from_steps(
         id="5",
@@ -256,6 +268,7 @@ def SID_ZA64RS_04_w():
             comment,
             mem,
             store_val1,
+            zero_val,
             lr_instr1,
             store_val2,
             lr_instr2,
@@ -264,10 +277,12 @@ def SID_ZA64RS_04_w():
             sc_pass1,
             assert_sc_pass1,
             load_verify1,
+            load_verify_val1,
             assert_value1,
             sc_pass2,
             assert_sc_pass2,
             load_verify2,
+            load_verify_val2,
             assert_value2,
         ],
     )
@@ -299,19 +314,22 @@ def SID_ZA64RS_04_d():
 
     # SC.D to offset 96 (64..127) - should fail
     sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.D to first LR address (offset 32) - should pass
     sc_pass1 = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
-    assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=0)
+    assert_sc_pass1 = AssertEqual(src1=sc_pass1, src2=zero_val)
     load_verify1 = Load(op="ld", memory=mem, offset=32)
-    assert_value1 = AssertEqual(src1=load_verify1, src2=0x3333333333333333)
+    load_verify_val1 = LoadImmediateStep(imm=0x3333333333333333)
+    assert_value1 = AssertEqual(src1=load_verify1, src2=load_verify_val1)
 
     # SC.D to second LR address (offset 160) - should pass
     sc_pass2 = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=160)
-    assert_sc_pass2 = AssertEqual(src1=sc_pass2, src2=0)
+    assert_sc_pass2 = AssertEqual(src1=sc_pass2, src2=zero_val)
     load_verify2 = Load(op="ld", memory=mem, offset=160)
-    assert_value2 = AssertEqual(src1=load_verify2, src2=0x4444444444444444)
+    load_verify_val2 = LoadImmediateStep(imm=0x4444444444444444)
+    assert_value2 = AssertEqual(src1=load_verify2, src2=load_verify_val2)
 
     return TestScenario.from_steps(
         id="6",
@@ -322,6 +340,7 @@ def SID_ZA64RS_04_d():
             comment,
             mem,
             store_val1,
+            zero_val,
             lr_instr1,
             store_val2,
             lr_instr2,
@@ -330,10 +349,12 @@ def SID_ZA64RS_04_d():
             sc_pass1,
             assert_sc_pass1,
             load_verify1,
+            load_verify_val1,
             assert_value1,
             sc_pass2,
             assert_sc_pass2,
             load_verify2,
+            load_verify_val2,
             assert_value2,
         ],
     )
@@ -360,15 +381,17 @@ def SID_ZA64RS_05_w():
 
     # SC.W to offset 32 (0..63) - should fail
     sc_fail = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=32)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.W to same address as LR (offset 96) - should pass
     sc_pass = MemAccess(op="sc.w", has_immediate=False, memory=mem, offset=96)
-    assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
 
     # Verify the value was written
     load_verify = Load(op="lw", memory=mem, offset=96)
-    assert_value = AssertEqual(src1=load_verify, src2=0xDEADBEEF)
+    load_verify_val = LoadImmediateStep(imm=0xDEADBEEF)
+    assert_value = AssertEqual(src1=load_verify, src2=load_verify_val)
 
     return TestScenario.from_steps(
         id="7",
@@ -382,9 +405,11 @@ def SID_ZA64RS_05_w():
             lr_instr,
             sc_fail,
             assert_sc_fail,
+            zero_val,
             sc_pass,
             assert_sc_pass,
             load_verify,
+            load_verify_val,
             assert_value,
         ],
     )
@@ -411,15 +436,17 @@ def SID_ZA64RS_05_d():
 
     # SC.D to offset 32 (0..63) - should fail
     sc_fail = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=32)
-    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=0)
+    zero_val = LoadImmediateStep(imm=0)
+    assert_sc_fail = AssertNotEqual(src1=sc_fail, src2=zero_val)
 
     # SC.D to same address as LR (offset 96) - should pass
     sc_pass = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=96)
-    assert_sc_pass = AssertEqual(src1=sc_pass, src2=0)
+    assert_sc_pass = AssertEqual(src1=sc_pass, src2=zero_val)
 
     # Verify the value was written
     load_verify = Load(op="ld", memory=mem, offset=96)
-    assert_value = AssertEqual(src1=load_verify, src2=0xDEADBEEFCAFEBABE)
+    load_verify_val = LoadImmediateStep(imm=0xDEADBEEFCAFEBABE)
+    assert_value = AssertEqual(src1=load_verify, src2=load_verify_val)
 
     return TestScenario.from_steps(
         id="8",
@@ -433,9 +460,11 @@ def SID_ZA64RS_05_d():
             lr_instr,
             sc_fail,
             assert_sc_fail,
+            zero_val,
             sc_pass,
             assert_sc_pass,
             load_verify,
+            load_verify_val,
             assert_value,
         ],
     )
