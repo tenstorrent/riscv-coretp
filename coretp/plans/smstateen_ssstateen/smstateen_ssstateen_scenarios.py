@@ -701,13 +701,13 @@ def SID_SMSTATEEN_008():
         test_val = LoadImmediateStep(imm=0xFFFFFFFFFFFFFFFF)
         steps.append(test_val)
 
-        write_m_step = CsrWrite(csr_name="m"+csr, value=test_val)
+        write_m_step = CsrWrite(csr_name="m" + csr, value=test_val)
         steps.append(write_m_step)
 
-        write_step = CsrWrite(csr_name="h"+csr, value=test_val, direct_write=True)
+        write_step = CsrWrite(csr_name="h" + csr, value=test_val, direct_write=True)
         steps.append(write_step)
 
-        read_val = CsrRead(csr_name="h"+csr, direct_read=True)
+        read_val = CsrRead(csr_name="h" + csr, direct_read=True)
         steps.append(read_val)
 
         # Only bit 63 can be set
@@ -931,6 +931,7 @@ def SID_SMSTATEEN_012_VU():
         env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[True]),
         steps=steps,
     )
+
 
 @smstateen_ssstateen_scenario
 def SID_SMSTATEEN_018_case1():

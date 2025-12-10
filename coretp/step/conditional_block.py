@@ -22,4 +22,3 @@ class ConditionalBlock(TestStep):
 
     enabled_features: list[Extension] = field(default_factory=list)
     code: list[TestStep] = field(default_factory=list)
-
