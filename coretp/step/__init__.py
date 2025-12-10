@@ -3,7 +3,7 @@
 
 from .step import TestStep
 from .memory import Memory, CodePage, ModifyPte, ReadLeafPTE, WriteLeafPTE
-
+from .conditional_block import ConditionalBlock
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
 from .load_store import MemoryOp, Load, Store, MemAccess
@@ -41,4 +41,5 @@ __all__ = [
     "Directive",
     "System",
     "Comment",
+    "ConditionalBlock",
 ]

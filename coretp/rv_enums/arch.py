@@ -179,6 +179,7 @@ class Extension(Flag):
     SSCSRIND = auto()
     SSNPM = auto()
     SSPM = auto()
+    SSQOSID = auto()
     SSSTATEEN = auto()
     SSTC = auto()
     SSTVALA = auto()

@@ -25,13 +25,17 @@ class ExceptionCause(Enum):
     DOUBLE_TRAP = 16
     SOFTWARE_CHECK = 18
     HARDWARE_ERROR = 19
+    INSTRUCTION_GUEST_PAGE_FAULT = 20
+    LOAD_GUEST_PAGE_FAULT = 21
+    VIRTUAL_INSTRUCTION = 22
+    STORE_AMO_GUEST_PAGE_FAULT = 23
     CUSTOM = 24
 
     @classmethod
     def from_cause(cls, cause: int) -> "ExceptionCause":
         "Create cause from integer value"
 
-        if cause in [10, 14, 17] or (cause >= 20 and cause <= 23) or (cause >= 32 and cause <= 47) or cause >= 64:
+        if cause in [10, 14, 17] or (cause >= 32 and cause <= 47) or cause >= 64:
             return cls.RESERVED
         if (cause >= 24 and cause <= 31) or (cause >= 48 and cause <= 63):
             return cls.CUSTOM
