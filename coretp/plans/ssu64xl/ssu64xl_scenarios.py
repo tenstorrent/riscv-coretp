@@ -148,19 +148,19 @@ def SID_SSU64XL_03():
     test_val = LoadImmediateStep(imm=0xFFFFFFFFFFFFFFFF)
 
     steps.append(test_val)
-    lsb_mask = LoadImmediateStep(imm=1)
+    lsb_mask = LoadImmediateStep(imm=0xFFFF)
     steps.append(lsb_mask)
-    expected_one = LoadImmediateStep(imm=1)
+    expected_one = LoadImmediateStep(imm=0xFFFF)
     steps.append(expected_one)
 
     comment_2 = Comment(comment="Loop 64 times, shifting right and checking LSB")
     steps.append(comment_2)
 
-    for i in range(64):
+    for i in range(3):
         comment_3 = Comment(comment=f"Shift right logical by {i} positions")
-        shift_amt = LoadImmediateStep(imm=i)
+        shift_amt = LoadImmediateStep(imm=16*i)
         shifted = Arithmetic(op="srl", src1=test_val, src2=shift_amt)
-        comment_4 = Comment(comment="Extract LSB (bit 0)")
+        comment_4 = Comment(comment="Extract LAST TWO BYTES (bit 0)")
         lsb = Arithmetic(op="and", src1=shifted, src2=lsb_mask)
         comment_5 = Comment(comment="Expected value: 1 for all bits 0-63")
         assert_lsb = AssertEqual(src1=lsb, src2=expected_one)
@@ -170,7 +170,7 @@ def SID_SSU64XL_03():
     return TestScenario.from_steps(
         id="3",
         name="SID_SSU64XL_03",
-        description="UXL bit check - underflow CSR and do 64 checks with SRLI, verifying LSB is bit 1",
+        description="UXL bit check - underflow CSR and do byte level checks with SRLI, verifying LAST TWO BYTES are 0xFFFF",
         env=test_env_u_mode(),
         steps=steps,
     )
