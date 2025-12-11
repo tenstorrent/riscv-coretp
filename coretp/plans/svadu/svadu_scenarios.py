@@ -138,7 +138,7 @@ def SID_SVADU_02_hardware_update_a_bit():
         id="3",
         name="SID_SVADU_02_hardware_update_a_bit",
         description="SVADU enabled: hardware updates pte.a bit on memory access",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], max_test_runs=1),
         steps=[
             mem,
             comment_1,
@@ -198,7 +198,7 @@ def SID_SVADU_02_hardware_update_d_bit():
         id="4",
         name="SID_SVADU_02_hardware_update_d_bit",
         description="SVADU enabled: hardware updates pte.d bit on store",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], max_test_runs=1),
         steps=[
             mem,
             comment_1,

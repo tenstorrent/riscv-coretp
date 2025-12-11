@@ -20,6 +20,7 @@ class TestEnv:
     hart_count: int = 1
     virtualized: bool = False  #: Whether the test environment is virtualized or in bare metal (hypervisor) mode
     deleg_excp_to: PrivilegeMode = PrivilegeMode.M
+    max_test_runs: int = 1000000  # Arbitrary large number to ensure test runs indefinitely
 
     def get_max_va_bits(self) -> int:
         """
