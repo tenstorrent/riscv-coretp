@@ -158,7 +158,7 @@ def SID_SSU64XL_03():
 
     for i in range(3):
         comment_3 = Comment(comment=f"Shift right logical by {i} positions")
-        shift_amt = LoadImmediateStep(imm=16*i)
+        shift_amt = LoadImmediateStep(imm=16 * i)
         shifted = Arithmetic(op="srl", src1=test_val, src2=shift_amt)
         comment_4 = Comment(comment="Extract LAST TWO BYTES (bit 0)")
         lsb = Arithmetic(op="and", src1=shifted, src2=lsb_mask)
