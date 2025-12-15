@@ -79,7 +79,7 @@ def SID_SSTC_01():
         id="1",
         name="SID_SSTC_01",
         description="Access to stimecmp, vstimecmp, & time blocked when mcounteren.tm=0",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], hypervisor=[True, False], virtualized=[True, False]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True, False]),
         steps=[
             comment_1,
             mcounteren_clear,
@@ -147,7 +147,7 @@ def SID_SSTC_02_M_HS():
         id="2",
         name="SID_SSTC_02_M_HS",
         description="Access blocked in lower-than-HS mode when mcounteren.tm=1, hcounteren.tm=0",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
         steps=[
             comment_1,
             mcounteren_set,
@@ -203,7 +203,7 @@ def SID_SSTC_02_HU():
         id="3",
         name="SID_SSTC_02_HU",
         description="Access blocked in lower-than-HS mode when mcounteren.tm=1, hcounteren.tm=0",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
             comment_1,
             mcounteren_set,
@@ -488,7 +488,7 @@ def SID_SSTC_05_M_HS():
         id="10",
         name="SID_SSTC_05_M_HS",
         description="Access to vstimecmp blocked in VS mode when henvcfg.STCE=0",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], hypervisor=[True]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
         steps=[
             comment_1,
             menvcfg_set,
