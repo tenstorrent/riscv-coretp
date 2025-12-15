@@ -2,13 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .step import TestStep
-<<<<<<< HEAD
-from .memory import Memory, CodePage, ModifyPte, ReadLeafPTE, WriteLeafPTE, ReadPTE, WritePTE
+from .memory import Memory, CodePage, ModifyPte, ReadLeafPTE, WriteLeafPTE, ReadPTE, WritePTE, RequestPmpRegion
 from .conditional_block import ConditionalBlock
-=======
-from .memory import Memory, CodePage, ModifyPte, ReadLeafPTE, WriteLeafPTE
-from .conditional_block import ConditionalBlock, RequestPmp
->>>>>>> 7c57bb4 (feat - Support for requesting PMP regions)
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
 from .load_store import MemoryOp, Load, Store, MemAccess
@@ -30,7 +25,7 @@ __all__ = [
     "WritePTE",
     "Call",
     "TestStep",
-    "RequestPmp",
+    "RequestPmpRegion",
     "Call",
     "MemAccess",
     "Load",

@@ -65,6 +65,12 @@ class InstructionCatalog:
     def __len__(self):
         return len(self._instructions)
 
+    def supports_extensions(self, extensions: Extension) -> bool:
+        """
+        Check if the catalog supports a given set of extensions.
+        """
+        return (self.isa.extensions & extensions) == extensions
+
     def filter(
         self,
         extension: Optional[Extension] = None,

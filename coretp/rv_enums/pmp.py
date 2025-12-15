@@ -9,7 +9,7 @@ from enum import Flag, auto
 
 
 class PmpAttribute(Flag):
-    write = auto()
-    read = auto()
-    execute = auto()
-    locked = auto()
+    WRITE = auto()
+    READ = auto()
+    EXECUTE = auto()
+    LOCKED = auto()

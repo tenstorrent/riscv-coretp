@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Any, Union
 
 from .step import TestStep
-from coretp.rv_enums import PageSize, PageFlags
+from coretp.rv_enums import PageSize, PageFlags, PmpAttribute
 
 
 @dataclass(frozen=True)
@@ -142,3 +142,16 @@ class WriteLeafPTE(TestStep):
 
     memory: Optional[Memory] = None
     src: Optional[Union[TestStep, int]] = None
+
+
+@dataclass(frozen=True)
+class RequestPmpRegion(Memory):
+    """
+    Request a PMP entry for a given memory region
+
+    This test step executes a block of code only if specific extensions are enabled.
+
+    :param PMP attributes: PMP attributes to request. E.g. PmpAttribute.READ | PmpAttribute.WRITE
+    """
+
+    pmp_attributes: Optional[PmpAttribute] = None
