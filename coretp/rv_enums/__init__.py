@@ -3,6 +3,7 @@
 
 from .arch import Xlen, BaseArch, Extension
 from .paging import PageSize, PagingMode, PageFlags
+from .pmp import PmpAttribute
 from .privilege import PrivilegeMode
 from .instruction import Category, OperandType
 from .register import RegisterClass
@@ -15,6 +16,7 @@ __all__ = [
     "PageSize",
     "PagingMode",
     "PageFlags",
+    "PmpAttribute",
     "PrivilegeMode",
     "Category",
     "OperandType",
