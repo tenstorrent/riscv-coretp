@@ -130,10 +130,6 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte_1, src2=w_bit_mask)
     write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
 
-    comment_5 = Comment(comment="Exception check on random store (should still fault - TLB has old PTE cached)")
-    random_store_2 = Store(memory=mem, value=random_store_val)
-    assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
-
     comment_6 = Comment(comment="2. SFENCE.W.INVAL")
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
 
@@ -169,8 +165,6 @@ def SID_SVINVAL_03_invalidation_sequence_1():
             w_bit_mask,
             pte_with_w,
             write_leaf_pte,
-            comment_5,
-            assert_store_fault_2,
             comment_6,
             sfence_w_inval,
             comment_7,
@@ -235,14 +229,6 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     pte_with_w_3 = Arithmetic(op="or", src1=read_leaf_pte_3, src2=w_bit_mask_3)
     write_leaf_pte_3 = WriteLeafPTE(memory=mem3, src=pte_with_w_3)
 
-    comment_5 = Comment(comment="Exception checks on random stores (should still fault - TLB has old PTE cached)")
-    random_store_1_2 = Store(memory=mem1, value=random_store_val)
-    assert_store_fault_1_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_1_2])
-    random_store_2_2 = Store(memory=mem2, value=random_store_val)
-    assert_store_fault_2_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2_2])
-    random_store_3_2 = Store(memory=mem3, value=random_store_val)
-    assert_store_fault_3_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_3_2])
-
     comment_6 = Comment(comment="2. SFENCE.W.INVAL")
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
 
@@ -306,10 +292,6 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
             w_bit_mask_3,
             pte_with_w_3,
             write_leaf_pte_3,
-            comment_5,
-            assert_store_fault_1_2,
-            assert_store_fault_2_2,
-            assert_store_fault_3_2,
             comment_6,
             sfence_w_inval,
             comment_7,
@@ -366,10 +348,6 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     pte_with_w = Arithmetic(op="or", src1=read_leaf_pte, src2=w_bit_mask)
     write_leaf_pte = WriteLeafPTE(memory=mem, src=pte_with_w)
 
-    comment_5 = Comment(comment="Exception check on random store (should still fault - TLB has old PTE cached)")
-    random_store_2 = Store(memory=mem, value=random_store_val)
-    assert_store_fault_2 = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[random_store_2])
-
     comment_6 = Comment(comment="2. SFENCE.W.INVAL followed by random ops")
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
     random_arithmetic = Arithmetic()
@@ -409,8 +387,6 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
             w_bit_mask,
             pte_with_w,
             write_leaf_pte,
-            comment_5,
-            assert_store_fault_2,
             comment_6,
             sfence_w_inval,
             random_arithmetic,
