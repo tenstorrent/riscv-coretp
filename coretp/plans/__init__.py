@@ -9,6 +9,7 @@ from .test_plan_registry import new_test_plan, get_plan, list_plans, query_plans
 from .paging import page_table_walks
 from .sstc import sstc_scenarios
 from .svade import svade_scenarios
+from .svadu import svadu_scenarios
 from .svinval import svinval_scenarios
 from .za64rs import za64rs_scenarios
 from .zicond import zicond_scenarios
