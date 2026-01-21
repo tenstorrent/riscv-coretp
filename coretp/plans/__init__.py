@@ -21,5 +21,6 @@ from .sscofpmf import sscofpmf_scenarios
 from .hypervisor import hypervisor_scenarios
 from .ssu64xl import ssu64xl_scenarios
 from .smstateen_ssstateen import smstateen_ssstateen_scenarios
+from .svadu import svadu_scenarios
 
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]
