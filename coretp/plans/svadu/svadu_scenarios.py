@@ -1,12 +1,11 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from coretp import TestPlan, TestScenario, TestEnvCfg
-from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
+from coretp import TestScenario, TestEnvCfg
+from coretp.rv_enums import PagingMode, PageSize, PageFlags, ExceptionCause
 from coretp.step import (
-    TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, CsrRead,
-    AssertException, Call, AssertEqual, AssertNotEqual, Comment, ModifyPte,
-    ReadLeafPTE, WriteLeafPTE, MemAccess, ConditionalBlock
+    Memory, Load, Store, CodePage, Arithmetic, CsrWrite,
+    AssertException, Call, Comment, MemAccess
 )
 
 from . import svadu_scenario
@@ -18,60 +17,56 @@ def SID_SVADU_01_fault_on_a_bit_cleared():
     When svadu disabled i.e menvcfg.adue=0,
     1. All memory access should fault when pte.a=0
     2. Store/Amo/sc/zicboz should fault when pte.d=0
-
-    This scenario tests that accesses fault when pte.a=0
     """
-    comment_1 = Comment(comment="SVADU disabled - test pte.a=0 fault")
+    # SVADU disabled (menvcfg.adue=0), test pte.a=0 fault
+    comment_1 = Comment(comment="Disable SVADU by setting menvcfg.adue=0")
+    csr_write_menvcfg = CsrWrite(csr_name="menvcfg", clear_mask=1 << 61)  # adue=0 (clear bit 61)
 
-    # Disable SVADU
-    csr_write = CsrWrite(csr="menvcfg", value=0x0)  # adue=0
-
-    # Create memory with pte.a=0 (clear accessed bit)
+    comment_2 = Comment(comment="Set up memory with pte.a=0 (clear accessed bit)")
     mem = Memory(
         size=0x10000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,  # pte.a=0, pte.d=0
+        modify=True,
     )
 
-    # Modify PTE to clear accessed bit
-    modify_pte = ModifyPte(memory=mem, clear_flags=PageFlags.ACCESSED)
+    comment_3 = Comment(comment="Test load instruction - should fault with pte.a=0")
+    load = Load(memory=mem)
+    assert_load_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[load])
 
-    # Test various access types that should fault
-    comment_2 = Comment(comment="Test load instruction - should fault with pte.a=0")
-    load_instr = Load(memory=mem)
-    load_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT)
+    comment_4 = Comment(comment="Test fetch/call - should fault with pte.a=0")
+    code = CodePage(code=[Arithmetic()], exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY, modify=True)
+    call = Call(target=code)
+    assert_fetch_fault = AssertException(cause=ExceptionCause.INSTRUCTION_PAGE_FAULT, code=[call])
 
-    comment_3 = Comment(comment="Test instruction fetch - should fault with pte.a=0")
-    code = CodePage(code=[Arithmetic()])
-    code_modify_pte = ModifyPte(memory=code, clear_flags=PageFlags.ACCESSED)
-    call_instr = Call(target=code)
-    fetch_exception = AssertException(cause=ExceptionCause.INSTRUCTION_PAGE_FAULT)
+    comment_5 = Comment(comment="Test lr instruction - should fault with pte.a=0")
+    lr = Load(memory=mem, op="lr.w")
+    assert_lr_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[lr])
 
-    comment_4 = Comment(comment="Test LR instruction - should fault with pte.a=0")
-    lr_instr = Arithmetic(op="lr.w", rd="t0", rs1="a0")
-    lr_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT)
+    comment_6 = Comment(comment="Test zicbom instruction - should fault with pte.a=0")
+    zicbom = MemAccess(op="cbo.clean", memory=mem)
+    assert_zicbom_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[zicbom])
 
     return TestScenario.from_steps(
         id="1",
         name="SID_SVADU_01_fault_on_a_bit_cleared",
-        description="SVADU disabled - faults on pte.a=0",
+        description="When svadu disabled (menvcfg.adue=0), all memory access should fault when pte.a=0",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             comment_1,
-            csr_write,
-            mem,
-            modify_pte,
+            csr_write_menvcfg,
             comment_2,
-            load_instr,
-            load_exception,
+            mem,
             comment_3,
-            code,
-            code_modify_pte,
-            call_instr,
-            fetch_exception,
+            assert_load_fault,
             comment_4,
-            lr_instr,
-            lr_exception,
+            code,
+            assert_fetch_fault,
+            comment_5,
+            assert_lr_fault,
+            comment_6,
+            assert_zicbom_fault,
         ],
     )
 
@@ -82,60 +77,55 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
     When svadu disabled i.e menvcfg.adue=0,
     1. All memory access should fault when pte.a=0
     2. Store/Amo/sc/zicboz should fault when pte.d=0
-
-    This scenario tests that stores fault when pte.d=0
     """
-    comment_1 = Comment(comment="SVADU disabled - test pte.d=0 fault")
+    # SVADU disabled (menvcfg.adue=0), test pte.d=0 fault
+    comment_1 = Comment(comment="Disable SVADU by setting menvcfg.adue=0")
+    csr_write_menvcfg = CsrWrite(csr_name="menvcfg", clear_mask=1 << 61)  # adue=0 (clear bit 61)
 
-    # Disable SVADU
-    csr_write = CsrWrite(csr="menvcfg", value=0x0)  # adue=0
-
-    # Create memory with pte.d=0 (clear dirty bit) but pte.a=1
+    comment_2 = Comment(comment="Set up memory with pte.d=0 (clear dirty bit)")
     mem = Memory(
         size=0x10000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED,
+        exclude_flags=PageFlags.DIRTY,  # pte.d=0
+        modify=True,
     )
 
-    # Modify PTE to clear dirty bit
-    modify_pte = ModifyPte(memory=mem, clear_flags=PageFlags.DIRTY)
+    comment_3 = Comment(comment="Test store instruction - should fault with pte.d=0")
+    store = Store(memory=mem, value=0xDEADBEEF)
+    assert_store_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[store])
 
-    # Test store instruction - should fault with pte.d=0
-    comment_2 = Comment(comment="Test store instruction - should fault with pte.d=0")
-    store_instr = Store(memory=mem, value=0xDEADBEEF)
-    store_exception = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT)
+    comment_4 = Comment(comment="Test amo instruction - should fault with pte.d=0")
+    amo = Store(memory=mem, op="amoadd.w", value=1)
+    assert_amo_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[amo])
 
-    # Test AMO instruction - should fault with pte.d=0
-    comment_3 = Comment(comment="Test AMO instruction - should fault with pte.d=0")
-    amo_instr = Arithmetic(op="amoadd.w", rd="t0", rs1="a0", rs2="t1")
-    amo_exception = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT)
+    comment_5 = Comment(comment="Test sc instruction - should fault with pte.d=0")
+    lr_before_sc = Load(memory=mem, op="lr.w")
+    sc = Store(memory=mem, op="sc.w", value=0x1)
+    assert_sc_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[lr_before_sc, sc])
 
-    # Test SC instruction - should fault with pte.d=0
-    comment_4 = Comment(comment="Test SC instruction - should fault with pte.d=0")
-    lr_setup = Arithmetic(op="lr.w", rd="t0", rs1="a0")
-    sc_instr = Arithmetic(op="sc.w", rd="t1", rs1="a0", rs2="t0")
-    sc_exception = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT)
+    comment_6 = Comment(comment="Test zicboz instruction - should fault with pte.d=0")
+    zicboz = MemAccess(op="cbo.zero", memory=mem)
+    assert_zicboz_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[zicboz])
 
     return TestScenario.from_steps(
         id="2",
         name="SID_SVADU_01_fault_on_d_bit_cleared",
-        description="SVADU disabled - faults on pte.d=0",
+        description="When svadu disabled (menvcfg.adue=0), Store/Amo/sc/zicboz should fault when pte.d=0",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             comment_1,
-            csr_write,
-            mem,
-            modify_pte,
+            csr_write_menvcfg,
             comment_2,
-            store_instr,
-            store_exception,
+            mem,
             comment_3,
-            amo_instr,
-            amo_exception,
+            assert_store_fault,
             comment_4,
-            lr_setup,
-            sc_instr,
-            sc_exception,
+            assert_amo_fault,
+            comment_5,
+            assert_sc_fault,
+            comment_6,
+            assert_zicboz_fault,
         ],
     )
 
@@ -144,100 +134,75 @@ def SID_SVADU_01_fault_on_d_bit_cleared():
 def SID_SVADU_02_hardware_update_a_bit():
     """
     When svadu enabled i.e menvcfg.adue=1, pte pa mem_type = cacheable
-    1. All memory access should update pte.a bit if pte.a=0
+    1. all memory access should update pte.a bit if pte.a=0
     2. Store/Amo/sc/zicboz should update pte.d bit if pte.d=0
-
-    This scenario tests hardware update of access bit
     """
-    comment_1 = Comment(comment="SVADU enabled - hardware updates pte.a bit")
+    # SVADU enabled (menvcfg.adue=1), hardware updates pte.a bit
+    comment_1 = Comment(comment="Enable SVADU by setting menvcfg.adue=1")
+    csr_write_menvcfg = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)  # adue=1 (set bit 61)
 
-    # Enable SVADU (set adue bit)
-    csr_write = CsrWrite(csr="menvcfg", value=0x2000000000000000)  # adue=1 (bit 61)
-
-    # Create cacheable memory with pte.a=0
+    comment_2 = Comment(comment="Set up cacheable memory with pte.a=0")
     mem = Memory(
         size=0x10000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,  # pte.a=0
+        modify=True
     )
 
-    # Clear accessed bit
-    modify_pte = ModifyPte(memory=mem, clear_flags=PageFlags.ACCESSED)
+    comment_3 = Comment(comment="Test load instruction - should succeed (hardware updates pte.a)")
+    load = Load(memory=mem)
 
-    # Sfence.vma to ensure TLB is flushed
-    sfence = Arithmetic(op="sfence.vma")
-
-    # Test load instruction - should update pte.a
-    comment_2 = Comment(comment="Load from memory - hardware should set pte.a=1")
-    load_instr = Load(memory=mem)
-
-    # Check that pte.a is now set
-    read_pte = ReadLeafPTE(memory=mem)
-    check_a_bit = AssertEqual(
-        actual=read_pte,
-        expected=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED,
-        mask=PageFlags.ACCESSED
+    comment_4 = Comment(comment="Test fetch/call - should succeed (hardware updates pte.a)")
+    code = CodePage(
+        code=[Arithmetic()],
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.EXECUTE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,
+        modify=True
     )
+    call = Call(target=code)
 
-    # Test with instruction fetch
-    comment_3 = Comment(comment="Instruction fetch - hardware should set pte.a=1")
-    code = CodePage(code=[Arithmetic()])
-    code_modify_pte = ModifyPte(memory=code, clear_flags=PageFlags.ACCESSED)
-    sfence_2 = Arithmetic(op="sfence.vma")
-    call_instr = Call(target=code)
-    read_code_pte = ReadLeafPTE(memory=code)
-    check_code_a_bit = AssertEqual(
-        actual=read_code_pte,
-        expected=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED,
-        mask=PageFlags.ACCESSED
-    )
-
-    # Test with LR instruction
-    comment_4 = Comment(comment="LR instruction - hardware should set pte.a=1")
-    mem2 = Memory(
+    comment_5 = Comment(comment="Test lr instruction - should succeed (hardware updates pte.a)")
+    mem_lr = Memory(
         size=0x10000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,
+        modify=True
     )
-    modify_pte_2 = ModifyPte(memory=mem2, clear_flags=PageFlags.ACCESSED)
-    sfence_3 = Arithmetic(op="sfence.vma")
-    lr_instr = Arithmetic(op="lr.w", rd="t0", rs1="a0")
-    read_pte_2 = ReadLeafPTE(memory=mem2)
-    check_lr_a_bit = AssertEqual(
-        actual=read_pte_2,
-        expected=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED,
-        mask=PageFlags.ACCESSED
+    lr = Load(memory=mem_lr, op="lr.w")
+
+    comment_6 = Comment(comment="Test zicbom instruction - should succeed (hardware updates pte.a)")
+    mem_zicbom = Memory(
+        size=0x10000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        exclude_flags=PageFlags.ACCESSED | PageFlags.DIRTY,
+        modify=True
     )
+    zicbom = MemAccess(op="cbo.clean", memory=mem_zicbom)
 
     return TestScenario.from_steps(
         id="3",
         name="SID_SVADU_02_hardware_update_a_bit",
-        description="SVADU enabled - hardware updates access bit",
+        description="When svadu enabled (menvcfg.adue=1), all memory access should update pte.a bit if pte.a=0",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             comment_1,
-            csr_write,
-            mem,
-            modify_pte,
-            sfence,
+            csr_write_menvcfg,
             comment_2,
-            load_instr,
-            read_pte,
-            check_a_bit,
+            mem,
             comment_3,
-            code,
-            code_modify_pte,
-            sfence_2,
-            call_instr,
-            read_code_pte,
-            check_code_a_bit,
+            load,
             comment_4,
-            mem2,
-            modify_pte_2,
-            sfence_3,
-            lr_instr,
-            read_pte_2,
-            check_lr_a_bit,
+            code,
+            call,
+            comment_5,
+            mem_lr,
+            lr,
+            comment_6,
+            mem_zicbom,
+            zicbom,
         ],
     )
 
@@ -246,105 +211,74 @@ def SID_SVADU_02_hardware_update_a_bit():
 def SID_SVADU_02_hardware_update_d_bit():
     """
     When svadu enabled i.e menvcfg.adue=1, pte pa mem_type = cacheable
-    1. All memory access should update pte.a bit if pte.a=0
+    1. all memory access should update pte.a bit if pte.a=0
     2. Store/Amo/sc/zicboz should update pte.d bit if pte.d=0
-
-    This scenario tests hardware update of dirty bit
     """
-    comment_1 = Comment(comment="SVADU enabled - hardware updates pte.d bit")
+    # SVADU enabled (menvcfg.adue=1), hardware updates pte.d bit
+    comment_1 = Comment(comment="Enable SVADU by setting menvcfg.adue=1")
+    csr_write_menvcfg = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)  # adue=1 (set bit 61)
 
-    # Enable SVADU (set adue bit)
-    csr_write = CsrWrite(csr="menvcfg", value=0x2000000000000000)  # adue=1 (bit 61)
-
-    # Create cacheable memory with pte.d=0 but pte.a=1
+    comment_2 = Comment(comment="Test store instruction - should succeed (hardware updates pte.d)")
     mem = Memory(
         size=0x10000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED,
+        exclude_flags=PageFlags.DIRTY,  # pte.d=0
+        modify=True
     )
+    store = Store(memory=mem, value=0xDEADBEEF)
 
-    # Clear dirty bit
-    modify_pte = ModifyPte(memory=mem, clear_flags=PageFlags.DIRTY)
-
-    # Sfence.vma to ensure TLB is flushed
-    sfence = Arithmetic(op="sfence.vma")
-
-    # Test store instruction - should update pte.d
-    comment_2 = Comment(comment="Store to memory - hardware should set pte.d=1")
-    store_instr = Store(memory=mem, value=0xDEADBEEF)
-
-    # Check that pte.d is now set
-    read_pte = ReadLeafPTE(memory=mem)
-    check_d_bit = AssertEqual(
-        actual=read_pte,
-        expected=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED | PageFlags.DIRTY,
-        mask=PageFlags.DIRTY
-    )
-
-    # Test with AMO instruction
-    comment_3 = Comment(comment="AMO instruction - hardware should set pte.d=1")
-    mem2 = Memory(
+    comment_3 = Comment(comment="Test amo instruction - should succeed (hardware updates pte.d)")
+    mem_amo = Memory(
         size=0x10000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED,
+        exclude_flags=PageFlags.DIRTY,
+        modify=True
     )
-    modify_pte_2 = ModifyPte(memory=mem2, clear_flags=PageFlags.DIRTY)
-    sfence_2 = Arithmetic(op="sfence.vma")
-    amo_instr = Arithmetic(op="amoadd.w", rd="t0", rs1="a0", rs2="t1")
-    read_pte_2 = ReadLeafPTE(memory=mem2)
-    check_amo_d_bit = AssertEqual(
-        actual=read_pte_2,
-        expected=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED | PageFlags.DIRTY,
-        mask=PageFlags.DIRTY
-    )
+    amo = Store(memory=mem_amo, op="amoadd.w", value=0x1)
 
-    # Test with SC instruction
-    comment_4 = Comment(comment="SC instruction - hardware should set pte.d=1")
-    mem3 = Memory(
+    comment_4 = Comment(comment="Test sc instruction - should succeed (hardware updates pte.d)")
+    mem_sc = Memory(
         size=0x10000,
         page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED,
+        exclude_flags=PageFlags.DIRTY,
+        modify=True
     )
-    modify_pte_3 = ModifyPte(memory=mem3, clear_flags=PageFlags.DIRTY)
-    sfence_3 = Arithmetic(op="sfence.vma")
-    lr_setup = Arithmetic(op="lr.w", rd="t0", rs1="a0")
-    sc_instr = Arithmetic(op="sc.w", rd="t1", rs1="a0", rs2="t0")
-    read_pte_3 = ReadLeafPTE(memory=mem3)
-    check_sc_d_bit = AssertEqual(
-        actual=read_pte_3,
-        expected=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED | PageFlags.DIRTY,
-        mask=PageFlags.DIRTY
+    lr_sc = Load(memory=mem_sc, op="lr.w")
+    sc = Store(memory=mem_sc, op="sc.w", value=0x2)
+
+    comment_5 = Comment(comment="Test zicboz instruction - should succeed (hardware updates pte.d)")
+    mem_zicboz = Memory(
+        size=0x10000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED,
+        exclude_flags=PageFlags.DIRTY,
+        modify=True
     )
+    zicboz = MemAccess(op="cbo.zero", memory=mem_zicboz)
 
     return TestScenario.from_steps(
         id="4",
         name="SID_SVADU_02_hardware_update_d_bit",
-        description="SVADU enabled - hardware updates dirty bit",
+        description="When svadu enabled (menvcfg.adue=1), Store/Amo/sc/zicboz should update pte.d bit if pte.d=0",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             comment_1,
-            csr_write,
-            mem,
-            modify_pte,
-            sfence,
+            csr_write_menvcfg,
             comment_2,
-            store_instr,
-            read_pte,
-            check_d_bit,
+            mem,
+            store,
             comment_3,
-            mem2,
-            modify_pte_2,
-            sfence_2,
-            amo_instr,
-            read_pte_2,
-            check_amo_d_bit,
+            mem_amo,
+            amo,
             comment_4,
-            mem3,
-            modify_pte_3,
-            sfence_3,
-            lr_setup,
-            sc_instr,
-            read_pte_3,
-            check_sc_d_bit,
+            mem_sc,
+            lr_sc,
+            sc,
+            comment_5,
+            mem_zicboz,
+            zicboz,
         ],
     )

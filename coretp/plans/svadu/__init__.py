@@ -7,8 +7,8 @@ from ..test_plan_registry import new_test_plan
 
 svadu_scenario = new_test_plan(
     name="svadu",
-    description="Covers SVADU (Hardware Updating of PTE A/D Bits) scenarios",
-    tags=["svadu", "paging", "memory"],
+    description="Covers SVADU (Supervisor Virtual Address Dirty/Accessed Update) extension scenarios",
+    tags=["svadu", "memory", "paging"],
 )
 
 __all__ = ["svadu_scenario"]
