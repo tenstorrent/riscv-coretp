@@ -23,6 +23,7 @@ from coretp.step import (
     Comment,
     MemAccess,
     System,
+    SetWaitTimeout,
 )
 
 from . import zawrs_scenario
@@ -47,7 +48,7 @@ def SID_ZAWRS_01_WRS_NTO_NO_RESERVATION():
         id="1",
         name="SID_ZAWRS_01_WRS_NTO_NO_RESERVATION",
         description="WRS.NTO without reservation should not stall the hart",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment,
             wrs_nto,
@@ -64,18 +65,20 @@ def SID_ZAWRS_02_WRS_NTO_WITH_RESERVATION():
     In S/U mode with TW=1
     """
     comment = Comment(comment="WRS.NTO with reservation - stall then exit on store from another hart")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Hart 0: LR to create reservation
-    lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
+    hart0 = Hart(hart_index=0)
+    lr_instr = MemAccess(op="lr.d", memory=mem, offset=0)
 
     # Hart 0: WRS.NTO - will stall waiting for reservation to be lost
     wrs_nto = System(instruction="wrs.nto")
 
+    hart0_exit = HartExit(sync=False)
+
     # Hart 1: Store to same address to clear reservation
     hart1 = Hart(hart_index=1)
     store_other_hart = Store(memory=mem, offset=0, access_size=8)
-    hart1_exit = HartExit(sync=True)
 
     comment_exit = Comment(comment="WRS.NTO exited due to store from another hart")
 
@@ -83,15 +86,15 @@ def SID_ZAWRS_02_WRS_NTO_WITH_RESERVATION():
         id="2",
         name="SID_ZAWRS_02_WRS_NTO_WITH_RESERVATION",
         description="WRS.NTO with reservation - stall then exit on store from another hart",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
             comment,
             mem,
+            hart0,
             lr_instr,
             wrs_nto,
+            hart0_exit,
             hart1,
             store_other_hart,
-            hart1_exit,
             comment_exit,
         ],
     )
@@ -101,11 +104,11 @@ def SID_ZAWRS_02_WRS_NTO_WITH_RESERVATION():
 def SID_ZAWRS_03_WRS_NTO_RESERVATION_LOST():
     """
     Scenario 1.3: WRS.NTO when reservation is lost
-    LR, then store from another hart/same hart loses reservation, WRS.NTO should not enter low-power mode
+    LR, then store from another hart/same hart loses reservation, WRS.NTO should not stall
     VS/VU mode
     """
-    comment = Comment(comment="WRS.NTO when reservation is lost - should not enter low-power mode")
-    mem = Memory(size=0x1000, alignment=64)
+    comment = Comment(comment="WRS.NTO when reservation is lost - should not stall")
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # LR to create reservation
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
@@ -113,15 +116,15 @@ def SID_ZAWRS_03_WRS_NTO_RESERVATION_LOST():
     # Store from same hart to lose reservation
     store_same_hart = Store(memory=mem, offset=0, access_size=8)
 
-    # WRS.NTO - reservation already lost, should not enter low-power mode
+    # WRS.NTO - reservation already lost, should not stall
     wrs_nto = System(instruction="wrs.nto")
 
-    comment_pass = Comment(comment="WRS.NTO did not enter low-power mode - reservation was already lost")
+    comment_pass = Comment(comment="WRS.NTO did not stall - reservation was already lost")
 
     return TestScenario.from_steps(
         id="3",
         name="SID_ZAWRS_03_WRS_NTO_RESERVATION_LOST",
-        description="WRS.NTO when reservation is lost should not enter low-power mode",
+        description="WRS.NTO when reservation is lost should not stall",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
             comment,
@@ -138,19 +141,19 @@ def SID_ZAWRS_03_WRS_NTO_RESERVATION_LOST():
 def SID_ZAWRS_04_WRS_STO_NO_RESERVATION():
     """
     Scenario 1.5: WRS.STO without reservation
-    WRS.STO should not enter low-power mode when there is no reservation
+    WRS.STO should not stall when there is no reservation
     """
-    comment = Comment(comment="WRS.STO without reservation - should not enter low-power mode")
+    comment = Comment(comment="WRS.STO without reservation - should not stall")
 
     # Execute WRS.STO without any prior LR
     wrs_sto = System(instruction="wrs.sto")
 
-    comment_pass = Comment(comment="WRS.STO did not enter low-power mode - test passed")
+    comment_pass = Comment(comment="WRS.STO did not stall - test passed")
 
     return TestScenario.from_steps(
         id="4",
         name="SID_ZAWRS_04_WRS_STO_NO_RESERVATION",
-        description="WRS.STO without reservation should not enter low-power mode",
+        description="WRS.STO without reservation should not stall",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
             comment,
@@ -164,37 +167,40 @@ def SID_ZAWRS_04_WRS_STO_NO_RESERVATION():
 def SID_ZAWRS_05_WRS_STO_WITH_RESERVATION():
     """
     Scenario 1.6: WRS.STO with reservation
-    LR creates reservation, WRS.STO enters low-power mode, store from another hart exits
+    LR creates reservation, WRS.STO stalls, store from another hart exits
     """
-    comment = Comment(comment="WRS.STO with reservation - enter low-power mode then exit on store")
-    mem = Memory(size=0x1000, alignment=64)
+    comment = Comment(comment="WRS.STO with reservation - stall then exit on store")
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Hart 0: LR to create reservation
+    hart0 = Hart(hart_index=0)
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
 
-    # Hart 0: WRS.STO - will enter low-power mode waiting for reservation to be lost
+    # Hart 0: WRS.STO - will stall waiting for reservation to be lost
     wrs_sto = System(instruction="wrs.sto")
+
+    hart0_exit = HartExit(sync=False)
 
     # Hart 1: Store to same address to clear reservation
     hart1 = Hart(hart_index=1)
     store_other_hart = Store(memory=mem, offset=0, access_size=8)
-    hart1_exit = HartExit(sync=True)
 
     comment_exit = Comment(comment="WRS.STO exited due to store from another hart")
 
     return TestScenario.from_steps(
         id="5",
         name="SID_ZAWRS_05_WRS_STO_WITH_RESERVATION",
-        description="WRS.STO with reservation - enter low-power mode then exit on store",
+        description="WRS.STO with reservation - stall then exit on store",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
             comment,
             mem,
+            hart0,
             lr_instr,
             wrs_sto,
+            hart0_exit,
             hart1,
             store_other_hart,
-            hart1_exit,
             comment_exit,
         ],
     )
@@ -204,10 +210,10 @@ def SID_ZAWRS_05_WRS_STO_WITH_RESERVATION():
 def SID_ZAWRS_06_WRS_STO_RESERVATION_LOST():
     """
     Scenario 1.7: WRS.STO when reservation is lost
-    LR, then store loses reservation, WRS.STO should not enter low-power mode
+    LR, then store loses reservation, WRS.STO should not stall
     """
-    comment = Comment(comment="WRS.STO when reservation is lost - should not enter low-power mode")
-    mem = Memory(size=0x1000, alignment=64)
+    comment = Comment(comment="WRS.STO when reservation is lost - should not stall")
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # LR to create reservation
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
@@ -215,15 +221,15 @@ def SID_ZAWRS_06_WRS_STO_RESERVATION_LOST():
     # Store to lose reservation
     store_same_hart = Store(memory=mem, offset=0, access_size=8)
 
-    # WRS.STO - reservation already lost, should not enter low-power mode
+    # WRS.STO - reservation already lost, should not stall
     wrs_sto = System(instruction="wrs.sto")
 
-    comment_pass = Comment(comment="WRS.STO did not enter low-power mode - reservation was already lost")
+    comment_pass = Comment(comment="WRS.STO did not stall - reservation was already lost")
 
     return TestScenario.from_steps(
         id="6",
         name="SID_ZAWRS_06_WRS_STO_RESERVATION_LOST",
-        description="WRS.STO when reservation is lost should not enter low-power mode",
+        description="WRS.STO when reservation is lost should not stall",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
             comment,
@@ -240,15 +246,18 @@ def SID_ZAWRS_06_WRS_STO_RESERVATION_LOST():
 def SID_ZAWRS_07_WRS_STO_TIMEOUT():
     """
     Scenario 1.8: WRS.STO without store - timeout
-    LR creates reservation, WRS.STO enters low-power mode, exits after T1 timeout if no store occurs
+    LR creates reservation, WRS.STO stalls, exits after T1 timeout if no store occurs
     """
     comment = Comment(comment="WRS.STO without store - should exit after T1 timeout")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     # LR to create reservation
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
 
-    # WRS.STO - will enter low-power mode, should exit after timeout
+    # WRS.STO - will stall, should exit after timeout
     wrs_sto = System(instruction="wrs.sto")
 
     comment_timeout = Comment(comment="WRS.STO exited due to timeout (T1)")
@@ -261,6 +270,7 @@ def SID_ZAWRS_07_WRS_STO_TIMEOUT():
         steps=[
             comment,
             mem,
+            set_timeout,
             lr_instr,
             wrs_sto,
             comment_timeout,
@@ -275,7 +285,10 @@ def SID_ZAWRS_08_WRS_IN_LR_SC_LOOP():
     LR, WRS.STO, SC - SC should succeed if WRS exited due to timeout
     """
     comment = Comment(comment="WRS.STO in LR/SC loop - SC should succeed if WRS exited due to timeout")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     # LR to create reservation
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
@@ -298,6 +311,7 @@ def SID_ZAWRS_08_WRS_IN_LR_SC_LOOP():
         steps=[
             comment,
             mem,
+            set_timeout,
             lr_instr,
             wrs_sto,
             zero_val,
@@ -316,11 +330,14 @@ def SID_ZAWRS_09_INTERRUPT_PENDING_M_MODE_NO_EXIT_1():
     Interrupt pending but not enabled, WRS.STO should timeout
     """
     comment = Comment(comment="Interrupt pending in M mode with all interrupts disabled - should timeout")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     # Disable all interrupts: MIE=0, mie.STIE=0
     mstatus_clear_mie = CsrWrite(csr_name="mstatus", clear_mask=0x8)  # MIE bit
-    mie_clear_stie = CsrWrite(csr_name="mie", clear_mask=(1 << 5))   # STIE bit
+    mie_clear_stie = CsrWrite(csr_name="mie", clear_mask=(1 << 5))  # STIE bit
     mideleg_clear = CsrWrite(csr_name="mideleg", clear_mask=(1 << 5))  # STI bit
 
     # LR to create reservation
@@ -339,6 +356,7 @@ def SID_ZAWRS_09_INTERRUPT_PENDING_M_MODE_NO_EXIT_1():
         steps=[
             comment,
             mem,
+            set_timeout,
             mstatus_clear_mie,
             mie_clear_stie,
             mideleg_clear,
@@ -356,7 +374,10 @@ def SID_ZAWRS_10_INTERRUPT_PENDING_M_MODE_NO_EXIT_2():
     MIE=1 SIE=0 mideleg.STI=0 mie.STIE=0
     """
     comment = Comment(comment="Interrupt pending in M mode with MIE=1 but STIE=0 - should timeout")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     # Set MIE=1, but mie.STIE=0
     mstatus_set_mie = CsrWrite(csr_name="mstatus", set_mask=0x8)
@@ -376,6 +397,7 @@ def SID_ZAWRS_10_INTERRUPT_PENDING_M_MODE_NO_EXIT_2():
         steps=[
             comment,
             mem,
+            set_timeout,
             mstatus_set_mie,
             mie_clear_stie,
             mideleg_clear,
@@ -393,7 +415,10 @@ def SID_ZAWRS_11_INTERRUPT_PENDING_M_MODE_NO_EXIT_3():
     MIE=1 SIE=1 mideleg.STI=1 mie.STIE=0
     """
     comment = Comment(comment="Interrupt pending delegated to S mode with STIE=0 - should timeout")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     mstatus_set = CsrWrite(csr_name="mstatus", set_mask=0xA)  # MIE=1, SIE=1
     mie_clear_stie = CsrWrite(csr_name="mie", clear_mask=(1 << 5))
@@ -412,6 +437,7 @@ def SID_ZAWRS_11_INTERRUPT_PENDING_M_MODE_NO_EXIT_3():
         steps=[
             comment,
             mem,
+            set_timeout,
             mstatus_set,
             mie_clear_stie,
             mideleg_set,
@@ -430,7 +456,7 @@ def SID_ZAWRS_12_INTERRUPT_PENDING_M_MODE_EXIT_1():
     WRS should exit due to interrupt pending even if MIE=0
     """
     comment = Comment(comment="Interrupt pending with mie.STIE=1 - WRS should exit")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     mstatus_clear = CsrWrite(csr_name="mstatus", clear_mask=0xA)  # MIE=0, SIE=0
     mie_set_stie = CsrWrite(csr_name="mie", set_mask=(1 << 5))
@@ -468,7 +494,7 @@ def SID_ZAWRS_13_INTERRUPT_PENDING_M_MODE_EXIT_2():
     MIE=1 SIE=1 mideleg.STI=1 mie.STIE=1
     """
     comment = Comment(comment="Interrupt pending with all enabled - WRS should exit")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     mstatus_set = CsrWrite(csr_name="mstatus", set_mask=0xA)
     mie_set_stie = CsrWrite(csr_name="mie", set_mask=(1 << 5))
@@ -507,7 +533,7 @@ def SID_ZAWRS_14_INTERRUPT_PENDING_M_MODE_EXIT_3():
     Exit due to interrupt pending, interrupt taken after WRS
     """
     comment = Comment(comment="Interrupt pending, MIE=1 STIE=1 - WRS exits, interrupt taken")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     mstatus_set_mie = CsrWrite(csr_name="mstatus", set_mask=0x8)
     mstatus_clear_sie = CsrWrite(csr_name="mstatus", clear_mask=0x2)
@@ -547,7 +573,10 @@ def SID_ZAWRS_15_INTERRUPT_PENDING_S_U_MODE_NO_EXIT_1():
     MIE=0 SIE=0 mideleg.STI=0 mie.STIE=0
     """
     comment = Comment(comment="Interrupt pending in S mode with all disabled - should timeout")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     mstatus_clear = CsrWrite(csr_name="mstatus", clear_mask=0xA)
     mie_clear_stie = CsrWrite(csr_name="mie", clear_mask=(1 << 5))
@@ -567,6 +596,7 @@ def SID_ZAWRS_15_INTERRUPT_PENDING_S_U_MODE_NO_EXIT_1():
         steps=[
             comment,
             mem,
+            set_timeout,
             mstatus_clear,
             mie_clear_stie,
             mideleg_clear,
@@ -585,7 +615,10 @@ def SID_ZAWRS_16_INTERRUPT_PENDING_S_U_MODE_NO_EXIT_2():
     MIE=0 SIE=1 mideleg.STI=1 mie.STIE=0
     """
     comment = Comment(comment="Interrupt delegated to S mode with STIE=0 - should timeout")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     mstatus_clear_mie = CsrWrite(csr_name="mstatus", clear_mask=0x8)
     mstatus_set_sie = CsrWrite(csr_name="mstatus", set_mask=0x2)
@@ -606,6 +639,7 @@ def SID_ZAWRS_16_INTERRUPT_PENDING_S_U_MODE_NO_EXIT_2():
         steps=[
             comment,
             mem,
+            set_timeout,
             mstatus_clear_mie,
             mstatus_set_sie,
             mie_clear_stie,
@@ -625,7 +659,7 @@ def SID_ZAWRS_17_INTERRUPT_PENDING_S_U_MODE_EXIT_1():
     MIE=0 SIE=0 mideleg.STI=0 mie.STIE=1
     """
     comment = Comment(comment="Interrupt pending with STIE=1 - WRS should exit")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     mstatus_clear = CsrWrite(csr_name="mstatus", clear_mask=0xA)
     mie_set_stie = CsrWrite(csr_name="mie", set_mask=(1 << 5))
@@ -663,7 +697,7 @@ def SID_ZAWRS_18_INTERRUPT_PENDING_S_U_MODE_EXIT_2():
     MIE=0 SIE=1 mideleg.STI=1 mie.STIE=1
     """
     comment = Comment(comment="Interrupt delegated with STIE=1 - WRS should exit")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     mstatus_clear_mie = CsrWrite(csr_name="mstatus", clear_mask=0x8)
     mstatus_set_sie = CsrWrite(csr_name="mstatus", set_mask=0x2)
@@ -704,7 +738,10 @@ def SID_ZAWRS_19_INTERRUPT_TAKEN_AT_WRS_STO():
     Interrupt taken on WRS, wrs re-dispatched after servicing interrupt
     """
     comment = Comment(comment="Interrupt taken at WRS.STO - re-dispatched after servicing")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
     wrs_sto_1 = System(instruction="wrs.sto")
@@ -720,6 +757,7 @@ def SID_ZAWRS_19_INTERRUPT_TAKEN_AT_WRS_STO():
         steps=[
             comment,
             mem,
+            set_timeout,
             lr_instr,
             wrs_sto_1,
             wrs_sto_2,
@@ -763,7 +801,7 @@ def SID_ZAWRS_21_WRS_TW_EXCEPTION():
     LR, WRS.{NTO/STO} - should cause illegal instruction exception
     """
     comment = Comment(comment="WRS in S/U mode with TW=1 - illegal instruction exception")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Set mstatus.TW=1
     mstatus_set_tw = CsrWrite(csr_name="mstatus", set_mask=(1 << 21))
@@ -799,7 +837,7 @@ def SID_ZAWRS_22_WRS_VTW_VIRTUAL_EXCEPTION():
     Should cause virtual instruction exception
     """
     comment = Comment(comment="WRS in VS/VU mode with VTW=1 - virtual instruction exception")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Set mstatus.TW=0, hstatus.VTW=1
     mstatus_clear_tw = CsrWrite(csr_name="mstatus", clear_mask=(1 << 21))
@@ -837,7 +875,7 @@ def SID_ZAWRS_23_WRS_TW_VTW_ILLEGAL_EXCEPTION_1():
     Should cause illegal instruction exception (TW takes precedence)
     """
     comment = Comment(comment="WRS in VS/VU mode with TW=1 VTW=1 - illegal instruction exception")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Set mstatus.TW=1, hstatus.VTW=1
     mstatus_set_tw = CsrWrite(csr_name="mstatus", set_mask=(1 << 21))
@@ -875,7 +913,7 @@ def SID_ZAWRS_24_WRS_TW_VTW_ILLEGAL_EXCEPTION_2():
     Should cause illegal instruction exception
     """
     comment = Comment(comment="WRS in VS/VU mode with TW=1 VTW=0 - illegal instruction exception")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Set mstatus.TW=1, hstatus.VTW=0
     mstatus_set_tw = CsrWrite(csr_name="mstatus", set_mask=(1 << 21))
@@ -914,7 +952,10 @@ def SID_ZAWRS_25_WRS_STO_TIMEOUT_CHECK():
     time2-time1 > c_wfitimer value
     """
     comment = Comment(comment="WRS.STO timeout check - verify timeout duration")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
 
@@ -944,6 +985,7 @@ def SID_ZAWRS_25_WRS_STO_TIMEOUT_CHECK():
         steps=[
             comment,
             mem,
+            set_timeout,
             lr_instr,
             time1,
             wrs_sto,
@@ -964,7 +1006,10 @@ def SID_ZAWRS_26_WRS_X_WFI():
     WaitType should be set properly in RTL
     """
     comment = Comment(comment="WRS and WFI interaction test")
-    mem = Memory(size=0x1000, alignment=64)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+
+    # Set the wait timeout value
+    set_timeout = SetWaitTimeout(cycles=1000)
 
     # Test 1: WRS.STO followed by WFI
     lr_instr_1 = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
@@ -988,6 +1033,7 @@ def SID_ZAWRS_26_WRS_X_WFI():
         steps=[
             comment,
             mem,
+            set_timeout,
             lr_instr_1,
             wrs_sto,
             wfi,
