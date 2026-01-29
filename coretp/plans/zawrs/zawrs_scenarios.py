@@ -278,7 +278,8 @@ def SID_ZAWRS_07_WRS_STO_TIMEOUT():
         ],
     )
 
-# Scenario disabled - Whisper is unaware of timeouts 
+
+# Scenario disabled - Whisper is unaware of timeouts
 # @zawrs_scenario
 # def SID_ZAWRS_08_WRS_IN_LR_SC_LOOP():
 #     """
@@ -939,6 +940,7 @@ def SID_ZAWRS_24_WRS_TW_VTW_ILLEGAL_EXCEPTION_2():
             assert_sto_exception,
         ],
     )
+
 
 # disabling - Whisper has no concept of wrs.sto timeouts
 # @zawrs_scenario

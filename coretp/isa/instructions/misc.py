@@ -1480,7 +1480,7 @@ misc_instrs = (
         prefetch_i,
         prefetch_r,
         prefetch_w,
-        wfi
+        wfi,
     ]
     + c_mop_N
     + mop_r_N
