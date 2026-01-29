@@ -118,4 +118,14 @@ nop = InstructionDef(
     formatter="nop",
 )
 
-pseudo_instrs = [LoadImmediate, Mv, LoadAddress, csrr, j, jr, ret, jalr_ra, nop]
+unimp = InstructionDef(
+    name="unimp",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.PSEUDO,
+    destination=None,
+    source=[],
+    formatter="unimp",
+)
+
+pseudo_instrs = [LoadImmediate, Mv, LoadAddress, csrr, j, jr, ret, jalr_ra, nop, unimp]

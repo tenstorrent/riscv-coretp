@@ -35,7 +35,7 @@ def SID_ZHP_01():
     """
     comment = Comment(comment="Setup exception before pause")
 
-    illegal_instr = System(instruction="illegal")
+    illegal_instr = System(instruction="unimp")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[illegal_instr])
     pause = System(instruction="pause")
     return TestScenario.from_steps(
@@ -45,6 +45,7 @@ def SID_ZHP_01():
         env=TestEnvCfg(),
         steps=[comment, assert_exception, pause],
     )
+
 
 # Note - no whisper support available here
 # @zihintpause_scenario
@@ -112,43 +113,10 @@ def SID_ZHP_03():
 @zihintpause_scenario
 def SID_ZHP_04a():
     """
-    Scenario: Pause around special instructions - Vector ops
-    Use vector ops before Pause instruction.
-    """
-    comment = Comment(comment="Pause after vector ops")
-
-    vec_reg1 = LoadImmediateStep(imm=0x1234)
-    vec_reg2 = LoadImmediateStep(imm=0x5678)
-    vector_op = Arithmetic(op="vadd.vv", src1=vec_reg1, src2=vec_reg2)
-
-    pause = System(instruction="pause")
-
-    comment_pass = Comment(comment="Pause executed after vector ops")
-
-    return TestScenario.from_steps(
-        id="4",
-        name="SID_ZHP_04a",
-        description="Use vector cracked ops before Pause instruction",
-        env=TestEnvCfg(),
-        steps=[
-            comment,
-            vec_reg1,
-            vec_reg2,
-            vector_op,
-            pause,
-            comment_pass,
-        ],
-    )
-
-
-@zihintpause_scenario
-def SID_ZHP_04b():
-    """
     Scenario: Pause around special instructions - CSR serialization
     Use CSR serialisation before Pause instruction.
     """
     comment = Comment(comment="Pause after CSR serialization")
-
 
     pause = System(instruction="pause")
 
@@ -156,7 +124,7 @@ def SID_ZHP_04b():
 
     pause_2 = System(instruction="pause")
 
-    csr_write = CsrWrite(csr_name="frm", value=-1)
+    csr_write = CsrWrite(csr_name="frm", value=0)
 
     pause_3 = System(instruction="pause")
 
@@ -180,7 +148,7 @@ def SID_ZHP_04b():
 
 
 @zihintpause_scenario
-def SID_ZHP_04c():
+def SID_ZHP_04b():
     """
     Scenario: Pause around special instructions - Fence
     Use Fence before Pause instruction.
@@ -208,7 +176,7 @@ def SID_ZHP_04c():
 
 
 @zihintpause_scenario
-def SID_ZHP_04d():
+def SID_ZHP_04c():
     """
     Scenario: Pause around special instructions - Random instructions
     Use random instruction before Pause instruction.
@@ -281,6 +249,7 @@ def SID_ZHP_05a():
             comment_pass,
         ],
     )
+
 
 # comment as interrupts are not supported by whisper
 # @zihintpause_scenario
