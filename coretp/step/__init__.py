@@ -10,7 +10,7 @@ from .load_store import MemoryOp, Load, Store, MemAccess
 from .csr import CsrWrite, CsrRead
 from .assertion import AssertEqual, AssertNotEqual, AssertException
 from .hart import Hart, HartExit
-from .directive import Directive
+from .miscellaneous import Directive, SetWaitTimeout
 from .system import System
 from .comment import Comment
 
@@ -42,6 +42,7 @@ __all__ = [
     "Hart",
     "HartExit",
     "Directive",
+    "SetWaitTimeout",
     "System",
     "Comment",
     "ConditionalBlock",

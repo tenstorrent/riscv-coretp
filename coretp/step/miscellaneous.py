@@ -15,3 +15,14 @@ class Directive(TestStep):
     """
 
     directive: str = ""
+
+
+@dataclass(frozen=True)
+class SetWaitTimeout(TestStep):
+    """
+    Sets the timeout value for wait instructions (WRS.STO, WFI).
+
+    :param cycles: The number of cycles before the wait instruction times out
+    """
+
+    cycles: int = 0

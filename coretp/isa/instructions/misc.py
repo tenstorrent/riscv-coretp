@@ -1370,6 +1370,17 @@ prefetch_w = InstructionDef(
     formatter="prefetch.w {imm}({rs1})",
 )
 
+wfi = InstructionDef(
+    name="wfi",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="wfi",
+)
+
+
 misc_instrs = (
     [
         amoadd_b,
@@ -1469,6 +1480,7 @@ misc_instrs = (
         prefetch_i,
         prefetch_r,
         prefetch_w,
+        wfi,
     ]
     + c_mop_N
     + mop_r_N
