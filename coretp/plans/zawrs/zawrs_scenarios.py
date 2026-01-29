@@ -86,6 +86,7 @@ def SID_ZAWRS_02_WRS_NTO_WITH_RESERVATION():
         id="2",
         name="SID_ZAWRS_02_WRS_NTO_WITH_RESERVATION",
         description="WRS.NTO with reservation - stall then exit on store from another hart",
+        env=TestEnvCfg(min_num_harts=2),
         steps=[
             comment,
             mem,
@@ -191,7 +192,7 @@ def SID_ZAWRS_05_WRS_STO_WITH_RESERVATION():
         id="5",
         name="SID_ZAWRS_05_WRS_STO_WITH_RESERVATION",
         description="WRS.STO with reservation - stall then exit on store",
-        env=TestEnvCfg(),
+        env=TestEnvCfg(min_num_harts=2),
         steps=[
             comment,
             mem,
