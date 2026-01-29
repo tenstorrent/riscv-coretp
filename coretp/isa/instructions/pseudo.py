@@ -107,4 +107,15 @@ jalr_ra = InstructionDef(
     formatter="jalr {rs1}",
     clobbers=["t0", "t1", "t2", "t3", "t4", "t5", "t6"],
 )
-pseudo_instrs = [LoadImmediate, Mv, LoadAddress, csrr, j, jr, ret, jalr_ra]
+
+nop = InstructionDef(
+    name="nop",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.PSEUDO,
+    destination=None,
+    source=[],
+    formatter="nop",
+)
+
+pseudo_instrs = [LoadImmediate, Mv, LoadAddress, csrr, j, jr, ret, jalr_ra, nop]

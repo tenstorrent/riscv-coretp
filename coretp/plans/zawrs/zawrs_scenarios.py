@@ -253,7 +253,7 @@ def SID_ZAWRS_07_WRS_STO_TIMEOUT():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Set the wait timeout value
-    set_timeout = SetWaitTimeout(cycles=1000)
+    set_timeout = SetWaitTimeout(cycles=200000)
 
     # LR to create reservation
     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
@@ -278,49 +278,49 @@ def SID_ZAWRS_07_WRS_STO_TIMEOUT():
         ],
     )
 
+# Scenario disabled - Whisper is unaware of timeouts 
+# @zawrs_scenario
+# def SID_ZAWRS_08_WRS_IN_LR_SC_LOOP():
+#     """
+#     Scenario 2.1: WRS not supported in constrained LR/SC loop
+#     LR, WRS.STO, SC - SC should succeed if WRS exited due to timeout
+#     """
+#     comment = Comment(comment="WRS.STO in LR/SC loop - SC should succeed if WRS exited due to timeout")
+#     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
-@zawrs_scenario
-def SID_ZAWRS_08_WRS_IN_LR_SC_LOOP():
-    """
-    Scenario 2.1: WRS not supported in constrained LR/SC loop
-    LR, WRS.STO, SC - SC should succeed if WRS exited due to timeout
-    """
-    comment = Comment(comment="WRS.STO in LR/SC loop - SC should succeed if WRS exited due to timeout")
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+#     # Set the wait timeout value
+#     set_timeout = SetWaitTimeout(cycles=200000)
 
-    # LR to create reservation
-    lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
+#     # LR to create reservation
+#     lr_instr = MemAccess(op="lr.d", has_immediate=False, memory=mem, offset=0)
 
-    # Set the wait timeout value
-    set_timeout = SetWaitTimeout(cycles=1000)
+#     # WRS.STO - exits due to timeout
+#     wrs_sto = System(instruction="wrs.sto")
 
-    # WRS.STO - exits due to timeout
-    wrs_sto = System(instruction="wrs.sto")
+#     # SC - should succeed
+#     sc_instr = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=0)
+#     zero_val = LoadImmediateStep(imm=0)
+#     assert_sc_pass = AssertEqual(src1=sc_instr, src2=zero_val)
 
-    # SC - should succeed
-    sc_instr = MemAccess(op="sc.d", has_immediate=False, memory=mem, offset=0)
-    zero_val = LoadImmediateStep(imm=0)
-    assert_sc_pass = AssertEqual(src1=sc_instr, src2=zero_val)
+#     comment_pass = Comment(comment="SC succeeded after WRS.STO timeout")
 
-    comment_pass = Comment(comment="SC succeeded after WRS.STO timeout")
-
-    return TestScenario.from_steps(
-        id="8",
-        name="SID_ZAWRS_08_WRS_IN_LR_SC_LOOP",
-        description="WRS in LR/SC loop - SC should succeed if WRS exited due to timeout",
-        env=TestEnvCfg(),
-        steps=[
-            comment,
-            mem,
-            lr_instr,
-            set_timeout,
-            wrs_sto,
-            zero_val,
-            sc_instr,
-            assert_sc_pass,
-            comment_pass,
-        ],
-    )
+#     return TestScenario.from_steps(
+#         id="8",
+#         name="SID_ZAWRS_08_WRS_IN_LR_SC_LOOP",
+#         description="WRS in LR/SC loop - SC should succeed if WRS exited due to timeout",
+#         env=TestEnvCfg(),
+#         steps=[
+#             comment,
+#             mem,
+#             set_timeout,
+#             lr_instr,
+#             wrs_sto,
+#             zero_val,
+#             sc_instr,
+#             assert_sc_pass,
+#             comment_pass,
+#         ],
+#     )
 
 
 # Note - commented cases are all in interrupts
@@ -800,7 +800,6 @@ def SID_ZAWRS_20_INTERRUPT_TAKEN_AT_WRS_NTO():
 def SID_ZAWRS_21_WRS_TW_EXCEPTION():
     """
     Scenario 5.1: WRS.NTO in S/U mode when TW=1
-    LR, WRS.{NTO/STO} - should cause illegal instruction exception
     """
     comment = Comment(comment="WRS in S/U mode with TW=1 - illegal instruction exception")
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
@@ -813,9 +812,6 @@ def SID_ZAWRS_21_WRS_TW_EXCEPTION():
     wrs_nto = System(instruction="wrs.nto")
     assert_nto_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[wrs_nto])
 
-    wrs_sto = System(instruction="wrs.sto")
-    assert_sto_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[wrs_sto])
-
     return TestScenario.from_steps(
         id="21",
         name="SID_ZAWRS_21_WRS_TW_EXCEPTION",
@@ -827,7 +823,6 @@ def SID_ZAWRS_21_WRS_TW_EXCEPTION():
             mstatus_set_tw,
             lr_instr,
             assert_nto_exception,
-            assert_sto_exception,
         ],
     )
 
@@ -857,7 +852,7 @@ def SID_ZAWRS_22_WRS_VTW_VIRTUAL_EXCEPTION():
         id="22",
         name="SID_ZAWRS_22_WRS_VTW_VIRTUAL_EXCEPTION",
         description="WRS in VS/VU mode with TW=0 VTW=1 - virtual instruction exception",
-        env=TestEnvCfg(),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
             comment,
             mem,
@@ -895,7 +890,7 @@ def SID_ZAWRS_23_WRS_TW_VTW_ILLEGAL_EXCEPTION_1():
         id="23",
         name="SID_ZAWRS_23_WRS_TW_VTW_ILLEGAL_EXCEPTION_1",
         description="WRS in VS/VU mode with TW=1 VTW=1 - illegal instruction exception",
-        env=TestEnvCfg(),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
             comment,
             mem,
@@ -945,59 +940,59 @@ def SID_ZAWRS_24_WRS_TW_VTW_ILLEGAL_EXCEPTION_2():
         ],
     )
 
+# disabling - Whisper has no concept of wrs.sto timeouts
+# @zawrs_scenario
+# def SID_ZAWRS_25_WRS_STO_TIMEOUT_CHECK():
+#     """
+#     Scenario 6: WRS.STO should timeout after the timeout cycles
+#     LR, read time1, WRS.STO, read time2
+#     time2-time1 > Wait Timeout value
+#     """
+#     comment = Comment(comment="WRS.STO timeout check - verify timeout duration")
+#     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
-@zawrs_scenario
-def SID_ZAWRS_25_WRS_STO_TIMEOUT_CHECK():
-    """
-    Scenario 6: WRS.STO should timeout after the timeout cycles
-    LR, read time1, WRS.STO, read time2
-    time2-time1 > Wait Timeout value
-    """
-    comment = Comment(comment="WRS.STO timeout check - verify timeout duration")
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+#     # Set the wait timeout value
+#     set_timeout = SetWaitTimeout(cycles=200000)
 
-    # Set the wait timeout value
-    set_timeout = SetWaitTimeout(cycles=1000)
+#     lr_instr = MemAccess(op="lr.d", memory=mem, offset=0)
 
-    lr_instr = MemAccess(op="lr.d", memory=mem, offset=0)
+#     # Read time CSR before WRS.STO
+#     time1 = CsrRead(csr_name="time")
 
-    # Read time CSR before WRS.STO
-    time1 = CsrRead(csr_name="time")
+#     # WRS.STO - will timeout
+#     wrs_sto = System(instruction="wrs.sto")
 
-    # WRS.STO - will timeout
-    wrs_sto = System(instruction="wrs.sto")
+#     # Read time CSR after WRS.STO
+#     time2 = CsrRead(csr_name="time")
 
-    # Read time CSR after WRS.STO
-    time2 = CsrRead(csr_name="time")
+#     # Calculate difference
+#     time_diff = Arithmetic(op="sub", src1=time2, src2=time1)
 
-    # Calculate difference
-    time_diff = Arithmetic(op="sub", src1=time2, src2=time1)
+#     # Assert time_diff > 0 (some timeout occurred)
+#     zero_val = LoadImmediateStep(imm=0)
+#     assert_timeout = AssertNotEqual(src1=time_diff, src2=zero_val)
 
-    # Assert time_diff > 0 (some timeout occurred)
-    zero_val = LoadImmediateStep(imm=0)
-    assert_timeout = AssertNotEqual(src1=time_diff, src2=zero_val)
+#     comment_pass = Comment(comment="WRS.STO timeout occurred - time difference verified")
 
-    comment_pass = Comment(comment="WRS.STO timeout occurred - time difference verified")
-
-    return TestScenario.from_steps(
-        id="25",
-        name="SID_ZAWRS_25_WRS_STO_TIMEOUT_CHECK",
-        description="WRS.STO timeout duration check",
-        env=TestEnvCfg(),
-        steps=[
-            comment,
-            mem,
-            set_timeout,
-            lr_instr,
-            time1,
-            wrs_sto,
-            time2,
-            time_diff,
-            zero_val,
-            assert_timeout,
-            comment_pass,
-        ],
-    )
+#     return TestScenario.from_steps(
+#         id="25",
+#         name="SID_ZAWRS_25_WRS_STO_TIMEOUT_CHECK",
+#         description="WRS.STO timeout duration check",
+#         env=TestEnvCfg(),
+#         steps=[
+#             comment,
+#             mem,
+#             set_timeout,
+#             lr_instr,
+#             time1,
+#             wrs_sto,
+#             time2,
+#             time_diff,
+#             zero_val,
+#             assert_timeout,
+#             comment_pass,
+#         ],
+#     )
 
 
 @zawrs_scenario
@@ -1006,25 +1001,27 @@ def SID_ZAWRS_26_WRS_X_WFI():
     Scenario 7: WRS x WFI
     WRS followed by WFI and WFI followed by WRS instruction timeout/exit as expected
     WaitType should be set properly in RTL
+    Limit to Machine and Super modes only, as U mode takes exception on WFI and we don't want wrs.sto to trap when .TW bit is set
     """
     comment = Comment(comment="WRS and WFI interaction test")
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
     # Test 1: WRS.STO followed by WFI
+    # Set the wait timeout value before LR-SC pairing
+    set_timeout_1 = SetWaitTimeout(cycles=200000)
     lr_instr_1 = MemAccess(op="lr.d", memory=mem, offset=0)
-    # Set the wait timeout value
-    set_timeout_1 = SetWaitTimeout(cycles=1000)
     wrs_sto = System(instruction="wrs.sto")
-    set_timeout_2 = SetWaitTimeout(cycles=1000)
+    set_timeout_2 = SetWaitTimeout(cycles=200000)
     wfi = System(instruction="wfi")
 
     comment_wrs_wfi = Comment(comment="WRS.STO followed by WFI completed")
 
     # Test 2: WFI followed by WRS.STO
-    set_timeout_3 = SetWaitTimeout(cycles=1000)
+    set_timeout_3 = SetWaitTimeout(cycles=200000)
     wfi_2 = System(instruction="wfi")
+    # Set the wait timeout value before LR-SC pairing
+    set_timeout_4 = SetWaitTimeout(cycles=200000)
     lr_instr_2 = MemAccess(op="lr.d", memory=mem, offset=0)
-    set_timeout_4 = SetWaitTimeout(cycles=1000)
     wrs_sto_2 = System(instruction="wrs.sto")
 
     comment_wfi_wrs = Comment(comment="WFI followed by WRS.STO completed")
@@ -1033,20 +1030,20 @@ def SID_ZAWRS_26_WRS_X_WFI():
         id="26",
         name="SID_ZAWRS_26_WRS_X_WFI",
         description="WRS and WFI interaction - WaitType properly set",
-        env=TestEnvCfg(),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
         steps=[
             comment,
             mem,
-            lr_instr_1,
             set_timeout_1,
+            lr_instr_1,
             wrs_sto,
             set_timeout_2,
             wfi,
             comment_wrs_wfi,
             set_timeout_3,
             wfi_2,
-            lr_instr_2,
             set_timeout_4,
+            lr_instr_2,
             wrs_sto_2,
             comment_wfi_wrs,
         ],
