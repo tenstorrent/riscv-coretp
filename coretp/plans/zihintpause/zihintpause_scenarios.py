@@ -208,6 +208,7 @@ def SID_ZHP_04c():
         env=TestEnvCfg(),
         steps=[
             comment,
+            mem,
             pause_1,
             arithmetic_op,
             pause_2,
