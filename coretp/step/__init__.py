@@ -13,6 +13,7 @@ from .hart import Hart, HartExit
 from .miscellaneous import Directive, SetWaitTimeout
 from .system import System
 from .comment import Comment
+from .privilege_mode import MachineCode, SupervisorCode
 
 __all__ = [
     "TestStep",
@@ -46,4 +47,6 @@ __all__ = [
     "System",
     "Comment",
     "ConditionalBlock",
+    "MachineCode",
+    "SupervisorCode",
 ]
