@@ -1380,6 +1380,15 @@ wfi = InstructionDef(
     formatter="wfi",
 )
 
+pause = InstructionDef(
+    name="pause",
+    extension=Extension.ZIHINTPAUSE,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="pause",
+)
 
 misc_instrs = (
     [
@@ -1481,6 +1490,7 @@ misc_instrs = (
         prefetch_r,
         prefetch_w,
         wfi,
+        pause,
     ]
     + c_mop_N
     + mop_r_N
