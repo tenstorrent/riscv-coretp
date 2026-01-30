@@ -7,7 +7,7 @@ from .conditional_block import ConditionalBlock
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
 from .load_store import MemoryOp, Load, Store, MemAccess
-from .csr import CsrWrite, CsrRead
+from .csr import CsrWrite, CsrRead, CsrAccess
 from .assertion import AssertEqual, AssertNotEqual, AssertException
 from .hart import Hart, HartExit
 from .miscellaneous import Directive, SetWaitTimeout
@@ -36,6 +36,7 @@ __all__ = [
     "LoadAddressStep",
     "CsrWrite",
     "CsrRead",
+    "CsrAccess",
     "AssertEqual",
     "AssertNotEqual",
     "AssertException",

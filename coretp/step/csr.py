@@ -58,3 +58,31 @@ class CsrRead(TestStep):
 
     csr_name: str = ""
     direct_read: bool = False
+
+
+@dataclass(frozen=True)
+class CsrAccess(TestStep):
+    """
+    Represents a CSR access operation in a test scenario.
+
+    This test step defines Control and Status Register (CSR) access
+    operations for testing CSR instructions.
+
+    Note that is csr_name is None, then the CSR will be randomized to a valid CSR that can be directly accessed by privilege mode.
+    :param op: The CSR operation to perform (e.g., "csrrw", "csrrs", "csrrc", etc.)
+    :type op: str
+    :param csr_name: Name or hex address of the CSR to access
+    :type csr_name: str, optional
+    :param direct_access: Do the access without jumping to a different privilege mode
+    :type direct_access: bool
+    :param src1: Source operand value or step dependency
+    :type src1: TestStep or int, optional
+    :param target_is_x0: Whether the target register is x0
+    :type target_is_x0: bool
+    """
+
+    op: str = ""
+    csr_name: Optional[str] = None
+    direct_access: bool = False
+    src1: StepOrInt = None
+    target_is_x0: bool = False
