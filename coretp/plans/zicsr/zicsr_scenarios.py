@@ -23,7 +23,7 @@ from coretp.step import (
     System,
     SetWaitTimeout,
 )
-from coretp.step.csr import CsrAccess
+from coretp.step.csr import CsrDirectAccess
 
 from . import zicsr_scenario
 
@@ -38,7 +38,7 @@ def SID_ZICSR_01():
     comment = Comment(comment="CSRRW: Atomic swap with max-int, rd is non-zero")
 
     li_src = LoadImmediateStep(imm=-1)
-    csr_access = CsrAccess(op="csrrw", csr_name=None, direct_access=True, src1=li_src, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrw", csr_name=None, src1=li_src, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="1",
@@ -59,7 +59,7 @@ def SID_ZICSR_02():
     comment = Comment(comment="CSRRW: Atomic swap with max-int, rd is x0 (no read)")
 
     li_src = LoadImmediateStep(imm=-1)
-    csr_access = CsrAccess(op="csrrw", csr_name=None, direct_access=True, src1=li_src, target_is_x0=True)
+    csr_access = CsrDirectAccess(op="csrrw", csr_name=None, src1=li_src, target_is_x0=True)
 
     return TestScenario.from_steps(
         id="2",
@@ -79,7 +79,7 @@ def SID_ZICSR_03():
     """
     comment = Comment(comment="CSRRW: Atomic swap with 0 to zero out CSR")
 
-    csr_access = CsrAccess(op="csrrw", csr_name=None, direct_access=True, src1=0, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrw", csr_name=None, src1=0, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="3",
@@ -100,7 +100,7 @@ def SID_ZICSR_04():
     comment = Comment(comment="CSRRS: Set all bits using max-int mask")
 
     li_src = LoadImmediateStep(imm=-1)
-    csr_access = CsrAccess(op="csrrs", csr_name=None, direct_access=True, src1=li_src, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrs", csr_name=None, src1=li_src, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="4",
@@ -120,7 +120,7 @@ def SID_ZICSR_05():
     """
     comment = Comment(comment="CSRRS: Read-only access by setting rs1 to 0")
 
-    csr_access = CsrAccess(op="csrrs", csr_name=None, direct_access=True, src1=0, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrs", csr_name=None, src1=0, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="5",
@@ -141,7 +141,7 @@ def SID_ZICSR_06():
     comment = Comment(comment="CSRRC: Clear all bits using max-int mask")
 
     li_src = LoadImmediateStep(imm=-1)
-    csr_access = CsrAccess(op="csrrc", csr_name=None, direct_access=True, src1=li_src, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrc", csr_name=None, src1=li_src, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="6",
@@ -161,7 +161,7 @@ def SID_ZICSR_07():
     """
     comment = Comment(comment="CSRRC: Read-only access by setting rs1 to 0")
 
-    csr_access = CsrAccess(op="csrrc", csr_name=None, direct_access=True, src1=0, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrc", csr_name=None, src1=0, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="7",
@@ -181,7 +181,7 @@ def SID_ZICSR_08():
     """
     comment = Comment(comment="CSRRWI: Atomic swap with max imm (0x1F), rd is non-zero")
 
-    csr_access = CsrAccess(op="csrrwi", csr_name=None, direct_access=True, src1=0x1F, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrwi", csr_name=None, src1=0x1F, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="8",
@@ -201,7 +201,7 @@ def SID_ZICSR_09():
     """
     comment = Comment(comment="CSRRWI: Atomic swap with max imm (0x1F), rd is x0")
 
-    csr_access = CsrAccess(op="csrrwi", csr_name=None, direct_access=True, src1=0x1F, target_is_x0=True)
+    csr_access = CsrDirectAccess(op="csrrwi", csr_name=None, src1=0x1F, target_is_x0=True)
 
     return TestScenario.from_steps(
         id="9",
@@ -221,7 +221,7 @@ def SID_ZICSR_10():
     """
     comment = Comment(comment="CSRRWI: Atomic swap with imm=0, rd is non-zero")
 
-    csr_access = CsrAccess(op="csrrwi", csr_name=None, direct_access=True, src1=0, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrwi", csr_name=None, src1=0, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="10",
@@ -241,7 +241,7 @@ def SID_ZICSR_11():
     """
     comment = Comment(comment="CSRRWI: Atomic swap with imm=0, rd is x0")
 
-    csr_access = CsrAccess(op="csrrwi", csr_name=None, direct_access=True, src1=0, target_is_x0=True)
+    csr_access = CsrDirectAccess(op="csrrwi", csr_name=None, src1=0, target_is_x0=True)
 
     return TestScenario.from_steps(
         id="11",
@@ -261,7 +261,7 @@ def SID_ZICSR_12():
     """
     comment = Comment(comment="CSRRSI: Set bits using max imm (0x1F)")
 
-    csr_access = CsrAccess(op="csrrsi", csr_name=None, direct_access=True, src1=0x1F, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrsi", csr_name=None, src1=0x1F, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="12",
@@ -281,7 +281,7 @@ def SID_ZICSR_13():
     """
     comment = Comment(comment="CSRRSI: Read-only access by setting uimm to 0")
 
-    csr_access = CsrAccess(op="csrrsi", csr_name=None, direct_access=True, src1=0, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrsi", csr_name=None, src1=0, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="13",
@@ -301,7 +301,7 @@ def SID_ZICSR_14():
     """
     comment = Comment(comment="CSRRCI: Clear bits using max imm (0x1F)")
 
-    csr_access = CsrAccess(op="csrrci", csr_name=None, direct_access=True, src1=0x1F, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrci", csr_name=None, src1=0x1F, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="14",
@@ -321,7 +321,7 @@ def SID_ZICSR_15():
     """
     comment = Comment(comment="CSRRCI: Read-only access by setting uimm to 0")
 
-    csr_access = CsrAccess(op="csrrci", csr_name=None, direct_access=True, src1=0, target_is_x0=False)
+    csr_access = CsrDirectAccess(op="csrrci", csr_name=None, src1=0, target_is_x0=False)
 
     return TestScenario.from_steps(
         id="15",
@@ -342,22 +342,22 @@ def SID_ZICSR_16():
     comment = Comment(comment="CSR access surrounded by random arithmetic instructions")
 
     arith_1 = Arithmetic()
-    csrrw = CsrAccess(op="csrrw", csr_name=None, direct_access=True, src1=None, target_is_x0=False)
+    csrrw = CsrDirectAccess(op="csrrw", csr_name=None, src1=None, target_is_x0=False)
 
     arith_2 = Arithmetic()
-    csrrs = CsrAccess(op="csrrs", csr_name=None, direct_access=True, src1=None, target_is_x0=False)
+    csrrs = CsrDirectAccess(op="csrrs", csr_name=None, src1=None, target_is_x0=False)
 
     arith_3 = Arithmetic()
-    csrrc = CsrAccess(op="csrrc", csr_name=None, direct_access=True, src1=None, target_is_x0=False)
+    csrrc = CsrDirectAccess(op="csrrc", csr_name=None, src1=None, target_is_x0=False)
 
     arith_4 = Arithmetic()
-    csrrwi = CsrAccess(op="csrrwi", csr_name=None, direct_access=True, src1=None, target_is_x0=False)
+    csrrwi = CsrDirectAccess(op="csrrwi", csr_name=None, src1=None, target_is_x0=False)
 
     arith_5 = Arithmetic()
-    csrrsi = CsrAccess(op="csrrsi", csr_name=None, direct_access=True, src1=None, target_is_x0=False)
+    csrrsi = CsrDirectAccess(op="csrrsi", csr_name=None, src1=None, target_is_x0=False)
 
     arith_6 = Arithmetic()
-    csrrci = CsrAccess(op="csrrci", csr_name=None, direct_access=True, src1=None, target_is_x0=False)
+    csrrci = CsrDirectAccess(op="csrrci", csr_name=None, src1=None, target_is_x0=False)
 
     arith_7 = Arithmetic()
 
@@ -400,8 +400,8 @@ def SID_ZICSR_17():
     steps.append(Comment(comment="Back to back CSR accesses - all cross coverage cases"))
     for op1 in ops:
         for op2 in ops:
-            steps.append(CsrAccess(op=op1, csr_name=None, direct_access=True, src1=None, target_is_x0=False))
-            steps.append(CsrAccess(op=op2, csr_name=None, direct_access=True, src1=None, target_is_x0=False))
+            steps.append(CsrDirectAccess(op=op1, csr_name=None, src1=None, target_is_x0=False))
+            steps.append(CsrDirectAccess(op=op2, csr_name=None, src1=None, target_is_x0=False))
 
     return TestScenario.from_steps(
         id="17",
