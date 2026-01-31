@@ -24,5 +24,6 @@ from .ssu64xl import ssu64xl_scenarios
 from .smstateen_ssstateen import smstateen_ssstateen_scenarios
 from .zawrs import zawrs_scenarios
 from .zihintpause import zihintpause_scenarios
+from .zicsr import zicsr_scenarios
 
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]
