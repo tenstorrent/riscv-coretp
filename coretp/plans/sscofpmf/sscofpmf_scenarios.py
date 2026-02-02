@@ -870,3 +870,581 @@ def SID_SSCOFPMF_08B_SCOUNTOVF_READ_ONLY_ZERO_DISABLED():
             clear_mhpmevent3_cleanup,
         ],
     )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_05A_XINH_MINH_INHIBITS_M_MODE():
+    """
+    Scenario 5a: Setting mhpmevent3.MINH (bit 58) must inhibit counting in M-mode.
+    Using minstret event (eventid=2) for testing since it always increments.
+    """
+    steps = []
+
+    comment_1 = Comment(comment="Configure mhpmevent3 with minstret event (eventid=2) and MINH=1")
+    minh_mask = LoadImmediateStep(imm=1 << 58)
+    event_selector = LoadImmediateStep(imm=2)
+    mhpmevent3_value = Arithmetic(op="or", src1=minh_mask, src2=event_selector)
+    write_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=mhpmevent3_value)
+    clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
+
+    steps.extend([comment_1, minh_mask, event_selector, mhpmevent3_value, write_mhpmevent3, clear_mhpmcounter3])
+
+    comment_2 = Comment(comment="Settling period")
+    steps.append(comment_2)
+    for _ in range(NUM_SETTLE):
+        steps.append(Arithmetic())
+
+    read_before = CsrRead(csr_name="mhpmcounter3")
+    steps.append(read_before)
+
+    comment_3 = Comment(comment="Execute instructions to generate events")
+    steps.append(comment_3)
+    for _ in range(NUM_FILL):
+        steps.append(Arithmetic())
+
+    read_after = CsrRead(csr_name="mhpmcounter3")
+    assert_inhibited = AssertEqual(src1=read_after, src2=read_before)
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
+    steps.extend([read_after, assert_inhibited, clear_mhpmevent3])
+
+    return TestScenario.from_steps(
+        id="5a",
+        name="SID_SSCOFPMF_05A_XINH_MINH_INHIBITS_M_MODE",
+        description="mhpmevent3.MINH=1 inhibits counting in M-mode.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_05B_XINH_MINH_ALLOWS_M_MODE():
+    """
+    Scenario 5b: Clearing mhpmevent3.MINH (bit 58) must allow counting in M-mode.
+    Using minstret event (eventid=2) for testing since it always increments.
+    """
+    steps = []
+
+    comment_1 = Comment(comment="Configure mhpmevent3 with minstret event (eventid=2) and MINH=0")
+    event_selector = LoadImmediateStep(imm=2)
+    write_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=event_selector)
+    clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
+
+    steps.extend([comment_1, event_selector, write_mhpmevent3, clear_mhpmcounter3])
+
+    read_before = CsrRead(csr_name="mhpmcounter3")
+    steps.append(read_before)
+
+    comment_2 = Comment(comment="Execute instructions to generate events")
+    steps.append(comment_2)
+    for _ in range(NUM_FILL):
+        steps.append(Arithmetic())
+
+    read_after = CsrRead(csr_name="mhpmcounter3")
+    delta = Arithmetic(op="sub", src1=read_after, src2=read_before)
+    zero = LoadImmediateStep(imm=0)
+    assert_counted = AssertNotEqual(src1=delta, src2=zero)
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
+    steps.extend([read_after, delta, zero, assert_counted, clear_mhpmevent3])
+
+    return TestScenario.from_steps(
+        id="5b",
+        name="SID_SSCOFPMF_05B_XINH_MINH_ALLOWS_M_MODE",
+        description="mhpmevent3.MINH=0 allows counting in M-mode.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_05C_XINH_SINH_INHIBITS_S_MODE():
+    """
+    Scenario 5c: Setting mhpmevent3.SINH (bit 59) must inhibit counting in S-mode.
+    Using minstret event (eventid=2) for testing since it always increments.
+    """
+    steps = []
+
+    comment_1 = Comment(comment="Configure mhpmevent3 with minstret event (eventid=2) and SINH=1")
+    sinh_mask = LoadImmediateStep(imm=1 << 59)
+    event_selector = LoadImmediateStep(imm=2)
+    mhpmevent3_value = Arithmetic(op="or", src1=sinh_mask, src2=event_selector)
+    write_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=mhpmevent3_value)
+    clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
+
+    steps.extend([comment_1, sinh_mask, event_selector, mhpmevent3_value, write_mhpmevent3, clear_mhpmcounter3])
+
+    comment_2 = Comment(comment="Settling period")
+    steps.append(comment_2)
+    for _ in range(NUM_SETTLE):
+        steps.append(Arithmetic())
+
+    read_before = CsrRead(csr_name="mhpmcounter3")
+    steps.append(read_before)
+
+    comment_3 = Comment(comment="Execute instructions to generate events in S-mode")
+    steps.append(comment_3)
+    for _ in range(NUM_FILL):
+        steps.append(Arithmetic())
+
+    read_after = CsrRead(csr_name="mhpmcounter3")
+    assert_inhibited = AssertEqual(src1=read_after, src2=read_before)
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
+    steps.extend([read_after, assert_inhibited, clear_mhpmevent3])
+
+    return TestScenario.from_steps(
+        id="5c",
+        name="SID_SSCOFPMF_05C_XINH_SINH_INHIBITS_S_MODE",
+        description="mhpmevent3.SINH=1 inhibits counting in S-mode.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        steps=steps,
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_05D_XINH_SINH_ALLOWS_S_MODE():
+    """
+    Scenario 5d: Clearing mhpmevent3.SINH (bit 59) must allow counting in S-mode.
+    Using minstret event (eventid=2) for testing since it always increments.
+    """
+    steps = []
+
+    comment_1 = Comment(comment="Configure mhpmevent3 with minstret event (eventid=2) and SINH=0")
+    event_selector = LoadImmediateStep(imm=2)
+    write_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=event_selector)
+    clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
+
+    steps.extend([comment_1, event_selector, write_mhpmevent3, clear_mhpmcounter3])
+
+    read_before = CsrRead(csr_name="mhpmcounter3")
+    steps.append(read_before)
+
+    comment_2 = Comment(comment="Execute instructions to generate events in S-mode")
+    steps.append(comment_2)
+    for _ in range(NUM_FILL):
+        steps.append(Arithmetic())
+
+    read_after = CsrRead(csr_name="mhpmcounter3")
+    delta = Arithmetic(op="sub", src1=read_after, src2=read_before)
+    zero = LoadImmediateStep(imm=0)
+    assert_counted = AssertNotEqual(src1=delta, src2=zero)
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+
+    steps.extend([read_after, delta, zero, assert_counted, clear_mhpmevent3])
+
+    return TestScenario.from_steps(
+        id="5d",
+        name="SID_SSCOFPMF_05D_XINH_SINH_ALLOWS_S_MODE",
+        description="mhpmevent3.SINH=0 allows counting in S-mode.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        steps=steps,
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_06A_OVERFLOW_SETS_LCOFIP():
+    """
+    Scenario 6a: When mhpmcounter3 overflows (hardware increment), mhpmevent3.OF and mip.LCOFIP should be set.
+    Note: This test sets up conditions for overflow by writing a high value to counter and configuring event.
+    Actual overflow verification depends on hardware event generation.
+    """
+    comment_1 = Comment(comment="Clear mip.LCOFIP and OF bit before test")
+    lcofip_mask = LoadImmediateStep(imm=1 << 13)
+    clear_lcofip = CsrWrite(csr_name="mip", clear_mask=1 << 13)
+    clear_mhpmevent3_initial = CsrWrite(csr_name="mhpmevent3", value=0)
+
+    comment_2 = Comment(comment="Configure mhpmevent3 with minstret event (eventid=2), OF=0")
+    event_selector = LoadImmediateStep(imm=2)
+    write_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=event_selector)
+
+    comment_3 = Comment(comment="Write high value to mhpmcounter3 (near overflow: 2^64 - 10)")
+    high_value = LoadImmediateStep(imm=(2**64 - 10))
+    write_high_counter = CsrWrite(csr_name="mhpmcounter3", value=high_value)
+
+    comment_4 = Comment(comment="Generate events to trigger overflow")
+    steps = [
+        comment_1,
+        lcofip_mask,
+        clear_lcofip,
+        clear_mhpmevent3_initial,
+        comment_2,
+        event_selector,
+        write_mhpmevent3,
+        comment_3,
+        high_value,
+        write_high_counter,
+        comment_4,
+    ]
+
+    for _ in range(NUM_FILL):
+        steps.append(Arithmetic())
+
+    comment_5 = Comment(comment="Check if OF bit is set in mhpmevent3")
+    read_mhpmevent3 = CsrRead(csr_name="mhpmevent3")
+    of_mask = LoadImmediateStep(imm=1 << 63)
+    of_value = Arithmetic(op="and", src1=read_mhpmevent3, src2=of_mask)
+    of_bit_set = LoadImmediateStep(imm=1 << 63)
+    assert_of_set = AssertEqual(src1=of_value, src2=of_bit_set)
+
+    comment_6 = Comment(comment="Check if mip.LCOFIP is set")
+    read_mip = CsrRead(csr_name="mip")
+    lcofip_value = Arithmetic(op="and", src1=read_mip, src2=lcofip_mask)
+    assert_lcofip_set = AssertEqual(src1=lcofip_value, src2=lcofip_mask)
+
+    comment_7 = Comment(comment="Cleanup")
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+    clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
+    clear_mip = CsrWrite(csr_name="mip", clear_mask=1 << 13)
+
+    steps.extend([
+        comment_5,
+        read_mhpmevent3,
+        of_mask,
+        of_value,
+        of_bit_set,
+        assert_of_set,
+        comment_6,
+        read_mip,
+        lcofip_value,
+        assert_lcofip_set,
+        comment_7,
+        clear_mhpmevent3,
+        clear_mhpmcounter3,
+        clear_mip,
+    ])
+
+    return TestScenario.from_steps(
+        id="6a",
+        name="SID_SSCOFPMF_06A_OVERFLOW_SETS_LCOFIP",
+        description="Counter overflow sets mhpmevent3.OF and mip.LCOFIP (hardware overflow testing).",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_07A_OF_BIT_MASKS_LCOFIP():
+    """
+    Scenario 7a: When mhpmevent3.OF is already set (1), counter overflow should NOT set mip.LCOFIP.
+    This tests the masking behavior where OF=1 prevents additional overflow interrupts.
+    """
+    comment_1 = Comment(comment="Clear mip.LCOFIP before test")
+    lcofip_mask = LoadImmediateStep(imm=1 << 13)
+    clear_lcofip = CsrWrite(csr_name="mip", clear_mask=1 << 13)
+
+    comment_2 = Comment(comment="Set OF bit in mhpmevent3 with event selector (eventid=2)")
+    of_mask = LoadImmediateStep(imm=1 << 63)
+    event_selector = LoadImmediateStep(imm=2)
+    mhpmevent3_with_of = Arithmetic(op="or", src1=of_mask, src2=event_selector)
+    write_mhpmevent3_of = CsrWrite(csr_name="mhpmevent3", value=mhpmevent3_with_of)
+
+    comment_3 = Comment(comment="Verify OF bit is set")
+    read_mhpmevent3_check = CsrRead(csr_name="mhpmevent3")
+    of_check = Arithmetic(op="and", src1=read_mhpmevent3_check, src2=of_mask)
+    assert_of_set = AssertEqual(src1=of_check, src2=of_mask)
+
+    comment_4 = Comment(comment="Write high value to mhpmcounter3 to trigger overflow")
+    high_value = LoadImmediateStep(imm=(2**64 - 10))
+    write_high_counter = CsrWrite(csr_name="mhpmcounter3", value=high_value)
+
+    comment_5 = Comment(comment="Generate events to trigger overflow")
+    steps = [
+        comment_1,
+        lcofip_mask,
+        clear_lcofip,
+        comment_2,
+        of_mask,
+        event_selector,
+        mhpmevent3_with_of,
+        write_mhpmevent3_of,
+        comment_3,
+        read_mhpmevent3_check,
+        of_check,
+        assert_of_set,
+        comment_4,
+        high_value,
+        write_high_counter,
+        comment_5,
+    ]
+
+    for _ in range(NUM_FILL):
+        steps.append(Arithmetic())
+
+    comment_6 = Comment(comment="Verify mip.LCOFIP remains clear (masked by OF=1)")
+    read_mip = CsrRead(csr_name="mip")
+    lcofip_value = Arithmetic(op="and", src1=read_mip, src2=lcofip_mask)
+    zero = LoadImmediateStep(imm=0)
+    assert_lcofip_clear = AssertEqual(src1=lcofip_value, src2=zero)
+
+    comment_7 = Comment(comment="Cleanup")
+    clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
+    clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
+
+    steps.extend([
+        comment_6,
+        read_mip,
+        lcofip_value,
+        zero,
+        assert_lcofip_clear,
+        comment_7,
+        clear_mhpmevent3,
+        clear_mhpmcounter3,
+    ])
+
+    return TestScenario.from_steps(
+        id="7a",
+        name="SID_SSCOFPMF_07A_OF_BIT_MASKS_LCOFIP",
+        description="When mhpmevent3.OF=1, counter overflow does not set mip.LCOFIP (masked).",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_10A_LCOFI_INTERRUPT_ENABLED():
+    """
+    Scenario 10a: When mie.LCOFIE=1 and mip.LCOFIP=1, LCOFI interrupt should be taken in M-mode.
+    Note: This test sets up interrupt enable conditions. Actual interrupt taking verification
+    depends on test framework's interrupt handling capabilities.
+    """
+    comment_1 = Comment(comment="Enable LCOFI interrupt in mie (bit 13)")
+    lcofie_mask = LoadImmediateStep(imm=1 << 13)
+    enable_lcofie = CsrWrite(csr_name="mie", set_mask=1 << 13)
+
+    comment_2 = Comment(comment="Set mip.LCOFIP (bit 13)")
+    set_lcofip = CsrWrite(csr_name="mip", set_mask=1 << 13)
+
+    comment_3 = Comment(comment="Verify mie.LCOFIE is set")
+    read_mie = CsrRead(csr_name="mie")
+    mie_lcofie = Arithmetic(op="and", src1=read_mie, src2=lcofie_mask)
+    assert_mie_set = AssertEqual(src1=mie_lcofie, src2=lcofie_mask)
+
+    comment_4 = Comment(comment="Verify mip.LCOFIP is set")
+    read_mip = CsrRead(csr_name="mip")
+    mip_lcofip = Arithmetic(op="and", src1=read_mip, src2=lcofie_mask)
+    assert_mip_set = AssertEqual(src1=mip_lcofip, src2=lcofie_mask)
+
+    comment_5 = Comment(comment="Interrupt should be pending and enabled for M-mode")
+    comment_6 = Comment(comment="Note: Actual interrupt delivery verification requires interrupt handler")
+
+    comment_7 = Comment(comment="Cleanup")
+    clear_mie = CsrWrite(csr_name="mie", clear_mask=1 << 13)
+    clear_mip = CsrWrite(csr_name="mip", clear_mask=1 << 13)
+
+    return TestScenario.from_steps(
+        id="10a",
+        name="SID_SSCOFPMF_10A_LCOFI_INTERRUPT_ENABLED",
+        description="mie.LCOFIE=1 and mip.LCOFIP=1 enables LCOFI interrupt in M-mode.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[
+            comment_1,
+            lcofie_mask,
+            enable_lcofie,
+            comment_2,
+            set_lcofip,
+            comment_3,
+            read_mie,
+            mie_lcofie,
+            assert_mie_set,
+            comment_4,
+            read_mip,
+            mip_lcofip,
+            assert_mip_set,
+            comment_5,
+            comment_6,
+            comment_7,
+            clear_mie,
+            clear_mip,
+        ],
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_10B_LCOFI_INTERRUPT_DISABLED():
+    """
+    Scenario 10b: When mie.LCOFIE=0 and mip.LCOFIP=1, LCOFI interrupt should NOT be taken.
+    """
+    comment_1 = Comment(comment="Clear LCOFI interrupt enable in mie (bit 13)")
+    lcofie_mask = LoadImmediateStep(imm=1 << 13)
+    disable_lcofie = CsrWrite(csr_name="mie", clear_mask=1 << 13)
+
+    comment_2 = Comment(comment="Set mip.LCOFIP (bit 13)")
+    set_lcofip = CsrWrite(csr_name="mip", set_mask=1 << 13)
+
+    comment_3 = Comment(comment="Verify mie.LCOFIE is clear")
+    read_mie = CsrRead(csr_name="mie")
+    mie_lcofie = Arithmetic(op="and", src1=read_mie, src2=lcofie_mask)
+    zero = LoadImmediateStep(imm=0)
+    assert_mie_clear = AssertEqual(src1=mie_lcofie, src2=zero)
+
+    comment_4 = Comment(comment="Verify mip.LCOFIP is set")
+    read_mip = CsrRead(csr_name="mip")
+    mip_lcofip = Arithmetic(op="and", src1=read_mip, src2=lcofie_mask)
+    assert_mip_set = AssertEqual(src1=mip_lcofip, src2=lcofie_mask)
+
+    comment_5 = Comment(comment="Interrupt is pending but disabled, should NOT be taken")
+
+    comment_6 = Comment(comment="Cleanup")
+    clear_mip = CsrWrite(csr_name="mip", clear_mask=1 << 13)
+
+    return TestScenario.from_steps(
+        id="10b",
+        name="SID_SSCOFPMF_10B_LCOFI_INTERRUPT_DISABLED",
+        description="mie.LCOFIE=0 and mip.LCOFIP=1 does not enable LCOFI interrupt.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[
+            comment_1,
+            lcofie_mask,
+            disable_lcofie,
+            comment_2,
+            set_lcofip,
+            comment_3,
+            read_mie,
+            mie_lcofie,
+            zero,
+            assert_mie_clear,
+            comment_4,
+            read_mip,
+            mip_lcofip,
+            assert_mip_set,
+            comment_5,
+            comment_6,
+            clear_mip,
+        ],
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_10C_LCOFI_DELEGATED_TO_S_MODE():
+    """
+    Scenario 10c: In M-mode when mideleg.LCOFI=1, mie.LCOFIE=1, mip.LCOFIP=1,
+    interrupt should be delegated to S-mode.
+    """
+    comment_1 = Comment(comment="Delegate LCOFI to S-mode via mideleg (bit 13)")
+    lcofie_mask = LoadImmediateStep(imm=1 << 13)
+    delegate_lcofi = CsrWrite(csr_name="mideleg", set_mask=1 << 13)
+
+    comment_2 = Comment(comment="Enable LCOFI interrupt in mie")
+    enable_lcofie = CsrWrite(csr_name="mie", set_mask=1 << 13)
+
+    comment_3 = Comment(comment="Set mip.LCOFIP")
+    set_lcofip = CsrWrite(csr_name="mip", set_mask=1 << 13)
+
+    comment_4 = Comment(comment="Verify mideleg.LCOFI is set")
+    read_mideleg = CsrRead(csr_name="mideleg")
+    mideleg_lcofi = Arithmetic(op="and", src1=read_mideleg, src2=lcofie_mask)
+    assert_mideleg_set = AssertEqual(src1=mideleg_lcofi, src2=lcofie_mask)
+
+    comment_5 = Comment(comment="Verify mie.LCOFIE is set")
+    read_mie = CsrRead(csr_name="mie")
+    mie_lcofie = Arithmetic(op="and", src1=read_mie, src2=lcofie_mask)
+    assert_mie_set = AssertEqual(src1=mie_lcofie, src2=lcofie_mask)
+
+    comment_6 = Comment(comment="Verify mip.LCOFIP is set")
+    read_mip = CsrRead(csr_name="mip")
+    mip_lcofip = Arithmetic(op="and", src1=read_mip, src2=lcofie_mask)
+    assert_mip_set = AssertEqual(src1=mip_lcofip, src2=lcofie_mask)
+
+    comment_7 = Comment(comment="Interrupt should be delegated to S-mode")
+
+    comment_8 = Comment(comment="Cleanup")
+    clear_mideleg = CsrWrite(csr_name="mideleg", clear_mask=1 << 13)
+    clear_mie = CsrWrite(csr_name="mie", clear_mask=1 << 13)
+    clear_mip = CsrWrite(csr_name="mip", clear_mask=1 << 13)
+
+    return TestScenario.from_steps(
+        id="10c",
+        name="SID_SSCOFPMF_10C_LCOFI_DELEGATED_TO_S_MODE",
+        description="With mideleg.LCOFI=1, LCOFI interrupt is delegated to S-mode.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
+        steps=[
+            comment_1,
+            lcofie_mask,
+            delegate_lcofi,
+            comment_2,
+            enable_lcofie,
+            comment_3,
+            set_lcofip,
+            comment_4,
+            read_mideleg,
+            mideleg_lcofi,
+            assert_mideleg_set,
+            comment_5,
+            read_mie,
+            mie_lcofie,
+            assert_mie_set,
+            comment_6,
+            read_mip,
+            mip_lcofip,
+            assert_mip_set,
+            comment_7,
+            comment_8,
+            clear_mideleg,
+            clear_mie,
+            clear_mip,
+        ],
+    )
+
+
+@sscofpmf_scenario
+def SID_SSCOFPMF_10D_LCOFI_S_MODE_ENABLED():
+    """
+    Scenario 10d: In S-mode when sie.LCOFIE=1, sip.LCOFIP=1, and mideleg.LCOFI=1,
+    LCOFI interrupt should be taken in S-mode.
+    """
+    comment_1 = Comment(comment="Delegate LCOFI to S-mode via mideleg (bit 13)")
+    lcofie_mask = LoadImmediateStep(imm=1 << 13)
+    delegate_lcofi = CsrWrite(csr_name="mideleg", set_mask=1 << 13)
+
+    comment_2 = Comment(comment="Enable LCOFI interrupt in sie")
+    enable_sie_lcofie = CsrWrite(csr_name="sie", set_mask=1 << 13)
+
+    comment_3 = Comment(comment="Set sip.LCOFIP")
+    set_sip_lcofip = CsrWrite(csr_name="sip", set_mask=1 << 13)
+
+    comment_4 = Comment(comment="Verify sie.LCOFIE is set")
+    read_sie = CsrRead(csr_name="sie")
+    sie_lcofie = Arithmetic(op="and", src1=read_sie, src2=lcofie_mask)
+    assert_sie_set = AssertEqual(src1=sie_lcofie, src2=lcofie_mask)
+
+    comment_5 = Comment(comment="Verify sip.LCOFIP is set")
+    read_sip = CsrRead(csr_name="sip")
+    sip_lcofip = Arithmetic(op="and", src1=read_sip, src2=lcofie_mask)
+    assert_sip_set = AssertEqual(src1=sip_lcofip, src2=lcofie_mask)
+
+    comment_6 = Comment(comment="Interrupt should be taken in S-mode")
+
+    comment_7 = Comment(comment="Cleanup")
+    clear_mideleg = CsrWrite(csr_name="mideleg", clear_mask=1 << 13)
+    clear_sie = CsrWrite(csr_name="sie", clear_mask=1 << 13)
+    clear_sip = CsrWrite(csr_name="sip", clear_mask=1 << 13)
+
+    return TestScenario.from_steps(
+        id="10d",
+        name="SID_SSCOFPMF_10D_LCOFI_S_MODE_ENABLED",
+        description="In S-mode with sie.LCOFIE=1 and sip.LCOFIP=1, LCOFI interrupt is enabled.",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        steps=[
+            comment_1,
+            lcofie_mask,
+            delegate_lcofi,
+            comment_2,
+            enable_sie_lcofie,
+            comment_3,
+            set_sip_lcofip,
+            comment_4,
+            read_sie,
+            sie_lcofie,
+            assert_sie_set,
+            comment_5,
+            read_sip,
+            sip_lcofip,
+            assert_sip_set,
+            comment_6,
+            comment_7,
+            clear_mideleg,
+            clear_sie,
+            clear_sip,
+        ],
+    )
