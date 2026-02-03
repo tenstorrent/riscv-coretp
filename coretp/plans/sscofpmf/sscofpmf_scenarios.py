@@ -1097,22 +1097,24 @@ def SID_SSCOFPMF_06A_OVERFLOW_SETS_LCOFIP():
     clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
     clear_mip = CsrWrite(csr_name="mip", clear_mask=1 << 13)
 
-    steps.extend([
-        comment_5,
-        read_mhpmevent3,
-        of_mask,
-        of_value,
-        of_bit_set,
-        assert_of_set,
-        comment_6,
-        read_mip,
-        lcofip_value,
-        assert_lcofip_set,
-        comment_7,
-        clear_mhpmevent3,
-        clear_mhpmcounter3,
-        clear_mip,
-    ])
+    steps.extend(
+        [
+            comment_5,
+            read_mhpmevent3,
+            of_mask,
+            of_value,
+            of_bit_set,
+            assert_of_set,
+            comment_6,
+            read_mip,
+            lcofip_value,
+            assert_lcofip_set,
+            comment_7,
+            clear_mhpmevent3,
+            clear_mhpmcounter3,
+            clear_mip,
+        ]
+    )
 
     return TestScenario.from_steps(
         id="6a",
@@ -1181,16 +1183,18 @@ def SID_SSCOFPMF_07A_OF_BIT_MASKS_LCOFIP():
     clear_mhpmevent3 = CsrWrite(csr_name="mhpmevent3", value=0)
     clear_mhpmcounter3 = CsrWrite(csr_name="mhpmcounter3", value=0)
 
-    steps.extend([
-        comment_6,
-        read_mip,
-        lcofip_value,
-        zero,
-        assert_lcofip_clear,
-        comment_7,
-        clear_mhpmevent3,
-        clear_mhpmcounter3,
-    ])
+    steps.extend(
+        [
+            comment_6,
+            read_mip,
+            lcofip_value,
+            zero,
+            assert_lcofip_clear,
+            comment_7,
+            clear_mhpmevent3,
+            clear_mhpmcounter3,
+        ]
+    )
 
     return TestScenario.from_steps(
         id="7a",
