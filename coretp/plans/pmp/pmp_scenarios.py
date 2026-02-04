@@ -138,18 +138,13 @@ def SID_PMP_04_LOAD_STORE_S_U_MODE():
     PMP checks for LOAD and STORE access in S/U mode with memory value assertion
     """
     comment_1 = Comment(comment="PMP checks for LOAD and STORE access in S/U mode")
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Execute STORE with PMP protection")
-    store_op = Store(memory=mem, value=0xDEADBEEF, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0)
 
     comment_3 = Comment(comment="Execute LOAD with PMP protection")
-    load_op = Load(memory=mem, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
 
     comment_4 = Comment(comment="Assert memory value matches stored value")
     expected_value = LoadImmediateStep(imm=0xDEADBEEF)
@@ -160,7 +155,7 @@ def SID_PMP_04_LOAD_STORE_S_U_MODE():
         name="SID_PMP_04_LOAD_STORE_S_U_MODE",
         description="PMP checks for LOAD and STORE access in S/U mode with memory value assertion",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem, pmp_region, comment_2, store_op, comment_3, load_op, comment_4, expected_value, assert_value],
+        steps=[comment_1, pmp_region, comment_2, store_op, comment_3, load_op, comment_4, expected_value, assert_value],
     )
 
 
@@ -170,26 +165,21 @@ def SID_PMP_04_AMO_S_U_MODE():
     PMP checks for AMO access
     """
     comment_1 = Comment(comment="PMP checks for AMO access in S/U mode")
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Store initial value to memory")
-    store_op = Store(memory=mem, value=0xCAFEBABE, offset=0)
+    store_op = Store(memory=pmp_region, value=0xCAFEBABE, offset=0)
 
     comment_3 = Comment(comment="Execute LR/SC with PMP protection")
-    lr_op = MemAccess(op="lr.w", memory=mem)
-    sc_op = MemAccess(op="sc.w", memory=mem, src2=0xDEADBEEF)
+    lr_op = MemAccess(op="lr.w", memory=pmp_region)
+    sc_op = MemAccess(op="sc.w", memory=pmp_region, src2=0xDEADBEEF)
 
     comment_4 = Comment(comment="Assert SC succeeded (returns 0)")
     expected_sc_result = LoadImmediateStep(imm=0)
     assert_sc = AssertEqual(src1=sc_op, src2=expected_sc_result)
 
     comment_5 = Comment(comment="Load and assert memory value matches SC stored value")
-    load_op = Load(memory=mem, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
     expected_value = LoadImmediateStep(imm=0xDEADBEEF)
     assert_value = AssertEqual(src1=load_op, src2=expected_value)
 
@@ -198,7 +188,7 @@ def SID_PMP_04_AMO_S_U_MODE():
         name="SID_PMP_04_AMO_S_U_MODE",
         description="PMP checks for AMO access in S/U mode",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem, pmp_region, comment_2, store_op, comment_3, lr_op, sc_op, comment_4, expected_sc_result, assert_sc, comment_5, load_op, expected_value, assert_value],
+        steps=[comment_1, pmp_region, comment_2, store_op, comment_3, lr_op, sc_op, comment_4, expected_sc_result, assert_sc, comment_5, load_op, expected_value, assert_value],
     )
 
 
@@ -273,18 +263,13 @@ def SID_PMP_05_LOAD_STORE_M_MODE():
     PMP checks for LOAD and STORE access in M mode with memory value assertion
     """
     comment_1 = Comment(comment="PMP checks for LOAD and STORE access in M mode")
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Execute STORE with PMP protection")
-    store_op = Store(memory=mem, value=0xDEADBEEF, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0)
 
     comment_3 = Comment(comment="Execute LOAD with PMP protection")
-    load_op = Load(memory=mem, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
 
     comment_4 = Comment(comment="Assert memory value matches stored value")
     expected_value = LoadImmediateStep(imm=0xDEADBEEF)
@@ -295,7 +280,7 @@ def SID_PMP_05_LOAD_STORE_M_MODE():
         name="SID_PMP_05_LOAD_STORE_M_MODE",
         description="PMP checks for LOAD and STORE access in M mode with memory value assertion",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, mem, pmp_region, comment_2, store_op, comment_3, load_op, comment_4, expected_value, assert_value],
+        steps=[comment_1, pmp_region, comment_2, store_op, comment_3, load_op, comment_4, expected_value, assert_value],
     )
 
 
@@ -305,26 +290,21 @@ def SID_PMP_05_AMO_M_MODE():
     PMP checks for AMO access in M mode
     """
     comment_1 = Comment(comment="PMP checks for AMO access in M mode")
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Store initial value to memory")
-    store_op = Store(memory=mem, value=0xCAFEBABE, offset=0)
+    store_op = Store(memory=pmp_region, value=0xCAFEBABE, offset=0)
 
     comment_3 = Comment(comment="Execute LR/SC with PMP protection")
-    lr_op = MemAccess(op="lr.w", memory=mem)
-    sc_op = MemAccess(op="sc.w", memory=mem, src2=0xDEADBEEF)
+    lr_op = MemAccess(op="lr.w", memory=pmp_region)
+    sc_op = MemAccess(op="sc.w", memory=pmp_region, src2=0xDEADBEEF)
 
     comment_4 = Comment(comment="Assert SC succeeded (returns 0)")
     expected_sc_result = LoadImmediateStep(imm=0)
     assert_sc = AssertEqual(src1=sc_op, src2=expected_sc_result)
 
     comment_5 = Comment(comment="Load and assert memory value matches SC stored value")
-    load_op = Load(memory=mem, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
     expected_value = LoadImmediateStep(imm=0xDEADBEEF)
     assert_value = AssertEqual(src1=load_op, src2=expected_value)
 
@@ -333,7 +313,7 @@ def SID_PMP_05_AMO_M_MODE():
         name="SID_PMP_05_AMO_M_MODE",
         description="PMP checks for AMO access in M mode",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, mem, pmp_region, comment_2, store_op, comment_3, lr_op, sc_op, comment_4, expected_sc_result, assert_sc, comment_5, load_op, expected_value, assert_value],
+        steps=[comment_1, pmp_region, comment_2, store_op, comment_3, lr_op, sc_op, comment_4, expected_sc_result, assert_sc, comment_5, load_op, expected_value, assert_value],
     )
 
 
@@ -476,21 +456,15 @@ def SID_PMP_07_LOCKED_M_MODE():
     """
     comment_1 = Comment(comment="PMP checks effective in M-mode when L=1")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     comment_2 = Comment(comment="Request PMP region with L=1 but no RWX permissions")
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.LOCKED)
 
     comment_3 = Comment(comment="Load should cause access fault in M-mode")
-    load_op = Load(memory=mem, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
     assert_load = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op])
 
     comment_4 = Comment(comment="Store should cause access fault in M-mode")
-    store_op = Store(memory=mem, value=0xDEAD, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEAD, offset=0)
     assert_store = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_op])
 
     return TestScenario.from_steps(
@@ -498,7 +472,7 @@ def SID_PMP_07_LOCKED_M_MODE():
         name="SID_PMP_07_LOCKED_M_MODE",
         description="Locked bit: PMP checks are effective in M-mode when locked bit=1",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, mem, comment_2, pmp_region, comment_3, assert_load, comment_4, assert_store],
+        steps=[comment_1, comment_2, pmp_region, comment_3, assert_load, comment_4, assert_store],
     )
 
 
@@ -709,17 +683,11 @@ def SID_PMP_10_NO_READ():
     """
     comment_1 = Comment(comment="Access fault: pmpxcfg.r=0 & load access")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     comment_2 = Comment(comment="Request PMP region without read permission")
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_3 = Comment(comment="Load should cause access fault")
-    load_op = Load(memory=mem, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
     assert_fault = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op])
 
     return TestScenario.from_steps(
@@ -727,7 +695,7 @@ def SID_PMP_10_NO_READ():
         name="SID_PMP_10_NO_READ",
         description="Access faults on PMP violation: pmpxcfg.r=0 & load/amo access/lr",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem, comment_2, pmp_region, comment_3, assert_fault],
+        steps=[comment_1, comment_2, pmp_region, comment_3, assert_fault],
     )
 
 
@@ -738,17 +706,11 @@ def SID_PMP_10_NO_WRITE():
     """
     comment_1 = Comment(comment="Access fault: pmpxcfg.w=0 & store access")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     comment_2 = Comment(comment="Request PMP region without write permission")
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.EXECUTE)
 
     comment_3 = Comment(comment="Store should cause access fault")
-    store_op = Store(memory=mem, value=0xDEAD, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEAD, offset=0)
     assert_fault = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_op])
 
     return TestScenario.from_steps(
@@ -756,7 +718,7 @@ def SID_PMP_10_NO_WRITE():
         name="SID_PMP_10_NO_WRITE",
         description="Access faults on PMP violation: pmpxcfg.w=0 & store/amo/sc",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem, comment_2, pmp_region, comment_3, assert_fault],
+        steps=[comment_1, comment_2, pmp_region, comment_3, assert_fault],
     )
 
 
@@ -791,12 +753,6 @@ def SID_PMP_11_A_NAPOT():
     """
     comment_1 = Comment(comment="Address matching: A=NAPOT")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     comment_2 = Comment(comment="Set pmpcfg0 with A=NAPOT, RWX=1")
     li_napot = LoadImmediateStep(imm=0x1F)  # A=NAPOT, RWX=1
     csr_write = CsrWrite(csr_name="pmpcfg0", value=li_napot, direct_write=True)
@@ -804,15 +760,15 @@ def SID_PMP_11_A_NAPOT():
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_3 = Comment(comment="Access within NAPOT region")
-    load_op = Load(memory=mem, offset=0)
-    store_op = Store(memory=mem, value=0xDEADBEEF, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0)
 
     return TestScenario.from_steps(
         id="24",
         name="SID_PMP_11_A_NAPOT",
         description="Address matching mode: A=NAPOT - address matching based on pmpaddr value",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem, comment_2, li_napot, csr_write, pmp_region, comment_3, load_op, store_op],
+        steps=[comment_1, comment_2, li_napot, csr_write, pmp_region, comment_3, load_op, store_op],
     )
 
 
@@ -855,25 +811,19 @@ def SID_PMP_13():
     """
     comment_1 = Comment(comment="PMP Prioritization: Access matching multiple PMP regions")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     comment_2 = Comment(comment="Configure overlapping PMP regions")
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_3 = Comment(comment="First matching entry takes precedence")
-    load_op = Load(memory=mem, offset=0)
-    store_op = Store(memory=mem, value=0xDEADBEEF, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0)
 
     return TestScenario.from_steps(
         id="26",
         name="SID_PMP_13",
         description="PMP Prioritization: Access matching multiple PMP regions",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem, comment_2, pmp_region, comment_3, load_op, store_op],
+        steps=[comment_1, comment_2, pmp_region, comment_3, load_op, store_op],
     )
 
 
@@ -982,26 +932,20 @@ def SID_PMP_16_PAGE_CROSS():
     """
     comment_1 = Comment(comment="Misaligned access: Page crosser access")
 
-    mem = Memory(
-        size=0x2000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        page_cross_en=True,
-    )
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Load crossing page boundary")
-    load_op = Load(op="ld", memory=mem, offset=0xFFC)
+    load_op = Load(op="ld", memory=pmp_region, offset=0xFFC)
 
     comment_3 = Comment(comment="Store crossing page boundary")
-    store_op = Store(memory=mem, value=0xDEADBEEF, offset=0xFFC)
+    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0xFFC)
 
     return TestScenario.from_steps(
         id="30",
         name="SID_PMP_16_PAGE_CROSS",
         description="Misaligned access: Page crosser access",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem, pmp_region, comment_2, load_op, comment_3, store_op],
+        steps=[comment_1, pmp_region, comment_2, load_op, comment_3, store_op],
     )
 
 
@@ -1044,25 +988,19 @@ def SID_PMP_18():
     """
     comment_1 = Comment(comment="PMP checks for PTW PA")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-    )
-
     comment_2 = Comment(comment="Request PMP region for PTE access")
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE)
 
     comment_3 = Comment(comment="Access triggers page table walk, PMP checks PTW PA")
-    load_op = Load(memory=mem, offset=0)
-    store_op = Store(memory=mem, value=0xDEADBEEF, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0)
 
     return TestScenario.from_steps(
         id="32",
         name="SID_PMP_18",
         description="PMP checks for PTW PA (Page Table Walk Physical Address)",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S], paging_modes=[PagingMode.SV39]),
-        steps=[comment_1, mem, comment_2, pmp_region, comment_3, load_op, store_op],
+        steps=[comment_1, comment_2, pmp_region, comment_3, load_op, store_op],
     )
 
 
@@ -1071,28 +1009,148 @@ def SID_PMP_19():
     """
     Splinter super page with multiple PMP definitions
     """
-    comment_1 = Comment(comment="Splinter super page with multiple PMP definitions")
+    steps = []
+    steps.append(Comment(comment="Splinter super page with multiple PMP definitions"))
 
+    # Create 2MB memory page
+    steps.append(Comment(comment="Create 2MB super page"))
     mem_2m = Memory(
         size=0x200000,
         page_size=PageSize.SIZE_2M,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     )
+    steps.append(mem_2m)
 
-    comment_2 = Comment(comment="Configure multiple PMP entries within super page")
-    pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
+    # Get base address of the 2MB page
+    steps.append(Comment(comment="Get base address of 2MB page"))
+    base_addr = Arithmetic(op="la", src1=mem_2m)
+    steps.append(base_addr)
 
-    comment_3 = Comment(comment="Access different parts of super page")
-    load_op_0 = Load(memory=mem_2m, offset=0)
-    load_op_1 = Load(memory=mem_2m, offset=0x1000)
-    store_op = Store(memory=mem_2m, value=0xDEAD, offset=0)
+    # Configure pmpaddr1-5 with contiguous 4KB regions
+    # pmpaddr format for NAPOT: (base >> 2) | 0x1FF for 4KB
+    steps.append(Comment(comment="Configure pmpaddr1-5 with contiguous 4KB regions"))
+
+    # pmpaddr1: offset 0x0000, R only
+    steps.append(Comment(comment="pmpaddr1: 4KB at offset 0x0000, R only"))
+    addr1_base = Arithmetic(op="srli", src1=base_addr, src2=2)
+    napot_mask = LoadImmediateStep(imm=0x1FF)
+    steps.append(addr1_base)
+    steps.append(napot_mask)
+    pmpaddr1_val = Arithmetic(op="or", src1=addr1_base, src2=napot_mask)
+    steps.append(pmpaddr1_val)
+    steps.append(CsrWrite(csr_name="pmpaddr1", value=pmpaddr1_val, direct_write=True))
+
+    # pmpaddr2: offset 0x1000, RW
+    steps.append(Comment(comment="pmpaddr2: 4KB at offset 0x1000, RW"))
+    offset_1 = LoadImmediateStep(imm=0x1000)
+    steps.append(offset_1)
+    addr2_tmp = Arithmetic(op="add", src1=base_addr, src2=offset_1)
+    steps.append(addr2_tmp)
+    addr2_base = Arithmetic(op="srli", src1=addr2_tmp, src2=2)
+    steps.append(addr2_base)
+    pmpaddr2_val = Arithmetic(op="or", src1=addr2_base, src2=napot_mask)
+    steps.append(pmpaddr2_val)
+    steps.append(CsrWrite(csr_name="pmpaddr2", value=pmpaddr2_val, direct_write=True))
+
+    # pmpaddr3: offset 0x2000, X only
+    steps.append(Comment(comment="pmpaddr3: 4KB at offset 0x2000, X only"))
+    offset_2 = LoadImmediateStep(imm=0x2000)
+    steps.append(offset_2)
+    addr3_tmp = Arithmetic(op="add", src1=base_addr, src2=offset_2)
+    steps.append(addr3_tmp)
+    addr3_base = Arithmetic(op="srli", src1=addr3_tmp, src2=2)
+    steps.append(addr3_base)
+    pmpaddr3_val = Arithmetic(op="or", src1=addr3_base, src2=napot_mask)
+    steps.append(pmpaddr3_val)
+    steps.append(CsrWrite(csr_name="pmpaddr3", value=pmpaddr3_val, direct_write=True))
+
+    # pmpaddr4: offset 0x3000, RWX
+    steps.append(Comment(comment="pmpaddr4: 4KB at offset 0x3000, RWX"))
+    offset_3 = LoadImmediateStep(imm=0x3000)
+    steps.append(offset_3)
+    addr4_tmp = Arithmetic(op="add", src1=base_addr, src2=offset_3)
+    steps.append(addr4_tmp)
+    addr4_base = Arithmetic(op="srli", src1=addr4_tmp, src2=2)
+    steps.append(addr4_base)
+    pmpaddr4_val = Arithmetic(op="or", src1=addr4_base, src2=napot_mask)
+    steps.append(pmpaddr4_val)
+    steps.append(CsrWrite(csr_name="pmpaddr4", value=pmpaddr4_val, direct_write=True))
+
+    # pmpaddr5: offset 0x4000, no permissions
+    steps.append(Comment(comment="pmpaddr5: 4KB at offset 0x4000, no permissions"))
+    offset_4 = LoadImmediateStep(imm=0x4000)
+    steps.append(offset_4)
+    addr5_tmp = Arithmetic(op="add", src1=base_addr, src2=offset_4)
+    steps.append(addr5_tmp)
+    addr5_base = Arithmetic(op="srli", src1=addr5_tmp, src2=2)
+    steps.append(addr5_base)
+    pmpaddr5_val = Arithmetic(op="or", src1=addr5_base, src2=napot_mask)
+    steps.append(pmpaddr5_val)
+    steps.append(CsrWrite(csr_name="pmpaddr5", value=pmpaddr5_val, direct_write=True))
+
+    # Configure pmpcfg0 for pmpaddr1-5
+    # pmpcfg0 byte layout: [pmp7cfg|pmp6cfg|pmp5cfg|pmp4cfg|pmp3cfg|pmp2cfg|pmp1cfg|pmp0cfg]
+    # pmp1cfg (byte 1): R only = 0x19 (A=NAPOT, R=1)
+    # pmp2cfg (byte 2): RW = 0x1B (A=NAPOT, R=1, W=1)
+    # pmp3cfg (byte 3): X only = 0x1C (A=NAPOT, X=1)
+    # pmp4cfg (byte 4): RWX = 0x1F (A=NAPOT, R=1, W=1, X=1)
+    # pmp5cfg (byte 5): none = 0x18 (A=NAPOT only)
+    steps.append(Comment(comment="Configure pmpcfg0: pmp1=R, pmp2=RW, pmp3=X, pmp4=RWX, pmp5=none"))
+    # Value: 0x00_00_18_1F_1C_1B_19_00
+    pmpcfg0_val = LoadImmediateStep(imm=0x00_00_18_1F_1C_1B_19_00)
+    steps.append(pmpcfg0_val)
+    steps.append(CsrWrite(csr_name="pmpcfg0", value=pmpcfg0_val, direct_write=True))
+
+    # TLB invalidation
+    steps.append(Comment(comment="TLB invalidation"))
+    steps.append(System(instruction="sfence.vma"))
+
+    # Test Region 1 (R only): Load succeeds, Store faults
+    steps.append(Comment(comment="Test Region 1 (R only): Load succeeds"))
+    load_r1 = Load(memory=mem_2m, offset=0x0000)
+    steps.append(load_r1)
+    steps.append(Comment(comment="Test Region 1 (R only): Store faults"))
+    store_r1 = Store(memory=mem_2m, value=0xDEAD, offset=0x0000)
+    steps.append(AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_r1]))
+
+    # Test Region 2 (RW): Load succeeds, Store succeeds
+    steps.append(Comment(comment="Test Region 2 (RW): Load succeeds"))
+    load_r2 = Load(memory=mem_2m, offset=0x1000)
+    steps.append(load_r2)
+    steps.append(Comment(comment="Test Region 2 (RW): Store succeeds"))
+    store_r2 = Store(memory=mem_2m, value=0xBEEF, offset=0x1000)
+    steps.append(store_r2)
+
+    # Test Region 3 (X only): Load faults, Store faults
+    steps.append(Comment(comment="Test Region 3 (X only): Load faults"))
+    load_r3 = Load(memory=mem_2m, offset=0x2000)
+    steps.append(AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_r3]))
+    steps.append(Comment(comment="Test Region 3 (X only): Store faults"))
+    store_r3 = Store(memory=mem_2m, value=0xCAFE, offset=0x2000)
+    steps.append(AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_r3]))
+
+    # Test Region 4 (RWX): Load succeeds, Store succeeds
+    steps.append(Comment(comment="Test Region 4 (RWX): Load succeeds"))
+    load_r4 = Load(memory=mem_2m, offset=0x3000)
+    steps.append(load_r4)
+    steps.append(Comment(comment="Test Region 4 (RWX): Store succeeds"))
+    store_r4 = Store(memory=mem_2m, value=0xFACE, offset=0x3000)
+    steps.append(store_r4)
+
+    # Test Region 5 (no permissions): Load faults, Store faults
+    steps.append(Comment(comment="Test Region 5 (no permissions): Load faults"))
+    load_r5 = Load(memory=mem_2m, offset=0x4000)
+    steps.append(AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_r5]))
+    steps.append(Comment(comment="Test Region 5 (no permissions): Store faults"))
+    store_r5 = Store(memory=mem_2m, value=0xBAD0, offset=0x4000)
+    steps.append(AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_r5]))
 
     return TestScenario.from_steps(
         id="33",
         name="SID_PMP_19",
         description="Splinter super page with multiple PMP definitions",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, mem_2m, comment_2, pmp_region, comment_3, load_op_0, load_op_1, store_op],
+        steps=steps,
     )
 
 
@@ -1103,16 +1161,10 @@ def SID_PMP_20():
     """
     comment_1 = Comment(comment="PMP Invalidation: Change PMP with TLB invalidation")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="1. Access VA1:PA")
-    load_op_1 = Load(memory=mem, offset=0)
+    load_op_1 = Load(memory=pmp_region, offset=0)
 
     comment_3 = Comment(comment="2. Change PMP to remove access")
     li_new = LoadImmediateStep(imm=0x0)
@@ -1122,7 +1174,7 @@ def SID_PMP_20():
     sfence = System(instruction="sfence.vma")
 
     comment_5 = Comment(comment="4. Access VA1:PA again - should use new PMP values and fault")
-    load_op_2 = Load(memory=mem, offset=0)
+    load_op_2 = Load(memory=pmp_region, offset=0)
     assert_fault = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op_2])
 
     return TestScenario.from_steps(
@@ -1130,7 +1182,7 @@ def SID_PMP_20():
         name="SID_PMP_20",
         description="PMP Invalidation: PMP changes with TLB invalidation",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
-        steps=[comment_1, mem, pmp_region, comment_2, load_op_1, comment_3, li_new, csr_write, comment_4, sfence, comment_5, assert_fault],
+        steps=[comment_1, pmp_region, comment_2, load_op_1, comment_3, li_new, csr_write, comment_4, sfence, comment_5, assert_fault],
     )
 
 
@@ -1172,26 +1224,20 @@ def SID_PMP_22_LOCKED_TO_UNLOCKED():
     """
     comment_1 = Comment(comment="PMP region cross: locked to non-locked regions")
 
-    mem = Memory(
-        size=0x2000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     comment_2 = Comment(comment="Configure locked region followed by non-locked")
     pmp_region_locked = RequestPmpRegion(pmp_attributes=PmpAttribute.LOCKED | PmpAttribute.READ)
     pmp_region_unlocked = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE)
 
     comment_3 = Comment(comment="Access crossing region boundary")
-    load_op_0 = Load(memory=mem, offset=0)
-    load_op_1 = Load(memory=mem, offset=0x1000)
+    load_op_0 = Load(memory=pmp_region_locked, offset=0)
+    load_op_1 = Load(memory=pmp_region_unlocked, offset=0)
 
     return TestScenario.from_steps(
         id="36",
         name="SID_PMP_22_LOCKED_TO_UNLOCKED",
         description="PMP region cross: locked to non-locked regions (M-mode)",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, mem, comment_2, pmp_region_locked, pmp_region_unlocked, comment_3, load_op_0, load_op_1],
+        steps=[comment_1, comment_2, pmp_region_locked, pmp_region_unlocked, comment_3, load_op_0, load_op_1],
     )
 
 
@@ -1202,24 +1248,18 @@ def SID_PMP_22_OFF_TO_NAPOT():
     """
     comment_1 = Comment(comment="PMP region cross: OFF to NAPOT")
 
-    mem = Memory(
-        size=0x2000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Access with region crossing")
-    load_op = Load(memory=mem, offset=0)
-    store_op = Store(memory=mem, value=0xDEAD, offset=0)
+    load_op = Load(memory=pmp_region, offset=0)
+    store_op = Store(memory=pmp_region, value=0xDEAD, offset=0)
 
     return TestScenario.from_steps(
         id="37",
         name="SID_PMP_22_OFF_TO_NAPOT",
         description="PMP region cross: OFF to NAPOT (all modes)",
         env=TestEnvCfg(),
-        steps=[comment_1, mem, pmp_region, comment_2, load_op, store_op],
+        steps=[comment_1, pmp_region, comment_2, load_op, store_op],
     )
 
 
@@ -1230,30 +1270,24 @@ def SID_PMP_23():
     """
     comment_1 = Comment(comment="Paging mode change: Bare to non-bare")
 
-    mem = Memory(
-        size=0x1000,
-        page_size=PageSize.SIZE_4K,
-        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-    )
-
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="MPRV=0, do access")
-    load_op_1 = Load(memory=mem, offset=0)
+    load_op_1 = Load(memory=pmp_region, offset=0)
 
     comment_3 = Comment(comment="Set MPRV=1")
     li_mprv = LoadImmediateStep(imm=0x20000)  # MPRV bit
     csr_write = CsrWrite(csr_name="mstatus", set_mask=li_mprv)
 
     comment_4 = Comment(comment="MPRV=1, do access")
-    load_op_2 = Load(memory=mem, offset=0)
+    load_op_2 = Load(memory=pmp_region, offset=0)
 
     return TestScenario.from_steps(
         id="38",
         name="SID_PMP_23",
         description="Paging mode change: Bare to non-bare, non-bare to bare",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, mem, pmp_region, comment_2, load_op_1, comment_3, li_mprv, csr_write, comment_4, load_op_2],
+        steps=[comment_1, pmp_region, comment_2, load_op_1, comment_3, li_mprv, csr_write, comment_4, load_op_2],
     )
 
 
