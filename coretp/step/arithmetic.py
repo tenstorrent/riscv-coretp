@@ -5,6 +5,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Any, Union
 from .step import TestStep
+from .memory import Memory
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,7 @@ class Arithmetic(TestStep):
 
 @dataclass(frozen=True)
 class LoadImmediateStep(Arithmetic):
-    imm: Optional[int] = None
+    imm: Optional[Union[Memory, int]] = None
     bits: Optional[int] = None  # max bits allowed for an immediate
 
 

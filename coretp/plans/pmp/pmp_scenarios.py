@@ -1023,7 +1023,7 @@ def SID_PMP_19():
 
     # Get base address of the 2MB page
     steps.append(Comment(comment="Get base address of 2MB page"))
-    base_addr = Arithmetic(op="la", src1=mem_2m)
+    base_addr = LoadImmediateStep(imm=mem_2m)
     steps.append(base_addr)
 
     # Configure pmpaddr1-5 with contiguous 4KB regions
