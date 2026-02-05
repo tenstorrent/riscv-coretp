@@ -13,3 +13,4 @@ class PmpAttribute(Flag):
     READ = auto()
     EXECUTE = auto()
     LOCKED = auto()
+    NONE = auto()

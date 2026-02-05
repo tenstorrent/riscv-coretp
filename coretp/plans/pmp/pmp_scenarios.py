@@ -684,7 +684,7 @@ def SID_PMP_10_NO_READ():
     comment_1 = Comment(comment="Access fault: pmpxcfg.r=0 & load access")
 
     comment_2 = Comment(comment="Request PMP region without read permission")
-    pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.WRITE | PmpAttribute.EXECUTE)
+    pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.NONE)
 
     comment_3 = Comment(comment="Load should cause access fault")
     load_op = Load(memory=pmp_region, offset=0)
