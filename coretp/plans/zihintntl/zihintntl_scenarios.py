@@ -20,10 +20,13 @@ def SID_ZIHINTNTL_01_NTL_P1():
 
     comment_2 = Comment(comment="Execute NTL.P1 hint (ADD x0, x0, x2) - should behave as NOP")
     # Note: This will be represented as ADD x0, x0, x2 which is NTL.P1
-    ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=2))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=2)
+    ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Verify initial value is preserved")
-    assert_preserved = AssertEqual(src1=initial_val, src2=LoadImmediateStep(imm=0xDEADBEEF))
+    expected_val = LoadImmediateStep(imm=0xDEADBEEF)
+    assert_preserved = AssertEqual(src1=initial_val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="1",
@@ -34,8 +37,11 @@ def SID_ZIHINTNTL_01_NTL_P1():
             comment_1,
             initial_val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             ntl_hint,
             comment_3,
+            expected_val,
             assert_preserved,
         ],
     )
@@ -52,10 +58,13 @@ def SID_ZIHINTNTL_02_NTL_PALL():
     test_val = LoadImmediateStep(imm=0xC0FFEE)
 
     comment_2 = Comment(comment="Execute NTL.PALL hint (ADD x0, x0, x3) - should behave as NOP")
-    ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=3))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=3)
+    ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Verify test value is unchanged")
-    assert_unchanged = AssertEqual(src1=test_val, src2=LoadImmediateStep(imm=0xC0FFEE))
+    expected_val = LoadImmediateStep(imm=0xC0FFEE)
+    assert_unchanged = AssertEqual(src1=test_val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="2",
@@ -66,8 +75,11 @@ def SID_ZIHINTNTL_02_NTL_PALL():
             comment_1,
             test_val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             ntl_hint,
             comment_3,
+            expected_val,
             assert_unchanged,
         ],
     )
@@ -84,10 +96,13 @@ def SID_ZIHINTNTL_03_NTL_S1():
     val = LoadImmediateStep(imm=0xFEEDFACE)
 
     comment_2 = Comment(comment="Execute NTL.S1 hint (ADD x0, x0, x4) - should behave as NOP")
-    ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=4))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=4)
+    ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Check value remains unchanged")
-    assert_unchanged = AssertEqual(src1=val, src2=LoadImmediateStep(imm=0xFEEDFACE))
+    expected_val = LoadImmediateStep(imm=0xFEEDFACE)
+    assert_unchanged = AssertEqual(src1=val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="3",
@@ -98,8 +113,11 @@ def SID_ZIHINTNTL_03_NTL_S1():
             comment_1,
             val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             ntl_hint,
             comment_3,
+            expected_val,
             assert_unchanged,
         ],
     )
@@ -116,10 +134,13 @@ def SID_ZIHINTNTL_04_NTL_ALL():
     test_val = LoadImmediateStep(imm=0xABCDEF01)
 
     comment_2 = Comment(comment="Execute NTL.ALL hint (ADD x0, x0, x5) - should behave as NOP")
-    ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=5))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=5)
+    ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Verify value is preserved")
-    assert_preserved = AssertEqual(src1=test_val, src2=LoadImmediateStep(imm=0xABCDEF01))
+    expected_val = LoadImmediateStep(imm=0xABCDEF01)
+    assert_preserved = AssertEqual(src1=test_val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="4",
@@ -130,8 +151,11 @@ def SID_ZIHINTNTL_04_NTL_ALL():
             comment_1,
             test_val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             ntl_hint,
             comment_3,
+            expected_val,
             assert_preserved,
         ],
     )
@@ -149,10 +173,13 @@ def SID_ZIHINTNTL_05_C_NTL_P1():
 
     comment_2 = Comment(comment="Execute C.NTL.P1 hint (C.ADD x0, x2) - compressed NOP")
     # Represented as compressed add to x0
-    c_ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=2))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=2)
+    c_ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Ensure value unchanged by compressed hint")
-    assert_unchanged = AssertEqual(src1=val, src2=LoadImmediateStep(imm=0x12345678))
+    expected_val = LoadImmediateStep(imm=0x12345678)
+    assert_unchanged = AssertEqual(src1=val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="5",
@@ -163,8 +190,11 @@ def SID_ZIHINTNTL_05_C_NTL_P1():
             comment_1,
             val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             c_ntl_hint,
             comment_3,
+            expected_val,
             assert_unchanged,
         ],
     )
@@ -180,10 +210,13 @@ def SID_ZIHINTNTL_06_C_NTL_PALL():
     val = LoadImmediateStep(imm=0x87654321)
 
     comment_2 = Comment(comment="Execute C.NTL.PALL hint (C.ADD x0, x3)")
-    c_ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=3))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=3)
+    c_ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Confirm value remains constant")
-    assert_constant = AssertEqual(src1=val, src2=LoadImmediateStep(imm=0x87654321))
+    expected_val = LoadImmediateStep(imm=0x87654321)
+    assert_constant = AssertEqual(src1=val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="6",
@@ -194,8 +227,11 @@ def SID_ZIHINTNTL_06_C_NTL_PALL():
             comment_1,
             val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             c_ntl_hint,
             comment_3,
+            expected_val,
             assert_constant,
         ],
     )
@@ -211,10 +247,13 @@ def SID_ZIHINTNTL_07_C_NTL_S1():
     val = LoadImmediateStep(imm=0xBAADF00D)
 
     comment_2 = Comment(comment="Execute C.NTL.S1 hint (C.ADD x0, x4)")
-    c_ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=4))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=4)
+    c_ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Verify value is unaffected")
-    assert_unaffected = AssertEqual(src1=val, src2=LoadImmediateStep(imm=0xBAADF00D))
+    expected_val = LoadImmediateStep(imm=0xBAADF00D)
+    assert_unaffected = AssertEqual(src1=val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="7",
@@ -225,8 +264,11 @@ def SID_ZIHINTNTL_07_C_NTL_S1():
             comment_1,
             val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             c_ntl_hint,
             comment_3,
+            expected_val,
             assert_unaffected,
         ],
     )
@@ -242,10 +284,13 @@ def SID_ZIHINTNTL_08_C_NTL_ALL():
     val = LoadImmediateStep(imm=0xCAFEBABE)
 
     comment_2 = Comment(comment="Execute C.NTL.ALL hint (C.ADD x0, x5)")
-    c_ntl_hint = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=5))
+    ntl_src1 = LoadImmediateStep(imm=0)
+    ntl_src2 = LoadImmediateStep(imm=5)
+    c_ntl_hint = Arithmetic(op="add", src1=ntl_src1, src2=ntl_src2)
 
     comment_3 = Comment(comment="Validate value persistence")
-    assert_persistence = AssertEqual(src1=val, src2=LoadImmediateStep(imm=0xCAFEBABE))
+    expected_val = LoadImmediateStep(imm=0xCAFEBABE)
+    assert_persistence = AssertEqual(src1=val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="8",
@@ -256,8 +301,11 @@ def SID_ZIHINTNTL_08_C_NTL_ALL():
             comment_1,
             val,
             comment_2,
+            ntl_src1,
+            ntl_src2,
             c_ntl_hint,
             comment_3,
+            expected_val,
             assert_persistence,
         ],
     )
@@ -274,13 +322,17 @@ def SID_ZIHINTNTL_09_NTL_WITH_ARITHMETIC():
     b = LoadImmediateStep(imm=50)
 
     comment_2 = Comment(comment="Execute NTL.P1 hint before operation")
-    ntl_p1 = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=2))
+    ntl_p1_src1 = LoadImmediateStep(imm=0)
+    ntl_p1_src2 = LoadImmediateStep(imm=2)
+    ntl_p1 = Arithmetic(op="add", src1=ntl_p1_src1, src2=ntl_p1_src2)
 
     comment_3 = Comment(comment="Perform arithmetic operation")
     result = Arithmetic(op="add", src1=a, src2=b)
 
     comment_4 = Comment(comment="Execute NTL.ALL hint after operation")
-    ntl_all = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=5))
+    ntl_all_src1 = LoadImmediateStep(imm=0)
+    ntl_all_src2 = LoadImmediateStep(imm=5)
+    ntl_all = Arithmetic(op="add", src1=ntl_all_src1, src2=ntl_all_src2)
 
     comment_5 = Comment(comment="Verify arithmetic result is correct (100 + 50 = 150)")
     expected = LoadImmediateStep(imm=150)
@@ -296,10 +348,14 @@ def SID_ZIHINTNTL_09_NTL_WITH_ARITHMETIC():
             a,
             b,
             comment_2,
+            ntl_p1_src1,
+            ntl_p1_src2,
             ntl_p1,
             comment_3,
             result,
             comment_4,
+            ntl_all_src1,
+            ntl_all_src2,
             ntl_all,
             comment_5,
             expected,
@@ -318,19 +374,28 @@ def SID_ZIHINTNTL_10_NTL_SEQUENCE():
     val = LoadImmediateStep(imm=0xABCD1234)
 
     comment_2 = Comment(comment="Execute NTL.P1 hint")
-    ntl_p1 = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=2))
+    ntl_p1_src1 = LoadImmediateStep(imm=0)
+    ntl_p1_src2 = LoadImmediateStep(imm=2)
+    ntl_p1 = Arithmetic(op="add", src1=ntl_p1_src1, src2=ntl_p1_src2)
 
     comment_3 = Comment(comment="Execute NTL.PALL hint")
-    ntl_pall = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=3))
+    ntl_pall_src1 = LoadImmediateStep(imm=0)
+    ntl_pall_src2 = LoadImmediateStep(imm=3)
+    ntl_pall = Arithmetic(op="add", src1=ntl_pall_src1, src2=ntl_pall_src2)
 
     comment_4 = Comment(comment="Execute NTL.S1 hint")
-    ntl_s1 = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=4))
+    ntl_s1_src1 = LoadImmediateStep(imm=0)
+    ntl_s1_src2 = LoadImmediateStep(imm=4)
+    ntl_s1 = Arithmetic(op="add", src1=ntl_s1_src1, src2=ntl_s1_src2)
 
     comment_5 = Comment(comment="Execute NTL.ALL hint")
-    ntl_all = Arithmetic(op="add", src1=LoadImmediateStep(imm=0), src2=LoadImmediateStep(imm=5))
+    ntl_all_src1 = LoadImmediateStep(imm=0)
+    ntl_all_src2 = LoadImmediateStep(imm=5)
+    ntl_all = Arithmetic(op="add", src1=ntl_all_src1, src2=ntl_all_src2)
 
     comment_6 = Comment(comment="Verify value unchanged after all hints")
-    assert_unchanged = AssertEqual(src1=val, src2=LoadImmediateStep(imm=0xABCD1234))
+    expected_val = LoadImmediateStep(imm=0xABCD1234)
+    assert_unchanged = AssertEqual(src1=val, src2=expected_val)
 
     return TestScenario.from_steps(
         id="10",
@@ -341,14 +406,23 @@ def SID_ZIHINTNTL_10_NTL_SEQUENCE():
             comment_1,
             val,
             comment_2,
+            ntl_p1_src1,
+            ntl_p1_src2,
             ntl_p1,
             comment_3,
+            ntl_pall_src1,
+            ntl_pall_src2,
             ntl_pall,
             comment_4,
+            ntl_s1_src1,
+            ntl_s1_src2,
             ntl_s1,
             comment_5,
+            ntl_all_src1,
+            ntl_all_src2,
             ntl_all,
             comment_6,
+            expected_val,
             assert_unchanged,
         ],
     )
