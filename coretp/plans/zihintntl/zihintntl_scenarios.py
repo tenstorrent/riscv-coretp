@@ -32,7 +32,7 @@ def SID_ZIHINTNTL_01_NTL_P1():
         id="1",
         name="SID_ZIHINTNTL_01_NTL_P1",
         description="Test NTL.P1 hint instruction (innermost private cache) behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             initial_val,
@@ -70,7 +70,7 @@ def SID_ZIHINTNTL_02_NTL_PALL():
         id="2",
         name="SID_ZIHINTNTL_02_NTL_PALL",
         description="Test NTL.PALL hint instruction (all private caches) behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             test_val,
@@ -108,7 +108,7 @@ def SID_ZIHINTNTL_03_NTL_S1():
         id="3",
         name="SID_ZIHINTNTL_03_NTL_S1",
         description="Test NTL.S1 hint instruction (innermost shared cache) behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             val,
@@ -146,7 +146,7 @@ def SID_ZIHINTNTL_04_NTL_ALL():
         id="4",
         name="SID_ZIHINTNTL_04_NTL_ALL",
         description="Test NTL.ALL hint instruction (all cache levels) behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             test_val,
@@ -185,7 +185,7 @@ def SID_ZIHINTNTL_05_C_NTL_P1():
         id="5",
         name="SID_ZIHINTNTL_05_C_NTL_P1",
         description="Test C.NTL.P1 compressed hint instruction behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             val,
@@ -222,7 +222,7 @@ def SID_ZIHINTNTL_06_C_NTL_PALL():
         id="6",
         name="SID_ZIHINTNTL_06_C_NTL_PALL",
         description="Test C.NTL.PALL compressed hint instruction behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             val,
@@ -259,7 +259,7 @@ def SID_ZIHINTNTL_07_C_NTL_S1():
         id="7",
         name="SID_ZIHINTNTL_07_C_NTL_S1",
         description="Test C.NTL.S1 compressed hint instruction behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             val,
@@ -296,7 +296,7 @@ def SID_ZIHINTNTL_08_C_NTL_ALL():
         id="8",
         name="SID_ZIHINTNTL_08_C_NTL_ALL",
         description="Test C.NTL.ALL compressed hint instruction behaves as NOP",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             val,
@@ -342,7 +342,7 @@ def SID_ZIHINTNTL_09_NTL_WITH_ARITHMETIC():
         id="9",
         name="SID_ZIHINTNTL_09_NTL_WITH_ARITHMETIC",
         description="Test NTL hints interleaved with arithmetic operations",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             a,
@@ -401,7 +401,7 @@ def SID_ZIHINTNTL_10_NTL_SEQUENCE():
         id="10",
         name="SID_ZIHINTNTL_10_NTL_SEQUENCE",
         description="Test sequence of all NTL hint variants",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(),
         steps=[
             comment_1,
             val,
