@@ -410,3 +410,315 @@ def SID_ZICSR_17():
         env=TestEnvCfg(),
         steps=steps,
     )
+
+
+@zicsr_scenario
+def SID_ZICSR_18():
+    """
+    Test CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI instructions on mscratch.
+    Write -1 (all bits set) and clear, with AssertEqual checks between each step.
+    Limited to M-mode only.
+    """
+    steps = []
+
+    steps.append(Comment(comment="ZICSR test: mscratch write/set/clear with assertions (M-mode)"))
+
+    # Constants
+    all_ones = LoadImmediateStep(imm=-1)
+    zero = LoadImmediateStep(imm=0)
+    max_imm = LoadImmediateStep(imm=0x1F)
+    steps.extend([all_ones, zero, max_imm])
+
+    # ===== CSRRW: Write -1 =====
+    steps.append(Comment(comment="CSRRW: Write all ones to mscratch"))
+    csrrw_write = CsrDirectAccess(op="csrrw", csr_name="mscratch", src1=all_ones, target_is_x0=False)
+    steps.append(csrrw_write)
+    read_after_csrrw = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrw)
+    assert_csrrw = AssertEqual(src1=read_after_csrrw, src2=all_ones)
+    steps.append(assert_csrrw)
+
+    # ===== CSRRW: Clear (write 0) =====
+    steps.append(Comment(comment="CSRRW: Clear mscratch by writing 0"))
+    csrrw_clear = CsrDirectAccess(op="csrrw", csr_name="mscratch", src1=0, target_is_x0=False)
+    steps.append(csrrw_clear)
+    read_after_csrrw_clear = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrw_clear)
+    assert_csrrw_clear = AssertEqual(src1=read_after_csrrw_clear, src2=zero)
+    steps.append(assert_csrrw_clear)
+
+    # ===== CSRRS: Set all bits =====
+    steps.append(Comment(comment="CSRRS: Set all bits in mscratch"))
+    csrrs_set = CsrDirectAccess(op="csrrs", csr_name="mscratch", src1=all_ones, target_is_x0=False)
+    steps.append(csrrs_set)
+    read_after_csrrs = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrs)
+    assert_csrrs = AssertEqual(src1=read_after_csrrs, src2=all_ones)
+    steps.append(assert_csrrs)
+
+    # ===== CSRRC: Clear all bits =====
+    steps.append(Comment(comment="CSRRC: Clear all bits in mscratch"))
+    csrrc_clear = CsrDirectAccess(op="csrrc", csr_name="mscratch", src1=all_ones, target_is_x0=False)
+    steps.append(csrrc_clear)
+    read_after_csrrc = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrc)
+    assert_csrrc = AssertEqual(src1=read_after_csrrc, src2=zero)
+    steps.append(assert_csrrc)
+
+    # ===== CSRRWI: Write max immediate (0x1F) =====
+    steps.append(Comment(comment="CSRRWI: Write max immediate (0x1F) to mscratch"))
+    csrrwi_write = CsrDirectAccess(op="csrrwi", csr_name="mscratch", src1=0x1F, target_is_x0=False)
+    steps.append(csrrwi_write)
+    read_after_csrrwi = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrwi)
+    assert_csrrwi = AssertEqual(src1=read_after_csrrwi, src2=max_imm)
+    steps.append(assert_csrrwi)
+
+    # ===== CSRRWI: Clear (write 0) =====
+    steps.append(Comment(comment="CSRRWI: Clear mscratch by writing 0"))
+    csrrwi_clear = CsrDirectAccess(op="csrrwi", csr_name="mscratch", src1=0, target_is_x0=False)
+    steps.append(csrrwi_clear)
+    read_after_csrrwi_clear = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrwi_clear)
+    assert_csrrwi_clear = AssertEqual(src1=read_after_csrrwi_clear, src2=zero)
+    steps.append(assert_csrrwi_clear)
+
+    # ===== CSRRSI: Set bits with max immediate =====
+    steps.append(Comment(comment="CSRRSI: Set bits with max immediate (0x1F) in mscratch"))
+    csrrsi_set = CsrDirectAccess(op="csrrsi", csr_name="mscratch", src1=0x1F, target_is_x0=False)
+    steps.append(csrrsi_set)
+    read_after_csrrsi = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrsi)
+    assert_csrrsi = AssertEqual(src1=read_after_csrrsi, src2=max_imm)
+    steps.append(assert_csrrsi)
+
+    # ===== CSRRCI: Clear bits with max immediate =====
+    steps.append(Comment(comment="CSRRCI: Clear bits with max immediate (0x1F) in mscratch"))
+    csrrci_clear = CsrDirectAccess(op="csrrci", csr_name="mscratch", src1=0x1F, target_is_x0=False)
+    steps.append(csrrci_clear)
+    read_after_csrrci = CsrRead(csr_name="mscratch", direct_read=True)
+    steps.append(read_after_csrrci)
+    assert_csrrci = AssertEqual(src1=read_after_csrrci, src2=zero)
+    steps.append(assert_csrrci)
+
+    return TestScenario.from_steps(
+        id="18",
+        name="SID_ZICSR_18",
+        description="CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI on mscratch with assertions (M-mode)",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+@zicsr_scenario
+def SID_ZICSR_19():
+    """
+    Test CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI instructions on sscratch.
+    Write -1 (all bits set) and clear, with AssertEqual checks between each step.
+    Limited to S-mode only.
+    """
+    steps = []
+
+    steps.append(Comment(comment="ZICSR test: sscratch write/set/clear with assertions (S-mode)"))
+
+    # Constants
+    all_ones = LoadImmediateStep(imm=-1)
+    zero = LoadImmediateStep(imm=0)
+    max_imm = LoadImmediateStep(imm=0x1F)
+    steps.extend([all_ones, zero, max_imm])
+
+    # ===== CSRRW: Write -1 =====
+    steps.append(Comment(comment="CSRRW: Write all ones to sscratch"))
+    csrrw_write = CsrDirectAccess(op="csrrw", csr_name="sscratch", src1=all_ones, target_is_x0=False)
+    steps.append(csrrw_write)
+    read_after_csrrw = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrw)
+    assert_csrrw = AssertEqual(src1=read_after_csrrw, src2=all_ones)
+    steps.append(assert_csrrw)
+
+    # ===== CSRRW: Clear (write 0) =====
+    steps.append(Comment(comment="CSRRW: Clear sscratch by writing 0"))
+    csrrw_clear = CsrDirectAccess(op="csrrw", csr_name="sscratch", src1=0, target_is_x0=False)
+    steps.append(csrrw_clear)
+    read_after_csrrw_clear = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrw_clear)
+    assert_csrrw_clear = AssertEqual(src1=read_after_csrrw_clear, src2=zero)
+    steps.append(assert_csrrw_clear)
+
+    # ===== CSRRS: Set all bits =====
+    steps.append(Comment(comment="CSRRS: Set all bits in sscratch"))
+    csrrs_set = CsrDirectAccess(op="csrrs", csr_name="sscratch", src1=all_ones, target_is_x0=False)
+    steps.append(csrrs_set)
+    read_after_csrrs = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrs)
+    assert_csrrs = AssertEqual(src1=read_after_csrrs, src2=all_ones)
+    steps.append(assert_csrrs)
+
+    # ===== CSRRC: Clear all bits =====
+    steps.append(Comment(comment="CSRRC: Clear all bits in sscratch"))
+    csrrc_clear = CsrDirectAccess(op="csrrc", csr_name="sscratch", src1=all_ones, target_is_x0=False)
+    steps.append(csrrc_clear)
+    read_after_csrrc = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrc)
+    assert_csrrc = AssertEqual(src1=read_after_csrrc, src2=zero)
+    steps.append(assert_csrrc)
+
+    # ===== CSRRWI: Write max immediate (0x1F) =====
+    steps.append(Comment(comment="CSRRWI: Write max immediate (0x1F) to sscratch"))
+    csrrwi_write = CsrDirectAccess(op="csrrwi", csr_name="sscratch", src1=0x1F, target_is_x0=False)
+    steps.append(csrrwi_write)
+    read_after_csrrwi = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrwi)
+    assert_csrrwi = AssertEqual(src1=read_after_csrrwi, src2=max_imm)
+    steps.append(assert_csrrwi)
+
+    # ===== CSRRWI: Clear (write 0) =====
+    steps.append(Comment(comment="CSRRWI: Clear sscratch by writing 0"))
+    csrrwi_clear = CsrDirectAccess(op="csrrwi", csr_name="sscratch", src1=0, target_is_x0=False)
+    steps.append(csrrwi_clear)
+    read_after_csrrwi_clear = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrwi_clear)
+    assert_csrrwi_clear = AssertEqual(src1=read_after_csrrwi_clear, src2=zero)
+    steps.append(assert_csrrwi_clear)
+
+    # ===== CSRRSI: Set bits with max immediate =====
+    steps.append(Comment(comment="CSRRSI: Set bits with max immediate (0x1F) in sscratch"))
+    csrrsi_set = CsrDirectAccess(op="csrrsi", csr_name="sscratch", src1=0x1F, target_is_x0=False)
+    steps.append(csrrsi_set)
+    read_after_csrrsi = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrsi)
+    assert_csrrsi = AssertEqual(src1=read_after_csrrsi, src2=max_imm)
+    steps.append(assert_csrrsi)
+
+    # ===== CSRRCI: Clear bits with max immediate =====
+    steps.append(Comment(comment="CSRRCI: Clear bits with max immediate (0x1F) in sscratch"))
+    csrrci_clear = CsrDirectAccess(op="csrrci", csr_name="sscratch", src1=0x1F, target_is_x0=False)
+    steps.append(csrrci_clear)
+    read_after_csrrci = CsrRead(csr_name="sscratch", direct_read=True)
+    steps.append(read_after_csrrci)
+    assert_csrrci = AssertEqual(src1=read_after_csrrci, src2=zero)
+    steps.append(assert_csrrci)
+
+    return TestScenario.from_steps(
+        id="19",
+        name="SID_ZICSR_19",
+        description="CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI on sscratch with assertions (S-mode)",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        steps=steps,
+    )
+
+
+@zicsr_scenario
+def SID_ZICSR_20():
+    """
+    Test CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI instructions on fcsr.
+    Only tests the lower 8 bits (FRM[7:5] and FFLAGS[4:0]).
+    Write 0xFF (all lower 8 bits set) and clear, with AssertEqual checks between each step.
+    Available in all privilege modes.
+    """
+    steps = []
+
+    steps.append(Comment(comment="ZICSR test: fcsr write/set/clear with assertions (lower 8 bits only)"))
+
+    # Constants - fcsr only has 8 writable bits (FRM[7:5] + FFLAGS[4:0])
+    all_ones_8bit = LoadImmediateStep(imm=0xFF)
+    zero = LoadImmediateStep(imm=0)
+    max_imm = LoadImmediateStep(imm=0x1F)
+    fcsr_mask = LoadImmediateStep(imm=0xFF)
+    steps.extend([all_ones_8bit, zero, max_imm, fcsr_mask])
+
+    # ===== CSRRW: Write 0xFF =====
+    steps.append(Comment(comment="CSRRW: Write 0xFF to fcsr (all 8 writable bits)"))
+    csrrw_write = CsrDirectAccess(op="csrrw", csr_name="fcsr", src1=all_ones_8bit, target_is_x0=False)
+    steps.append(csrrw_write)
+    read_after_csrrw = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrw)
+    masked_csrrw = Arithmetic(op="and", src1=read_after_csrrw, src2=fcsr_mask)
+    steps.append(masked_csrrw)
+    assert_csrrw = AssertEqual(src1=masked_csrrw, src2=all_ones_8bit)
+    steps.append(assert_csrrw)
+
+    # ===== CSRRW: Clear (write 0) =====
+    steps.append(Comment(comment="CSRRW: Clear fcsr by writing 0"))
+    csrrw_clear = CsrDirectAccess(op="csrrw", csr_name="fcsr", src1=0, target_is_x0=False)
+    steps.append(csrrw_clear)
+    read_after_csrrw_clear = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrw_clear)
+    masked_csrrw_clear = Arithmetic(op="and", src1=read_after_csrrw_clear, src2=fcsr_mask)
+    steps.append(masked_csrrw_clear)
+    assert_csrrw_clear = AssertEqual(src1=masked_csrrw_clear, src2=zero)
+    steps.append(assert_csrrw_clear)
+
+    # ===== CSRRS: Set all 8 bits =====
+    steps.append(Comment(comment="CSRRS: Set all 8 bits in fcsr"))
+    csrrs_set = CsrDirectAccess(op="csrrs", csr_name="fcsr", src1=all_ones_8bit, target_is_x0=False)
+    steps.append(csrrs_set)
+    read_after_csrrs = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrs)
+    masked_csrrs = Arithmetic(op="and", src1=read_after_csrrs, src2=fcsr_mask)
+    steps.append(masked_csrrs)
+    assert_csrrs = AssertEqual(src1=masked_csrrs, src2=all_ones_8bit)
+    steps.append(assert_csrrs)
+
+    # ===== CSRRC: Clear all 8 bits =====
+    steps.append(Comment(comment="CSRRC: Clear all 8 bits in fcsr"))
+    csrrc_clear = CsrDirectAccess(op="csrrc", csr_name="fcsr", src1=all_ones_8bit, target_is_x0=False)
+    steps.append(csrrc_clear)
+    read_after_csrrc = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrc)
+    masked_csrrc = Arithmetic(op="and", src1=read_after_csrrc, src2=fcsr_mask)
+    steps.append(masked_csrrc)
+    assert_csrrc = AssertEqual(src1=masked_csrrc, src2=zero)
+    steps.append(assert_csrrc)
+
+    # ===== CSRRWI: Write max immediate (0x1F) =====
+    steps.append(Comment(comment="CSRRWI: Write max immediate (0x1F) to fcsr"))
+    csrrwi_write = CsrDirectAccess(op="csrrwi", csr_name="fcsr", src1=0x1F, target_is_x0=False)
+    steps.append(csrrwi_write)
+    read_after_csrrwi = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrwi)
+    masked_csrrwi = Arithmetic(op="and", src1=read_after_csrrwi, src2=fcsr_mask)
+    steps.append(masked_csrrwi)
+    assert_csrrwi = AssertEqual(src1=masked_csrrwi, src2=max_imm)
+    steps.append(assert_csrrwi)
+
+    # ===== CSRRWI: Clear (write 0) =====
+    steps.append(Comment(comment="CSRRWI: Clear fcsr by writing 0"))
+    csrrwi_clear = CsrDirectAccess(op="csrrwi", csr_name="fcsr", src1=0, target_is_x0=False)
+    steps.append(csrrwi_clear)
+    read_after_csrrwi_clear = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrwi_clear)
+    masked_csrrwi_clear = Arithmetic(op="and", src1=read_after_csrrwi_clear, src2=fcsr_mask)
+    steps.append(masked_csrrwi_clear)
+    assert_csrrwi_clear = AssertEqual(src1=masked_csrrwi_clear, src2=zero)
+    steps.append(assert_csrrwi_clear)
+
+    # ===== CSRRSI: Set bits with max immediate =====
+    steps.append(Comment(comment="CSRRSI: Set bits with max immediate (0x1F) in fcsr"))
+    csrrsi_set = CsrDirectAccess(op="csrrsi", csr_name="fcsr", src1=0x1F, target_is_x0=False)
+    steps.append(csrrsi_set)
+    read_after_csrrsi = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrsi)
+    masked_csrrsi = Arithmetic(op="and", src1=read_after_csrrsi, src2=fcsr_mask)
+    steps.append(masked_csrrsi)
+    assert_csrrsi = AssertEqual(src1=masked_csrrsi, src2=max_imm)
+    steps.append(assert_csrrsi)
+
+    # ===== CSRRCI: Clear bits with max immediate =====
+    steps.append(Comment(comment="CSRRCI: Clear bits with max immediate (0x1F) in fcsr"))
+    csrrci_clear = CsrDirectAccess(op="csrrci", csr_name="fcsr", src1=0x1F, target_is_x0=False)
+    steps.append(csrrci_clear)
+    read_after_csrrci = CsrRead(csr_name="fcsr", direct_read=True)
+    steps.append(read_after_csrrci)
+    masked_csrrci = Arithmetic(op="and", src1=read_after_csrrci, src2=fcsr_mask)
+    steps.append(masked_csrrci)
+    assert_csrrci = AssertEqual(src1=masked_csrrci, src2=zero)
+    steps.append(assert_csrrci)
+
+    return TestScenario.from_steps(
+        id="20",
+        name="SID_ZICSR_20",
+        description="CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI on fcsr with assertions (lower 8 bits only)",
+        env=TestEnvCfg(),
+        steps=steps,
+    )
