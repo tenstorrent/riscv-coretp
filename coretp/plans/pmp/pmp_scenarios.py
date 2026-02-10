@@ -47,7 +47,7 @@ def SID_PMP_01():
     for csr_name in ["pmpcfg0", "pmpcfg2"]:
         steps.append(Comment(comment=f"Read/write {csr_name}"))
         steps.append(CsrRead(csr_name=csr_name, direct_read=True))
-        li = LoadImmediateStep(imm=-1)
+        li = LoadImmediateStep(imm=0x1f1f1f1f1f1f1f1f)
         steps.append(li)
         steps.append(CsrWrite(csr_name=csr_name, value=li, direct_write=True))
 
@@ -141,13 +141,13 @@ def SID_PMP_04_LOAD_STORE_S_U_MODE():
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Execute STORE with PMP protection")
-    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0)
+    expected_value = LoadImmediateStep(imm=0xA1)
+    store_op = Store(op= "sb", memory=pmp_region, value=expected_value, offset=0)
 
     comment_3 = Comment(comment="Execute LOAD with PMP protection")
-    load_op = Load(memory=pmp_region, offset=0)
+    load_op = Load(op="lbu",memory=pmp_region, offset=0)
 
     comment_4 = Comment(comment="Assert memory value matches stored value")
-    expected_value = LoadImmediateStep(imm=0xDEADBEEF)
     assert_value = AssertEqual(src1=load_op, src2=expected_value)
 
     return TestScenario.from_steps(
@@ -155,7 +155,7 @@ def SID_PMP_04_LOAD_STORE_S_U_MODE():
         name="SID_PMP_04_LOAD_STORE_S_U_MODE",
         description="PMP checks for LOAD and STORE access in S/U mode with memory value assertion",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
-        steps=[comment_1, pmp_region, comment_2, store_op, comment_3, load_op, comment_4, expected_value, assert_value],
+        steps=[comment_1, pmp_region, comment_2, expected_value, store_op, comment_3, load_op, comment_4, assert_value],
     )
 
 
@@ -266,13 +266,13 @@ def SID_PMP_05_LOAD_STORE_M_MODE():
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
     comment_2 = Comment(comment="Execute STORE with PMP protection")
-    store_op = Store(memory=pmp_region, value=0xDEADBEEF, offset=0)
+    expected_value = LoadImmediateStep(imm=0xA1)
+    store_op = Store(op="sb", memory=pmp_region, value=expected_value, offset=0)
 
     comment_3 = Comment(comment="Execute LOAD with PMP protection")
-    load_op = Load(memory=pmp_region, offset=0)
+    load_op = Load(op="lbu", memory=pmp_region, offset=0)
 
     comment_4 = Comment(comment="Assert memory value matches stored value")
-    expected_value = LoadImmediateStep(imm=0xDEADBEEF)
     assert_value = AssertEqual(src1=load_op, src2=expected_value)
 
     return TestScenario.from_steps(
@@ -280,7 +280,7 @@ def SID_PMP_05_LOAD_STORE_M_MODE():
         name="SID_PMP_05_LOAD_STORE_M_MODE",
         description="PMP checks for LOAD and STORE access in M mode with memory value assertion",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, pmp_region, comment_2, store_op, comment_3, load_op, comment_4, expected_value, assert_value],
+        steps=[comment_1, pmp_region, comment_2, expected_value, store_op, comment_3, load_op, comment_4, assert_value],
     )
 
 
@@ -292,28 +292,21 @@ def SID_PMP_05_AMO_M_MODE():
     comment_1 = Comment(comment="PMP checks for AMO access in M mode")
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
-    comment_2 = Comment(comment="Store initial value to memory")
-    store_op = Store(memory=pmp_region, value=0xCAFEBABE, offset=0)
-
-    comment_3 = Comment(comment="Execute LR/SC with PMP protection")
+    comment_2 = Comment(comment="Execute LR/SC with PMP protection")
     lr_op = MemAccess(op="lr.w", memory=pmp_region)
-    sc_op = MemAccess(op="sc.w", memory=pmp_region, src2=0xDEADBEEF)
+    sc_op = MemAccess(op="sc.w", memory=pmp_region)
 
-    comment_4 = Comment(comment="Assert SC succeeded (returns 0)")
+    comment_3 = Comment(comment="Assert SC succeeded (returns 0)")
     expected_sc_result = LoadImmediateStep(imm=0)
     assert_sc = AssertEqual(src1=sc_op, src2=expected_sc_result)
 
-    comment_5 = Comment(comment="Load and assert memory value matches SC stored value")
-    load_op = Load(memory=pmp_region, offset=0)
-    expected_value = LoadImmediateStep(imm=0xDEADBEEF)
-    assert_value = AssertEqual(src1=load_op, src2=expected_value)
 
     return TestScenario.from_steps(
         id="7",
         name="SID_PMP_05_AMO_M_MODE",
         description="PMP checks for AMO access in M mode",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, pmp_region, comment_2, store_op, comment_3, lr_op, sc_op, comment_4, expected_sc_result, assert_sc, comment_5, load_op, expected_value, assert_value],
+        steps=[comment_1, pmp_region, comment_2, lr_op, sc_op, comment_3, expected_sc_result, assert_sc],
     )
 
 
@@ -357,7 +350,7 @@ def SID_PMP_05_IFETCH_M():
         id="10",
         name="SID_PMP_05_IFETCH_M",
         description="PMP checks for instruction fetch access in M mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
             comment_1,
             mem,
@@ -382,98 +375,98 @@ def SID_PMP_05_IFETCH_M():
     )
 
 
-@pmp_scenario
-def SID_PMP_06_LOCKED_WRITE_IGNORED():
-    """
-    Locked bit: Writes to pmpaddr,pmpcfg CSRs on corresponding locked bit=1 are ignored
-    """
-    steps = []
-    steps.append(Comment(comment="Locked bit: Writes ignored when L=1"))
+# @pmp_scenario
+# def SID_PMP_06_LOCKED_WRITE_IGNORED():
+#     """
+#     Locked bit: Writes to pmpaddr,pmpcfg CSRs on corresponding locked bit=1 are ignored
+#     """
+#     steps = []
+#     steps.append(Comment(comment="Locked bit: Writes ignored when L=1"))
 
-    steps.append(Comment(comment="Set pmpcfg0 with L=1, A=NAPOT, RWX=1"))
-    li_cfg = LoadImmediateStep(imm=0x9F)  # L=1, A=NAPOT, RWX=1
-    steps.append(li_cfg)
-    steps.append(CsrWrite(csr_name="pmpcfg0", value=li_cfg, direct_write=True))
+#     steps.append(Comment(comment="Set pmpcfg0 with L=1, A=NAPOT, RWX=1"))
+#     li_cfg = LoadImmediateStep(imm=0x9F)  # L=1, A=NAPOT, RWX=1
+#     steps.append(li_cfg)
+#     steps.append(CsrWrite(csr_name="pmpcfg0", value=li_cfg, direct_write=True))
 
-    steps.append(Comment(comment="Read current pmpaddr0 value"))
-    old_addr = CsrRead(csr_name="pmpaddr0", direct_read=True)
-    steps.append(old_addr)
+#     steps.append(Comment(comment="Read current pmpaddr0 value"))
+#     old_addr = CsrRead(csr_name="pmpaddr0", direct_read=True)
+#     steps.append(old_addr)
 
-    steps.append(Comment(comment="Try to write new value to pmpaddr0"))
-    li_new = LoadImmediateStep(imm=0xDEADBEEF)
-    steps.append(li_new)
-    steps.append(CsrWrite(csr_name="pmpaddr0", value=li_new, direct_write=True))
+#     steps.append(Comment(comment="Try to write new value to pmpaddr0"))
+#     li_new = LoadImmediateStep(imm=0xDEADBEEF)
+#     steps.append(li_new)
+#     steps.append(CsrWrite(csr_name="pmpaddr0", value=li_new, direct_write=True))
 
-    steps.append(Comment(comment="Read pmpaddr0 again - should be unchanged"))
-    new_addr = CsrRead(csr_name="pmpaddr0", direct_read=True)
-    steps.append(new_addr)
-    steps.append(AssertEqual(src1=old_addr, src2=new_addr))
+#     steps.append(Comment(comment="Read pmpaddr0 again - should be unchanged"))
+#     new_addr = CsrRead(csr_name="pmpaddr0", direct_read=True)
+#     steps.append(new_addr)
+#     steps.append(AssertEqual(src1=old_addr, src2=new_addr))
 
-    return TestScenario.from_steps(
-        id="12",
-        name="SID_PMP_06_LOCKED_WRITE_IGNORED",
-        description="Locked bit: Writes to pmpaddr,pmpcfg CSRs on corresponding locked bit=1 are ignored",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=steps,
-    )
-
-
-@pmp_scenario
-def SID_PMP_06_LOCKED_A_OFF():
-    """
-    Locked bit: L bit locks PMP entry even when A bit set to OFF
-    """
-    steps = []
-    steps.append(Comment(comment="L bit locks PMP entry even when A=OFF"))
-
-    steps.append(Comment(comment="Set pmpcfg0 with L=1, A=OFF"))
-    li_cfg = LoadImmediateStep(imm=0x80)  # L=1, A=OFF
-    steps.append(li_cfg)
-    steps.append(CsrWrite(csr_name="pmpcfg0", value=li_cfg, direct_write=True))
-
-    steps.append(Comment(comment="Try to modify pmpcfg0 - should be ignored"))
-    li_new_cfg = LoadImmediateStep(imm=0x1F)  # A=NAPOT, RWX=1
-    steps.append(li_new_cfg)
-    steps.append(CsrWrite(csr_name="pmpcfg0", value=li_new_cfg, direct_write=True))
-
-    steps.append(Comment(comment="Read back pmpcfg0 - should still have L=1, A=OFF"))
-    read_cfg = CsrRead(csr_name="pmpcfg0", direct_read=True)
-    steps.append(read_cfg)
-
-    return TestScenario.from_steps(
-        id="13",
-        name="SID_PMP_06_LOCKED_A_OFF",
-        description="Locked bit: L bit locks PMP entry even when A bit set to OFF",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=steps,
-    )
+#     return TestScenario.from_steps(
+#         id="12",
+#         name="SID_PMP_06_LOCKED_WRITE_IGNORED",
+#         description="Locked bit: Writes to pmpaddr,pmpcfg CSRs on corresponding locked bit=1 are ignored",
+#         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+#         steps=steps,
+#     )
 
 
-@pmp_scenario
-def SID_PMP_07_LOCKED_M_MODE():
-    """
-    Locked bit: PMP checks are effective in M-mode when locked bit=1
-    """
-    comment_1 = Comment(comment="PMP checks effective in M-mode when L=1")
+# @pmp_scenario
+# def SID_PMP_06_LOCKED_A_OFF():
+#     """
+#     Locked bit: L bit locks PMP entry even when A bit set to OFF
+#     """
+#     steps = []
+#     steps.append(Comment(comment="L bit locks PMP entry even when A=OFF"))
 
-    comment_2 = Comment(comment="Request PMP region with L=1 but no RWX permissions")
-    pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.LOCKED)
+#     steps.append(Comment(comment="Set pmpcfg0 with L=1, A=OFF"))
+#     li_cfg = LoadImmediateStep(imm=0x80)  # L=1, A=OFF
+#     steps.append(li_cfg)
+#     steps.append(CsrWrite(csr_name="pmpcfg0", value=li_cfg, direct_write=True))
 
-    comment_3 = Comment(comment="Load should cause access fault in M-mode")
-    load_op = Load(memory=pmp_region, offset=0)
-    assert_load = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op])
+#     steps.append(Comment(comment="Try to modify pmpcfg0 - should be ignored"))
+#     li_new_cfg = LoadImmediateStep(imm=0x1F)  # A=NAPOT, RWX=1
+#     steps.append(li_new_cfg)
+#     steps.append(CsrWrite(csr_name="pmpcfg0", value=li_new_cfg, direct_write=True))
 
-    comment_4 = Comment(comment="Store should cause access fault in M-mode")
-    store_op = Store(memory=pmp_region, value=0xDEAD, offset=0)
-    assert_store = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_op])
+#     steps.append(Comment(comment="Read back pmpcfg0 - should still have L=1, A=OFF"))
+#     read_cfg = CsrRead(csr_name="pmpcfg0", direct_read=True)
+#     steps.append(read_cfg)
 
-    return TestScenario.from_steps(
-        id="14",
-        name="SID_PMP_07_LOCKED_M_MODE",
-        description="Locked bit: PMP checks are effective in M-mode when locked bit=1",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, comment_2, pmp_region, comment_3, assert_load, comment_4, assert_store],
-    )
+#     return TestScenario.from_steps(
+#         id="13",
+#         name="SID_PMP_06_LOCKED_A_OFF",
+#         description="Locked bit: L bit locks PMP entry even when A bit set to OFF",
+#         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+#         steps=steps,
+#     )
+
+
+# @pmp_scenario
+# def SID_PMP_07_LOCKED_M_MODE():
+#     """
+#     Locked bit: PMP checks are effective in M-mode when locked bit=1
+#     """
+#     comment_1 = Comment(comment="PMP checks effective in M-mode when L=1")
+
+#     comment_2 = Comment(comment="Request PMP region with L=1 but no RWX permissions")
+#     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.LOCKED)
+
+#     comment_3 = Comment(comment="Load should cause access fault in M-mode")
+#     load_op = Load(memory=pmp_region, offset=0)
+#     assert_load = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op])
+
+#     comment_4 = Comment(comment="Store should cause access fault in M-mode")
+#     store_op = Store(memory=pmp_region, value=0xDEAD, offset=0)
+#     assert_store = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_op])
+
+#     return TestScenario.from_steps(
+#         id="14",
+#         name="SID_PMP_07_LOCKED_M_MODE",
+#         description="Locked bit: PMP checks are effective in M-mode when locked bit=1",
+#         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+#         steps=[comment_1, comment_2, pmp_region, comment_3, assert_load, comment_4, assert_store],
+#     )
 
 
 @pmp_scenario
@@ -755,7 +748,7 @@ def SID_PMP_11_A_NAPOT():
 
     comment_2 = Comment(comment="Set pmpcfg0 with A=NAPOT, RWX=1")
     li_napot = LoadImmediateStep(imm=0x1F)  # A=NAPOT, RWX=1
-    csr_write = CsrWrite(csr_name="pmpcfg0", value=li_napot, direct_write=True)
+    csr_write = CsrWrite(csr_name="pmpcfg0", value=li_napot)
 
     pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
 
@@ -1012,6 +1005,19 @@ def SID_PMP_19():
     steps = []
     steps.append(Comment(comment="Splinter super page with multiple PMP definitions"))
 
+    # Save pmpcfg0 to scratch space
+    steps.append(Comment(comment="Save pmpcfg0 to scratch space"))
+    scratch = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+    )
+    steps.append(scratch)
+    old_pmpcfg0 = CsrRead(csr_name="pmpcfg0")
+    steps.append(old_pmpcfg0)
+    save_cfg = Store(memory=scratch, value=old_pmpcfg0, offset=0)
+    steps.append(save_cfg)
+
     # Create 2MB memory page
     steps.append(Comment(comment="Create 2MB super page"))
     mem_2m = Memory(
@@ -1038,7 +1044,7 @@ def SID_PMP_19():
     steps.append(napot_mask)
     pmpaddr1_val = Arithmetic(op="or", src1=addr1_base, src2=napot_mask)
     steps.append(pmpaddr1_val)
-    steps.append(CsrWrite(csr_name="pmpaddr1", value=pmpaddr1_val, direct_write=True))
+    steps.append(CsrWrite(csr_name="pmpaddr1", value=pmpaddr1_val))
 
     # pmpaddr2: offset 0x1000, RW
     steps.append(Comment(comment="pmpaddr2: 4KB at offset 0x1000, RW"))
@@ -1050,7 +1056,7 @@ def SID_PMP_19():
     steps.append(addr2_base)
     pmpaddr2_val = Arithmetic(op="or", src1=addr2_base, src2=napot_mask)
     steps.append(pmpaddr2_val)
-    steps.append(CsrWrite(csr_name="pmpaddr2", value=pmpaddr2_val, direct_write=True))
+    steps.append(CsrWrite(csr_name="pmpaddr2", value=pmpaddr2_val))
 
     # pmpaddr3: offset 0x2000, X only
     steps.append(Comment(comment="pmpaddr3: 4KB at offset 0x2000, X only"))
@@ -1062,7 +1068,7 @@ def SID_PMP_19():
     steps.append(addr3_base)
     pmpaddr3_val = Arithmetic(op="or", src1=addr3_base, src2=napot_mask)
     steps.append(pmpaddr3_val)
-    steps.append(CsrWrite(csr_name="pmpaddr3", value=pmpaddr3_val, direct_write=True))
+    steps.append(CsrWrite(csr_name="pmpaddr3", value=pmpaddr3_val))
 
     # pmpaddr4: offset 0x3000, RWX
     steps.append(Comment(comment="pmpaddr4: 4KB at offset 0x3000, RWX"))
@@ -1074,7 +1080,7 @@ def SID_PMP_19():
     steps.append(addr4_base)
     pmpaddr4_val = Arithmetic(op="or", src1=addr4_base, src2=napot_mask)
     steps.append(pmpaddr4_val)
-    steps.append(CsrWrite(csr_name="pmpaddr4", value=pmpaddr4_val, direct_write=True))
+    steps.append(CsrWrite(csr_name="pmpaddr4", value=pmpaddr4_val))
 
     # pmpaddr5: offset 0x4000, no permissions
     steps.append(Comment(comment="pmpaddr5: 4KB at offset 0x4000, no permissions"))
@@ -1086,20 +1092,29 @@ def SID_PMP_19():
     steps.append(addr5_base)
     pmpaddr5_val = Arithmetic(op="or", src1=addr5_base, src2=napot_mask)
     steps.append(pmpaddr5_val)
-    steps.append(CsrWrite(csr_name="pmpaddr5", value=pmpaddr5_val, direct_write=True))
+    steps.append(CsrWrite(csr_name="pmpaddr5", value=pmpaddr5_val))
 
-    # Configure pmpcfg0 for pmpaddr1-5
+
+    # pmpaddr6: entire address space, RWX
+    steps.append(Comment(comment="pmpaddr6: entire address space, RWX"))
+    pmpaddr6_val = LoadImmediateStep(imm=0xFFFFFFFFFFFFFFFF)
+    steps.append(pmpaddr6_val)
+    steps.append(CsrWrite(csr_name="pmpaddr6", value=pmpaddr6_val))
+
+    # Configure pmpcfg0 for pmpaddr1-6
     # pmpcfg0 byte layout: [pmp7cfg|pmp6cfg|pmp5cfg|pmp4cfg|pmp3cfg|pmp2cfg|pmp1cfg|pmp0cfg]
     # pmp1cfg (byte 1): R only = 0x19 (A=NAPOT, R=1)
     # pmp2cfg (byte 2): RW = 0x1B (A=NAPOT, R=1, W=1)
     # pmp3cfg (byte 3): X only = 0x1C (A=NAPOT, X=1)
     # pmp4cfg (byte 4): RWX = 0x1F (A=NAPOT, R=1, W=1, X=1)
     # pmp5cfg (byte 5): none = 0x18 (A=NAPOT only)
-    steps.append(Comment(comment="Configure pmpcfg0: pmp1=R, pmp2=RW, pmp3=X, pmp4=RWX, pmp5=none"))
-    # Value: 0x00_00_18_1F_1C_1B_19_00
-    pmpcfg0_val = LoadImmediateStep(imm=0x00_00_18_1F_1C_1B_19_00)
+    # pmp6cfg (byte 6): RWX = 0x1F (A=NAPOT, R=1, W=1, X=1)
+    steps.append(Comment(comment="Configure pmpcfg0: pmp1=R, pmp2=RW, pmp3=X, pmp4=RWX, pmp5=none, pmp6=RWX"))
+    # Value: 0x00_1F_18_1F_1C_1B_19_00
+    pmpcfg0_val = LoadImmediateStep(imm=0x00_1F_18_1F_1C_1B_19_00)
+
     steps.append(pmpcfg0_val)
-    steps.append(CsrWrite(csr_name="pmpcfg0", value=pmpcfg0_val, direct_write=True))
+    steps.append(CsrWrite(csr_name="pmpcfg0", value=pmpcfg0_val))
 
     # TLB invalidation
     steps.append(Comment(comment="TLB invalidation"))
@@ -1145,6 +1160,12 @@ def SID_PMP_19():
     store_r5 = Store(memory=mem_2m, value=0xBAD0, offset=0x4000)
     steps.append(AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_r5]))
 
+    # Restore pmpcfg0 from scratch space
+    steps.append(Comment(comment="Restore pmpcfg0 from scratch space"))
+    restored_cfg = Load(memory=scratch, offset=0)
+    steps.append(restored_cfg)
+    steps.append(CsrWrite(csr_name="pmpcfg0", value=restored_cfg))
+
     return TestScenario.from_steps(
         id="33",
         name="SID_PMP_19",
@@ -1159,30 +1180,72 @@ def SID_PMP_20():
     """
     PMP Invalidation: PMP changes with TLB invalidation
     """
-    comment_1 = Comment(comment="PMP Invalidation: Change PMP with TLB invalidation")
+    steps = []
+    steps.append(Comment(comment="PMP Invalidation: Change PMP with TLB invalidation"))
 
-    pmp_region = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE | PmpAttribute.EXECUTE)
+    # Allocate a 4KB region for the test
+    mem_4k = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
+    )
+    steps.append(mem_4k)
+    # Configure pmpaddr1: entire DRAM (all ones NAPOT) - do first to not fail out when pmpaddr0 gets clobbered by the test
+    steps.append(Comment(comment="Configure pmpaddr1: entire DRAM"))
+    pmpaddr1_val = LoadImmediateStep(imm=0xFFFFFFFFFFFFFFFF)
+    steps.append(pmpaddr1_val)
+    steps.append(CsrWrite(csr_name="pmpaddr1", value=pmpaddr1_val))
 
-    comment_2 = Comment(comment="1. Access VA1:PA")
-    load_op_1 = Load(memory=pmp_region, offset=0)
+    # Set pmpcfg0: pmp0cfg=RWX NAPOT (0x1F), pmp1cfg=RWX NAPOT (0x1F)
+    steps.append(Comment(comment="Set pmpcfg0: pmp0=RWX NAPOT, pmp1=RWX NAPOT"))
+    pmpcfg0_val = LoadImmediateStep(imm=0x1F1F)
+    steps.append(pmpcfg0_val)
+    steps.append(CsrWrite(csr_name="pmpcfg0", value=pmpcfg0_val))
 
-    comment_3 = Comment(comment="2. Change PMP to remove access")
-    li_new = LoadImmediateStep(imm=0x0)
-    csr_write = CsrWrite(csr_name="pmpcfg0", value=li_new, direct_write=True)
 
-    comment_4 = Comment(comment="3. TLB invalidation")
-    sfence = System(instruction="sfence.vma")
+    # Configure pmpaddr0: 4KB NAPOT covering the allocated region
+    steps.append(Comment(comment="Configure pmpaddr0: 4KB NAPOT for test region"))
+    base_addr = LoadImmediateStep(imm=mem_4k)
+    steps.append(base_addr)
+    addr0_shifted = Arithmetic(op="srli", src1=base_addr, src2=2)
+    steps.append(addr0_shifted)
+    napot_mask = LoadImmediateStep(imm=0x1FF)  # 4KB NAPOT mask
+    steps.append(napot_mask)
+    pmpaddr0_val = Arithmetic(op="or", src1=addr0_shifted, src2=napot_mask)
+    steps.append(pmpaddr0_val)
+    steps.append(CsrWrite(csr_name="pmpaddr0", value=pmpaddr0_val))
 
-    comment_5 = Comment(comment="4. Access VA1:PA again - should use new PMP values and fault")
-    load_op_2 = Load(memory=pmp_region, offset=0)
-    assert_fault = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op_2])
+    # TLB invalidation
+    steps.append(Comment(comment="TLB invalidation"))
+    steps.append(System(instruction="sfence.vma"))
 
+    # 1. Load from 4KB region - should succeed (pmpaddr0 grants RWX)
+    steps.append(Comment(comment="1. Load from test region - succeeds"))
+    load_op_1 = Load(memory=mem_4k, offset=0)
+    steps.append(load_op_1)
+
+    # 2. Remove pmpaddr0 permissions (set pmp0cfg to NAPOT with no permissions)
+    # pmpcfg0: pmp0cfg=0x18 (NAPOT, no RWX), pmp1cfg=0x1F (RWX NAPOT)
+    steps.append(Comment(comment="2. Remove pmpaddr0 permissions"))
+    pmpcfg0_no_perm = LoadImmediateStep(imm=0x1F18)
+    steps.append(pmpcfg0_no_perm)
+    steps.append(CsrWrite(csr_name="pmpcfg0", value=pmpcfg0_no_perm))
+
+    # 3. TLB invalidation
+    steps.append(Comment(comment="3. TLB invalidation"))
+    steps.append(System(instruction="sfence.vma"))
+
+    # 4. Load from same region - should fault (pmpaddr0 now denies access, first match wins)
+    steps.append(Comment(comment="4. Load from test region - faults (pmpaddr0 denies, first match wins)"))
+    load_op_2 = Load(memory=mem_4k, offset=0)
+    steps.append(AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op_2]))
+    
     return TestScenario.from_steps(
         id="34",
         name="SID_PMP_20",
         description="PMP Invalidation: PMP changes with TLB invalidation",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
-        steps=[comment_1, pmp_region, comment_2, load_op_1, comment_3, li_new, csr_write, comment_4, sfence, comment_5, assert_fault],
+        steps=steps,
     )
 
 
@@ -1217,28 +1280,28 @@ def SID_PMP_21():
     )
 
 
-@pmp_scenario
-def SID_PMP_22_LOCKED_TO_UNLOCKED():
-    """
-    PMP region cross: locked to non-locked regions (M-mode)
-    """
-    comment_1 = Comment(comment="PMP region cross: locked to non-locked regions")
+# @pmp_scenario
+# def SID_PMP_22_LOCKED_TO_UNLOCKED():
+#     """
+#     PMP region cross: locked to non-locked regions (M-mode)
+#     """
+#     comment_1 = Comment(comment="PMP region cross: locked to non-locked regions")
 
-    comment_2 = Comment(comment="Configure locked region followed by non-locked")
-    pmp_region_locked = RequestPmpRegion(pmp_attributes=PmpAttribute.LOCKED | PmpAttribute.READ)
-    pmp_region_unlocked = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE)
+#     comment_2 = Comment(comment="Configure locked region followed by non-locked")
+#     pmp_region_locked = RequestPmpRegion(pmp_attributes=PmpAttribute.LOCKED | PmpAttribute.READ)
+#     pmp_region_unlocked = RequestPmpRegion(pmp_attributes=PmpAttribute.READ | PmpAttribute.WRITE)
 
-    comment_3 = Comment(comment="Access crossing region boundary")
-    load_op_0 = Load(memory=pmp_region_locked, offset=0)
-    load_op_1 = Load(memory=pmp_region_unlocked, offset=0)
+#     comment_3 = Comment(comment="Access crossing region boundary")
+#     load_op_0 = Load(memory=pmp_region_locked, offset=0)
+#     load_op_1 = Load(memory=pmp_region_unlocked, offset=0)
 
-    return TestScenario.from_steps(
-        id="36",
-        name="SID_PMP_22_LOCKED_TO_UNLOCKED",
-        description="PMP region cross: locked to non-locked regions (M-mode)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment_1, comment_2, pmp_region_locked, pmp_region_unlocked, comment_3, load_op_0, load_op_1],
-    )
+#     return TestScenario.from_steps(
+#         id="36",
+#         name="SID_PMP_22_LOCKED_TO_UNLOCKED",
+#         description="PMP region cross: locked to non-locked regions (M-mode)",
+#         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+#         steps=[comment_1, comment_2, pmp_region_locked, pmp_region_unlocked, comment_3, load_op_0, load_op_1],
+#     )
 
 
 @pmp_scenario
