@@ -1451,6 +1451,24 @@ c_ntl_all = InstructionDef(
     destination=None,
     source=[],
     formatter="c.add x0, x5",
+wfi = InstructionDef(
+    name="wfi",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="wfi",
+)
+
+pause = InstructionDef(
+    name="pause",
+    extension=Extension.ZIHINTPAUSE,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="pause",
 )
 
 misc_instrs = (
@@ -1560,6 +1578,8 @@ misc_instrs = (
         c_ntl_pall,
         c_ntl_s1,
         c_ntl_all,
+        wfi,
+        pause,
     ]
     + c_mop_N
     + mop_r_N
