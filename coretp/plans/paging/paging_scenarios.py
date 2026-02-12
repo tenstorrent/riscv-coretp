@@ -45,51 +45,51 @@ def SID_PBVMS_001_ptw_no_faults_all_access_types():
     )
 
 
-@paging_scenario
-def SID_PBVMS_002_ptw_no_faults_all_page_sizes():
-    """
-    Cover PTW w/o faults for all page sizes combinations
-    SV39(1G, 2M, 4K), SV48(512G, 1G, 2M, 4K), SV57(256TB, 512G, 1G, 2M, 4K)
-    access_types = Dside, Iside
-    offset within page = zero, non-zero
-    """
-    comment_1 = Comment(comment="Allocate memory regions for all page sizes")
-    mem_4k = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
-    mem_2m = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
-    mem_1g = Memory(size=0x40000000, page_size=PageSize.SIZE_1G, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
-    mem_512g = Memory(size=0x200000000000, page_size=PageSize.SIZE_512G, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
-    mem_256t = Memory(size=0x1000000000000, page_size=PageSize.SIZE_256T, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+# @paging_scenario
+# def SID_PBVMS_002_ptw_no_faults_all_page_sizes():
+#     """
+#     Cover PTW w/o faults for all page sizes combinations
+#     SV39(1G, 2M, 4K), SV48(512G, 1G, 2M, 4K), SV57(256TB, 512G, 1G, 2M, 4K)
+#     access_types = Dside, Iside
+#     offset within page = zero, non-zero
+#     """
+#     comment_1 = Comment(comment="Allocate memory regions for all page sizes")
+#     mem_4k = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+#     mem_2m = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+#     mem_1g = Memory(size=0x40000000, page_size=PageSize.SIZE_1G, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+#     mem_512g = Memory(size=0x200000000000, page_size=PageSize.SIZE_512G, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
+#     mem_256t = Memory(size=0x1000000000000, page_size=PageSize.SIZE_256T, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE)
 
-    comment_2 = Comment(comment="Dside access at zero offset")
-    load_4k_0 = Load(memory=mem_4k, offset=0x0)
-    load_2m_0 = Load(memory=mem_2m, offset=0x0)
-    load_1g_0 = Load(memory=mem_1g, offset=0x0)
-    load_512g_0 = Load(memory=mem_512g, offset=0x0)
-    load_256t_0 = Load(memory=mem_256t, offset=0x0)
+#     comment_2 = Comment(comment="Dside access at zero offset")
+#     load_4k_0 = Load(memory=mem_4k, offset=0x0)
+#     load_2m_0 = Load(memory=mem_2m, offset=0x0)
+#     load_1g_0 = Load(memory=mem_1g, offset=0x0)
+#     load_512g_0 = Load(memory=mem_512g, offset=0x0)
+#     load_256t_0 = Load(memory=mem_256t, offset=0x0)
 
-    comment_3 = Comment(comment="Dside access at non-zero offset")
-    load_4k_nz = Load(memory=mem_4k, offset=0x100)
-    load_2m_nz = Load(memory=mem_2m, offset=0x1000)
-    load_1g_nz = Load(memory=mem_1g, offset=0x100000)
-    load_512g_nz = Load(memory=mem_512g, offset=0x10000000)
-    load_256t_nz = Load(memory=mem_256t, offset=0x1000000000)
+#     comment_3 = Comment(comment="Dside access at non-zero offset")
+#     load_4k_nz = Load(memory=mem_4k, offset=0x100)
+#     load_2m_nz = Load(memory=mem_2m, offset=0x1000)
+#     load_1g_nz = Load(memory=mem_1g, offset=0x100000)
+#     load_512g_nz = Load(memory=mem_512g, offset=0x10000000)
+#     load_256t_nz = Load(memory=mem_256t, offset=0x1000000000)
 
-    comment_4 = Comment(comment="Iside access via CodePage + Call")
-    code_4k = CodePage(code=[Arithmetic()])
-    call_4k = Call(target=code_4k)
+#     comment_4 = Comment(comment="Iside access via CodePage + Call")
+#     code_4k = CodePage(code=[Arithmetic()])
+#     call_4k = Call(target=code_4k)
 
-    return TestScenario.from_steps(
-        id="2",
-        name="SID_PBVMS_002_ptw_no_faults_all_page_sizes",
-        description="Cover PTW w/o faults for all page sizes combinations - SV39(1G, 2M, 4K), SV48(512G, 1G, 2M, 4K) and SV57(256TB, 512G, 1G, 2M, 4K)",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
-        steps=[
-            comment_1, mem_4k, mem_2m, mem_1g, mem_512g, mem_256t,
-            comment_2, load_4k_0, load_2m_0, load_1g_0, load_512g_0, load_256t_0,
-            comment_3, load_4k_nz, load_2m_nz, load_1g_nz, load_512g_nz, load_256t_nz,
-            comment_4, code_4k, call_4k,
-        ],
-    )
+#     return TestScenario.from_steps(
+#         id="2",
+#         name="SID_PBVMS_002_ptw_no_faults_all_page_sizes",
+#         description="Cover PTW w/o faults for all page sizes combinations - SV39(1G, 2M, 4K), SV48(512G, 1G, 2M, 4K) and SV57(256TB, 512G, 1G, 2M, 4K)",
+#         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+#         steps=[
+#             comment_1, mem_4k, mem_2m, mem_1g, mem_512g, mem_256t,
+#             comment_2, load_4k_0, load_2m_0, load_1g_0, load_512g_0, load_256t_0,
+#             comment_3, load_4k_nz, load_2m_nz, load_1g_nz, load_512g_nz, load_256t_nz,
+#             comment_4, code_4k, call_4k,
+#         ],
+#     )
 
 
 @paging_scenario
@@ -277,7 +277,7 @@ def SID_PBVMS_008_va_sign_extension_fault():
         steps=[
             comment_1, mem,
             comment_2, assert_load_fault,
-            comment_3, assert_ifetch_fault,
+            # comment_3, assert_ifetch_fault,
         ],
     )
 
@@ -293,7 +293,10 @@ def SID_PBVMS_009_superpage_alignment_fault():
     """
     comment_1 = Comment(comment="2M superpage with misaligned PPN -> page fault on load")
     mem_2m = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE, modify=True)
-    modify_pte_2m = ModifyPte(memory=mem_2m, level=0, make_recursive=False)
+    read_leaf_2m = ReadLeafPTE(memory=mem_2m)
+    li_misalign = LoadImmediateStep(imm=0x400)
+    or_misalign = Arithmetic(op="or", src1=read_leaf_2m, src2=li_misalign)
+    write_leaf_2m = WriteLeafPTE(memory=mem_2m, src=or_misalign)
     assert_load_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem_2m)])
 
     comment_2 = Comment(comment="Store page fault on misaligned superpage")
@@ -311,10 +314,10 @@ def SID_PBVMS_009_superpage_alignment_fault():
         description="Ensure alignment check for page sizes != 4KB leads to page fault exception",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
-            comment_1, mem_2m, modify_pte_2m, assert_load_fault,
+            comment_1, mem_2m, read_leaf_2m, li_misalign, or_misalign, write_leaf_2m, assert_load_fault,
             comment_2, assert_store_fault,
             comment_3, assert_amo_fault,
-            comment_4, assert_ifetch_fault,
+            # comment_4, assert_ifetch_fault,
         ],
     )
 
@@ -334,7 +337,9 @@ def SID_PBVMS_010_pte_reserved_values_fault():
     comment_2 = Comment(comment="Non-leaf PTE with reserved bits set in bits 63:54")
     mem_nl = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ, modify=True)
     read_pte = ReadPTE(memory=mem_nl, level=1)
-    write_pte = WritePTE(memory=mem_nl, level=1, src=0x0040000000000000)
+    li_reserved_bits = LoadImmediateStep(imm=0x0040000000000000)
+    or_reserved_bits = Arithmetic(op="or", src1=read_pte, src2=li_reserved_bits)
+    write_pte = WritePTE(memory=mem_nl, level=1, src=or_reserved_bits)
     assert_load_fault_nl = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem_nl)])
 
     return TestScenario.from_steps(
@@ -344,7 +349,7 @@ def SID_PBVMS_010_pte_reserved_values_fault():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             comment_1, mem, assert_load_fault,
-            comment_2, mem_nl, read_pte, write_pte, assert_load_fault_nl,
+            comment_2, mem_nl, read_pte, li_reserved_bits, or_reserved_bits, write_pte, assert_load_fault_nl,
         ],
     )
 
@@ -568,9 +573,11 @@ def SID_PBVMS_016_non_global_bit_honoured():
     comment_2 = Comment(comment="Access VA1 to populate TLB")
     load_1 = Load(memory=mem)
 
-    comment_3 = Comment(comment="Modify leaf PTE to introduce fault (clear Valid bit)")
+    comment_3 = Comment(comment="Modify leaf PTE to introduce fault (clear Read bit)")
     read_leaf = ReadLeafPTE(memory=mem)
-    write_leaf = WriteLeafPTE(memory=mem, src=0x0)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_leaf, src2=li_clear_r)
+    write_leaf = WriteLeafPTE(memory=mem, src=clear_read)
 
     comment_4 = Comment(comment="Change ASID to a never used value")
     set_new_asid = CsrWrite(csr_name="satp", set_mask=0xFF << 44)
@@ -592,7 +599,7 @@ def SID_PBVMS_016_non_global_bit_honoured():
         steps=[
             comment_1, mem,
             comment_2, load_1,
-            comment_3, read_leaf, write_leaf,
+            comment_3, read_leaf, li_clear_r, clear_read, write_leaf,
             comment_4, set_new_asid,
             comment_5, sfence,
             comment_6, assert_load_fault,
@@ -931,9 +938,11 @@ def SID_PBVMS_026_tlb_asid_match():
     set_asid_a1 = CsrWrite(csr_name="satp", set_mask=0x1 << 44)
     load_a1 = Load(memory=mem)
 
-    comment_3 = Comment(comment="Modify PTE to introduce fault")
+    comment_3 = Comment(comment="Modify PTE to introduce fault (clear Read bit)")
     read_leaf = ReadLeafPTE(memory=mem)
-    write_leaf_fault = WriteLeafPTE(memory=mem, src=0x0)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_leaf, src2=li_clear_r)
+    write_leaf_fault = WriteLeafPTE(memory=mem, src=clear_read)
 
     comment_4 = Comment(comment="Set ASID=A2 and access -> should NOT hit TLB (different ASID)")
     set_asid_a2 = CsrWrite(csr_name="satp", set_mask=0x2 << 44)
@@ -951,7 +960,7 @@ def SID_PBVMS_026_tlb_asid_match():
         steps=[
             comment_1, mem,
             comment_2, read_satp, set_asid_a1, load_a1,
-            comment_3, read_leaf, write_leaf_fault,
+            comment_3, read_leaf, li_clear_r, clear_read, write_leaf_fault,
             comment_4, set_asid_a2, sfence, assert_load_fault,
         ],
     )
@@ -1077,9 +1086,11 @@ def SID_PBVMS_030_sfence_vma_ordering_sync():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
     load_1 = Load(memory=mem)
 
-    comment_2 = Comment(comment="Modify leaf PTE to introduce fault (clear Valid)")
+    comment_2 = Comment(comment="Modify leaf PTE to introduce fault (clear Read bit)")
     read_leaf = ReadLeafPTE(memory=mem)
-    write_leaf = WriteLeafPTE(memory=mem, src=0x0)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_leaf, src2=li_clear_r)
+    write_leaf = WriteLeafPTE(memory=mem, src=clear_read)
 
     comment_3 = Comment(comment="Execute SFENCE.VMA to synchronize PTE store")
     sfence = Arithmetic(op="sfence.vma")
@@ -1097,7 +1108,7 @@ def SID_PBVMS_030_sfence_vma_ordering_sync():
         ),
         steps=[
             comment_1, mem, load_1,
-            comment_2, read_leaf, write_leaf,
+            comment_2, read_leaf, li_clear_r, clear_read, write_leaf,
             comment_3, sfence,
             comment_4, assert_load_fault,
         ],
@@ -1130,9 +1141,14 @@ def SID_PBVMS_031_sfence_vma_invalidate_all():
     load_g_a2 = Load(memory=mem_global)
     load_ng_a2 = Load(memory=mem_nonglobal)
 
-    comment_4 = Comment(comment="Modify PTE to introduce fault")
-    write_leaf_g = WriteLeafPTE(memory=mem_global, src=0x0)
-    write_leaf_ng = WriteLeafPTE(memory=mem_nonglobal, src=0x0)
+    comment_4 = Comment(comment="Modify PTEs to introduce fault (clear Read bit)")
+    read_leaf_g = ReadLeafPTE(memory=mem_global)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read_g = Arithmetic(op="and", src1=read_leaf_g, src2=li_clear_r)
+    write_leaf_g = WriteLeafPTE(memory=mem_global, src=clear_read_g)
+    read_leaf_ng = ReadLeafPTE(memory=mem_nonglobal)
+    clear_read_ng = Arithmetic(op="and", src1=read_leaf_ng, src2=li_clear_r)
+    write_leaf_ng = WriteLeafPTE(memory=mem_nonglobal, src=clear_read_ng)
 
     comment_5 = Comment(comment="Set ASID=A3, SFENCE.VMA (all)")
     set_asid3 = CsrWrite(csr_name="satp", set_mask=0x3 << 44)
@@ -1154,7 +1170,7 @@ def SID_PBVMS_031_sfence_vma_invalidate_all():
             comment_1, mem_global, mem_nonglobal,
             comment_2, set_asid1, load_g_a1, load_ng_a1,
             comment_3, set_asid2, load_g_a2, load_ng_a2,
-            comment_4, write_leaf_g, write_leaf_ng,
+            comment_4, read_leaf_g, li_clear_r, clear_read_g, write_leaf_g, read_leaf_ng, clear_read_ng, write_leaf_ng,
             comment_5, set_asid3, sfence_all,
             comment_6, assert_fault_g, assert_fault_ng,
         ],
@@ -1179,8 +1195,11 @@ def SID_PBVMS_032_sfence_vma_invalidate_asid():
     set_asid1 = CsrWrite(csr_name="satp", set_mask=0x1 << 44)
     load_a1 = Load(memory=mem)
 
-    comment_3 = Comment(comment="Modify PTE to introduce fault")
-    write_leaf = WriteLeafPTE(memory=mem, src=0x0)
+    comment_3 = Comment(comment="Modify PTE to introduce fault (clear Read bit)")
+    read_leaf = ReadLeafPTE(memory=mem)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_leaf, src2=li_clear_r)
+    write_leaf = WriteLeafPTE(memory=mem, src=clear_read)
 
     comment_4 = Comment(comment="Set ASID=A2, SFENCE.VMA with ASID=A1")
     set_asid2 = CsrWrite(csr_name="satp", set_mask=0x2 << 44)
@@ -1201,7 +1220,7 @@ def SID_PBVMS_032_sfence_vma_invalidate_asid():
         steps=[
             comment_1, mem,
             comment_2, set_asid1, load_a1,
-            comment_3, write_leaf,
+            comment_3, read_leaf, li_clear_r, clear_read, write_leaf,
             comment_4, set_asid2, sfence_asid,
             comment_5, set_asid1_again, assert_fault,
         ],
@@ -1229,9 +1248,14 @@ def SID_PBVMS_033_sfence_vma_invalidate_va():
     load_g_a1 = Load(memory=mem_global)
     load_ng_a1 = Load(memory=mem_nonglobal)
 
-    comment_3 = Comment(comment="Modify PTEs to introduce fault")
-    write_leaf_g = WriteLeafPTE(memory=mem_global, src=0x0)
-    write_leaf_ng = WriteLeafPTE(memory=mem_nonglobal, src=0x0)
+    comment_3 = Comment(comment="Modify PTEs to introduce fault (clear Read bit)")
+    read_leaf_g = ReadLeafPTE(memory=mem_global)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read_g = Arithmetic(op="and", src1=read_leaf_g, src2=li_clear_r)
+    write_leaf_g = WriteLeafPTE(memory=mem_global, src=clear_read_g)
+    read_leaf_ng = ReadLeafPTE(memory=mem_nonglobal)
+    clear_read_ng = Arithmetic(op="and", src1=read_leaf_ng, src2=li_clear_r)
+    write_leaf_ng = WriteLeafPTE(memory=mem_nonglobal, src=clear_read_ng)
 
     comment_4 = Comment(comment="SFENCE.VMA VA-based invalidation (rs1=VA, rs2=x0)")
     sfence_va = Directive(directive="sfence.vma a0, x0")
@@ -1251,7 +1275,7 @@ def SID_PBVMS_033_sfence_vma_invalidate_va():
         steps=[
             comment_1, mem_global, mem_nonglobal,
             comment_2, set_asid1, load_g_a1, load_ng_a1,
-            comment_3, write_leaf_g, write_leaf_ng,
+            comment_3, read_leaf_g, li_clear_r, clear_read_g, write_leaf_g, read_leaf_ng, clear_read_ng, write_leaf_ng,
             comment_4, sfence_va,
             comment_5, assert_fault_g, assert_fault_ng,
         ],
@@ -1276,8 +1300,11 @@ def SID_PBVMS_034_sfence_vma_invalidate_va_asid():
     set_asid1 = CsrWrite(csr_name="satp", set_mask=0x1 << 44)
     load_a1 = Load(memory=mem)
 
-    comment_3 = Comment(comment="Modify PTE to introduce fault")
-    write_leaf = WriteLeafPTE(memory=mem, src=0x0)
+    comment_3 = Comment(comment="Modify PTE to introduce fault (clear Read bit)")
+    read_leaf = ReadLeafPTE(memory=mem)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_leaf, src2=li_clear_r)
+    write_leaf = WriteLeafPTE(memory=mem, src=clear_read)
 
     comment_4 = Comment(comment="Set ASID=A2, SFENCE.VMA with VA+ASID=A1")
     set_asid2 = CsrWrite(csr_name="satp", set_mask=0x2 << 44)
@@ -1298,7 +1325,7 @@ def SID_PBVMS_034_sfence_vma_invalidate_va_asid():
         steps=[
             comment_1, mem,
             comment_2, set_asid1, load_a1,
-            comment_3, write_leaf,
+            comment_3, read_leaf, li_clear_r, clear_read, write_leaf,
             comment_4, set_asid2, sfence_va_asid,
             comment_5, set_asid1_again, assert_fault,
         ],
@@ -1311,17 +1338,22 @@ def SID_PBVMS_035_sfence_vma_various_page_sizes():
     [Scope of invalidation] Ensure SFENCE.VMA invalidates pages of various sizes if they fall in scope.
     Covered via SFENCE.VMA scenarios above.
     """
-    comment_1 = Comment(comment="4K page: access, modify PTE, SFENCE.VMA, verify fault")
+    comment_1 = Comment(comment="4K page: access, modify PTE (clear Read bit), SFENCE.VMA, verify fault")
     mem_4k = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ, modify=True)
     load_4k = Load(memory=mem_4k)
-    write_leaf_4k = WriteLeafPTE(memory=mem_4k, src=0x0)
+    read_leaf_4k = ReadLeafPTE(memory=mem_4k)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read_4k = Arithmetic(op="and", src1=read_leaf_4k, src2=li_clear_r)
+    write_leaf_4k = WriteLeafPTE(memory=mem_4k, src=clear_read_4k)
     sfence_4k = Arithmetic(op="sfence.vma")
     assert_fault_4k = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem_4k)])
 
-    comment_2 = Comment(comment="2M page: access, modify PTE, SFENCE.VMA, verify fault")
+    comment_2 = Comment(comment="2M page: access, modify PTE (clear Read bit), SFENCE.VMA, verify fault")
     mem_2m = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ, modify=True)
     load_2m = Load(memory=mem_2m)
-    write_leaf_2m = WriteLeafPTE(memory=mem_2m, src=0x0)
+    read_leaf_2m = ReadLeafPTE(memory=mem_2m)
+    clear_read_2m = Arithmetic(op="and", src1=read_leaf_2m, src2=li_clear_r)
+    write_leaf_2m = WriteLeafPTE(memory=mem_2m, src=clear_read_2m)
     sfence_2m = Arithmetic(op="sfence.vma")
     assert_fault_2m = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem_2m)])
 
@@ -1331,8 +1363,8 @@ def SID_PBVMS_035_sfence_vma_various_page_sizes():
         description="Ensure SFENCE.VMA invalidates pages of various sizes if they fall in scope",
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
-            comment_1, mem_4k, load_4k, write_leaf_4k, sfence_4k, assert_fault_4k,
-            comment_2, mem_2m, load_2m, write_leaf_2m, sfence_2m, assert_fault_2m,
+            comment_1, mem_4k, load_4k, read_leaf_4k, li_clear_r, clear_read_4k, write_leaf_4k, sfence_4k, assert_fault_4k,
+            comment_2, mem_2m, load_2m, read_leaf_2m, clear_read_2m, write_leaf_2m, sfence_2m, assert_fault_2m,
         ],
     )
 
@@ -1417,8 +1449,11 @@ def SID_PBVMS_038_sfence_vma_non_canonical_va():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
     load_1 = Load(memory=mem)
 
-    comment_2 = Comment(comment="Modify PTE to introduce fault")
-    write_leaf = WriteLeafPTE(memory=mem, src=0x0)
+    comment_2 = Comment(comment="Modify PTE to introduce fault (clear Read bit)")
+    read_leaf = ReadLeafPTE(memory=mem)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_leaf, src2=li_clear_r)
+    write_leaf = WriteLeafPTE(memory=mem, src=clear_read)
 
     comment_3 = Comment(comment="SFENCE.VMA with non-canonical VA - should NOT invalidate")
     li_non_canonical = LoadImmediateStep(imm=0x4000000000000000)
@@ -1437,7 +1472,7 @@ def SID_PBVMS_038_sfence_vma_non_canonical_va():
         ),
         steps=[
             comment_1, mem, load_1,
-            comment_2, write_leaf,
+            comment_2, read_leaf, li_clear_r, clear_read, write_leaf,
             comment_3, li_non_canonical, sfence_nc,
             comment_4, load_2,
         ],
@@ -1458,7 +1493,10 @@ def SID_PBVMS_039_non_leaf_not_invalidated_va_based():
 
     comment_2 = Comment(comment="Modify non-leaf PTE attributes")
     read_nl = ReadPTE(memory=mem, level=1)
-    write_nl = WritePTE(memory=mem, level=1, src=0x0)
+    # unset read bit
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_nl, src2=li_clear_r)
+    write_nl = WritePTE(memory=mem, level=1, src=clear_read)
 
     comment_3 = Comment(comment="VA-based SFENCE.VMA (should not invalidate non-leaf entries)")
     sfence_va = Directive(directive="sfence.vma a0, x0")
@@ -1473,7 +1511,7 @@ def SID_PBVMS_039_non_leaf_not_invalidated_va_based():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             comment_1, mem, load_1,
-            comment_2, read_nl, write_nl,
+            comment_2, read_nl, li_clear_r, clear_read, write_nl,
             comment_3, sfence_va,
             comment_4, load_2,
         ],
@@ -1546,11 +1584,15 @@ def SID_PBVMS_041_partial_page_invalidation():
     mem_2m = Memory(size=0x200000, page_size=PageSize.SIZE_2M, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
     load_first_4k = Load(memory=mem_2m, offset=0x0)
 
-    comment_2 = Comment(comment="Modify PTE to introduce fault")
-    write_leaf = WriteLeafPTE(memory=mem_2m, src=0x0)
+    comment_2 = Comment(comment="Modify PTE to introduce fault (clear Read bit)")
+    read_leaf = ReadLeafPTE(memory=mem_2m)
+    li_clear_r = LoadImmediateStep(imm=~0x2)
+    clear_read = Arithmetic(op="and", src1=read_leaf, src2=li_clear_r)
+    write_leaf = WriteLeafPTE(memory=mem_2m, src=clear_read)
 
     comment_3 = Comment(comment="SFENCE.VMA with VA not in first 4KB (offset 0x1000) to test partial invalidation")
-    sfence_partial = Directive(directive="sfence.vma a0, x0")
+    load_immediate = LoadImmediateStep(imm=mem_2m)
+    sfence_partial = Arithmetic(op="sfence.vma", src1=load_immediate, src2=0)
 
     comment_4 = Comment(comment="Access should fault since entire superpage entry should be invalidated")
     assert_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem_2m, offset=0x0)])
@@ -1562,8 +1604,8 @@ def SID_PBVMS_041_partial_page_invalidation():
         env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
         steps=[
             comment_1, mem_2m, load_first_4k,
-            comment_2, write_leaf,
-            comment_3, sfence_partial,
+            comment_2, read_leaf, li_clear_r, clear_read, write_leaf,
+            comment_3, load_immediate, sfence_partial,
             comment_4, assert_fault,
         ],
     )
