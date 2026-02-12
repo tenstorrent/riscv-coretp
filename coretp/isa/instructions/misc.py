@@ -1374,7 +1374,7 @@ prefetch_w = InstructionDef(
 # These are encoded as ADD x0, x0, xN but act as NOPs (hints to the microarchitecture)
 ntl_p1 = InstructionDef(
     name="ntl.p1",
-    extension=Extension.I,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
@@ -1384,7 +1384,7 @@ ntl_p1 = InstructionDef(
 
 ntl_pall = InstructionDef(
     name="ntl.pall",
-    extension=Extension.I,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
@@ -1394,7 +1394,7 @@ ntl_pall = InstructionDef(
 
 ntl_s1 = InstructionDef(
     name="ntl.s1",
-    extension=Extension.I,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
@@ -1404,7 +1404,7 @@ ntl_s1 = InstructionDef(
 
 ntl_all = InstructionDef(
     name="ntl.all",
-    extension=Extension.I,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
@@ -1415,7 +1415,7 @@ ntl_all = InstructionDef(
 # Compressed Zihintntl instructions
 c_ntl_p1 = InstructionDef(
     name="c.ntl.p1",
-    extension=Extension.C,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
@@ -1425,7 +1425,7 @@ c_ntl_p1 = InstructionDef(
 
 c_ntl_pall = InstructionDef(
     name="c.ntl.pall",
-    extension=Extension.C,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
@@ -1435,7 +1435,7 @@ c_ntl_pall = InstructionDef(
 
 c_ntl_s1 = InstructionDef(
     name="c.ntl.s1",
-    extension=Extension.C,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
@@ -1445,7 +1445,7 @@ c_ntl_s1 = InstructionDef(
 
 c_ntl_all = InstructionDef(
     name="c.ntl.all",
-    extension=Extension.C,
+    extension=Extension.ZIHINTNTL,
     xlen=Xlen.XLEN32,
     category=Category.ARITHMETIC,
     destination=None,
