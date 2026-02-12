@@ -1451,6 +1451,8 @@ c_ntl_all = InstructionDef(
     destination=None,
     source=[],
     formatter="c.add x0, x5",
+)
+
 wfi = InstructionDef(
     name="wfi",
     extension=Extension.I,
