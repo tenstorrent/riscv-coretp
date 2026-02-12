@@ -22,6 +22,7 @@ from .sscofpmf import sscofpmf_scenarios
 from .hypervisor import hypervisor_scenarios
 from .ssu64xl import ssu64xl_scenarios
 from .smstateen_ssstateen import smstateen_ssstateen_scenarios
+from .zihintntl import zihintntl_scenarios
 from .zawrs import zawrs_scenarios
 from .zihintpause import zihintpause_scenarios
 from .zicsr import zicsr_scenarios

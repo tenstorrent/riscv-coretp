@@ -1370,6 +1370,89 @@ prefetch_w = InstructionDef(
     formatter="prefetch.w {imm}({rs1})",
 )
 
+# Zihintntl Non-Temporal Locality Hint Instructions
+# These are encoded as ADD x0, x0, xN but act as NOPs (hints to the microarchitecture)
+ntl_p1 = InstructionDef(
+    name="ntl.p1",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="add x0, x0, x2",
+)
+
+ntl_pall = InstructionDef(
+    name="ntl.pall",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="add x0, x0, x3",
+)
+
+ntl_s1 = InstructionDef(
+    name="ntl.s1",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="add x0, x0, x4",
+)
+
+ntl_all = InstructionDef(
+    name="ntl.all",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="add x0, x0, x5",
+)
+
+# Compressed Zihintntl instructions
+c_ntl_p1 = InstructionDef(
+    name="c.ntl.p1",
+    extension=Extension.C,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="c.add x0, x2",
+)
+
+c_ntl_pall = InstructionDef(
+    name="c.ntl.pall",
+    extension=Extension.C,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="c.add x0, x3",
+)
+
+c_ntl_s1 = InstructionDef(
+    name="c.ntl.s1",
+    extension=Extension.C,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="c.add x0, x4",
+)
+
+c_ntl_all = InstructionDef(
+    name="c.ntl.all",
+    extension=Extension.C,
+    xlen=Xlen.XLEN32,
+    category=Category.ARITHMETIC,
+    destination=None,
+    source=[],
+    formatter="c.add x0, x5",
+)
+
 wfi = InstructionDef(
     name="wfi",
     extension=Extension.I,
@@ -1489,6 +1572,14 @@ misc_instrs = (
         prefetch_i,
         prefetch_r,
         prefetch_w,
+        ntl_p1,
+        ntl_pall,
+        ntl_s1,
+        ntl_all,
+        c_ntl_p1,
+        c_ntl_pall,
+        c_ntl_s1,
+        c_ntl_all,
         wfi,
         pause,
     ]
