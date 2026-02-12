@@ -787,7 +787,7 @@ def SID_SSCOFPMF_08A_SCOUNTOVF_SHADOW_COPY_ENABLED():
         id="8a",
         name="SID_SSCOFPMF_08A_SCOUNTOVF_SHADOW_COPY_ENABLED",
         description="scountovf[3] reflects mhpmevent3.OF when mcounteren[3] or scounteren[3] is set.",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], virtualized=[False]),
         steps=[
             zero,
             counter3_bit,
