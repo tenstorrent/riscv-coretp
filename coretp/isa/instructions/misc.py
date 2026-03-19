@@ -554,8 +554,11 @@ sfence_vma = InstructionDef(
     xlen=Xlen.XLEN32,
     category=Category.FENCE,
     destination=None,
-    source=[],
-    formatter="sfence.vma",
+    source=[
+        OperandSlot("rs1", OperandType.GPR),
+        OperandSlot("rs2", OperandType.GPR),
+    ],
+    formatter="sfence.vma {rs1}, {rs2}",
 )
 
 

@@ -124,6 +124,10 @@ def SID_SSTC_02_M_HS():
     Access to stimecmp & time csr is blocked in modes below HS when mcounteren.tm=1 and hcounteren.tm = 0.
     Verify access to stimecmp in VS, and time csr in VU mode, expect virtual instruction exception.
     """
+
+    comment_0 = Comment(comment="Set menvcfg.STCE=1")
+    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
 
@@ -149,6 +153,8 @@ def SID_SSTC_02_M_HS():
         description="Access blocked in lower-than-HS mode when mcounteren.tm=1, hcounteren.tm=0",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S]),
         steps=[
+            comment_0,
+            menvcfg_set,
             comment_1,
             mcounteren_set,
             comment_2,

@@ -112,14 +112,15 @@ def SID_SSCOFPMF_03A_MCOUNTEREN_MCYCLE():
 
     clear_cy = CsrWrite(csr_name="mcounteren", clear_mask=0x1)
     read_before = CsrRead(csr_name="mcycle")
+    save_step = Arithmetic(op="mv", src1=read_before)
 
-    steps = [clear_cy, read_before]
+    steps = [clear_cy, read_before, save_step]
 
     for _ in range(NUM_FILL):
         steps.append(Arithmetic())
 
     read_after = CsrRead(csr_name="mcycle")
-    delta = Arithmetic(op="sub", src1=read_after, src2=read_before)
+    delta = Arithmetic(op="sub", src1=read_after, src2=save_step)
     zero = LoadImmediateStep(imm=0)
     assert_incremented = AssertNotEqual(src1=delta, src2=zero)
 
@@ -293,13 +294,14 @@ def SID_SSCOFPMF_04D_MCOUNTINHIBIT_MINSTRET_RESUMES():
     steps.append(clear_ir)
 
     read_before = CsrRead(csr_name="minstret")
-    steps.append(read_before)
+    hold_read_before = Arithmetic(op="mv", src1=read_before)
+    steps.extend([read_before, hold_read_before])
 
     for _ in range(NUM_FILL):
         steps.append(Arithmetic())
 
     read_after = CsrRead(csr_name="minstret")
-    delta = Arithmetic(op="sub", src1=read_after, src2=read_before)
+    delta = Arithmetic(op="sub", src1=read_after, src2=hold_read_before)
     zero = LoadImmediateStep(imm=0)
     assert_resumed = AssertNotEqual(src1=delta, src2=zero)
     clear_mcountinhibit = CsrWrite(csr_name="mcountinhibit", value=0)

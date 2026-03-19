@@ -6,7 +6,7 @@ from .test_plan_registry import new_test_plan, get_plan, list_plans, query_plans
 
 
 # Have to import all plans here to ensure they are registered. Need to include the module itself to ensure it's registered.
-from .paging import page_table_walks
+from .paging import paging_scenarios
 from .sstc import sstc_scenarios
 from .svadu import svadu_scenarios
 from .svade import svade_scenarios
@@ -26,5 +26,5 @@ from .zihintntl import zihintntl_scenarios
 from .zawrs import zawrs_scenarios
 from .zihintpause import zihintpause_scenarios
 from .zicsr import zicsr_scenarios
-
+from .svnapot import svnapot_scenarios
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]
