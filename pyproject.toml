@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "coretp"
-version = "0.1.0"
+version = "0.4.0"
 description = "RISC-V Core Test Plan "
 readme = "README.md"
 requires-python = ">= 3.9"
@@ -37,7 +37,6 @@ coretp-export = "rv_core_test_plan.coretp.coretp_export:main"
 [tool.pyright]
 include = [
     "coretp",
-
 ]
 extraPaths = ["coretp",]
 pythonVersion = "3.9"

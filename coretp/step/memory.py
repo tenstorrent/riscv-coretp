@@ -155,3 +155,20 @@ class RequestPmpRegion(Memory):
     """
 
     pmp_attributes: Optional[PmpAttribute] = None
+
+
+@dataclass(frozen=True)
+class RequestPmaRegion(Memory):
+    """
+    Request a PMA (Physical Memory Attributes) configuration for a given memory region
+
+    This test step allows test scenarios to specify desired PMA attributes for a memory region.
+    The framework/simulator is responsible for configuring the PMA to match these attributes.
+
+    Note: This is a placeholder for future PMA attribute support.
+
+    :param pma_attributes: Reserved for future PMA attributes support
+    :type pma_attributes: Optional[Any]
+    """
+
+    pma_attributes: Optional[Any] = None
