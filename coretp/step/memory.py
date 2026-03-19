@@ -166,7 +166,7 @@ class RequestPmaRegion(Memory):
     The framework/simulator is responsible for configuring the PMA to match these attributes.
 
     Note: This is a placeholder for future PMA attribute support.
-    
+
     :param pma_attributes: Reserved for future PMA attributes support
     :type pma_attributes: Optional[Any]
     """

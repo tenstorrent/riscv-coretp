@@ -27,4 +27,5 @@ from .zawrs import zawrs_scenarios
 from .zihintpause import zihintpause_scenarios
 from .zicsr import zicsr_scenarios
 from .svnapot import svnapot_scenarios
+
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]
