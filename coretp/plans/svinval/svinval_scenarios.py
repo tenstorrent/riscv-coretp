@@ -18,11 +18,11 @@ from coretp.step import (
     Call,
     LoadImmediateStep,
     ModifyPte,
-    MemAccess,
     ReadLeafPTE,
     WriteLeafPTE,
     Hart,
     HartExit,
+    Directive,
 )
 
 from . import svinval_scenario
@@ -36,7 +36,8 @@ def SID_SVINVAL_01_02_opcode_coverage_S():
     """
     comment_1 = Comment(comment="Test SINVAL.VMA variants (S-mode, various paging modes)")
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
-    sinval_vma_basic = MemAccess(op="sinval.vma", memory=mem, src2=0)
+    sinval_vma_basic_src1 = LoadImmediateStep(imm=mem)
+    sinval_vma_basic = Arithmetic(op="sinval.vma", src1=sinval_vma_basic_src1, src2=0)
     comment_2 = Comment(comment="Test SFENCE.W.INVAL and SFENCE.INVAL.IR (all privilege modes)")
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
@@ -53,6 +54,7 @@ def SID_SVINVAL_01_02_opcode_coverage_S():
         steps=[
             comment_1,
             mem,
+            sinval_vma_basic_src1,
             sinval_vma_basic,
             comment_2,
             sfence_w_inval,
@@ -84,7 +86,7 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
         id="1",
         name="SID_SVINVAL_01_opcode_coverage",
         description="SINVAL.VMA - All variants, SFENCE.W.INVAL, SFENCE.INVAL.IR opcode coverage",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
             comment_1,
             assert_sfence_w_inval,
@@ -134,7 +136,8 @@ def SID_SVINVAL_03_invalidation_sequence_1():
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
 
     comment_7 = Comment(comment="3. SINVAL.VMA")
-    sinval_vma = MemAccess(op="sinval.vma", memory=mem, src2=0)
+    sinval_vma_src1 = LoadImmediateStep(imm=mem)
+    sinval_vma = Arithmetic(op="sinval.vma", src1=sinval_vma_src1, src2=0)
     comment_8 = Comment(comment="4. SFENCE.INVAL.IR")
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
 
@@ -168,6 +171,7 @@ def SID_SVINVAL_03_invalidation_sequence_1():
             comment_6,
             sfence_w_inval,
             comment_7,
+            sinval_vma_src1,
             sinval_vma,
             comment_8,
             sfence_inval_ir,
@@ -233,9 +237,12 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
 
     comment_7 = Comment(comment="3. SINVAL.VMA for each VA")
-    sinval_vma1 = MemAccess(op="sinval.vma", memory=mem1, src2=0)
-    sinval_vma2 = MemAccess(op="sinval.vma", memory=mem2, src2=0)
-    sinval_vma3 = MemAccess(op="sinval.vma", memory=mem3, src2=0)
+    sinval_vma1_src1 = LoadImmediateStep(imm=mem1)
+    sinval_vma1 = Arithmetic(op="sinval.vma", src1=sinval_vma1_src1, src2=0)
+    sinval_vma2_src1 = LoadImmediateStep(imm=mem2)
+    sinval_vma2 = Arithmetic(op="sinval.vma", src1=sinval_vma2_src1, src2=0)
+    sinval_vma3_src1 = LoadImmediateStep(imm=mem3)
+    sinval_vma3 = Arithmetic(op="sinval.vma", src1=sinval_vma3_src1, src2=0)
 
     comment_8 = Comment(comment="4. SFENCE.INVAL.IR")
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
@@ -295,8 +302,11 @@ def SID_SVINVAL_04_invalidation_sequence_2_multiple_vas():
             comment_6,
             sfence_w_inval,
             comment_7,
+            sinval_vma1_src1,
             sinval_vma1,
+            sinval_vma2_src1,
             sinval_vma2,
+            sinval_vma3_src1,
             sinval_vma3,
             comment_8,
             sfence_inval_ir,
@@ -353,7 +363,8 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
     random_arithmetic = Arithmetic()
 
     comment_7 = Comment(comment="3. SINVAL.VMA")
-    sinval_vma = MemAccess(op="sinval.vma", memory=mem, src2=0)
+    sinval_vma_src1 = LoadImmediateStep(imm=mem)
+    sinval_vma = Arithmetic(op="sinval.vma", src1=sinval_vma_src1, src2=0)
 
     comment_8 = Comment(comment="4. Random ops followed by SFENCE.INVAL.IR")
     random_arithmetic_2 = Arithmetic()
@@ -391,6 +402,7 @@ def SID_SVINVAL_05_non_consecutive_invalidation():
             sfence_w_inval,
             random_arithmetic,
             comment_7,
+            sinval_vma_src1,
             sinval_vma,
             comment_8,
             random_arithmetic_2,
@@ -417,17 +429,19 @@ def SID_SVINVAL_06_fault_in_usermode():
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
         modify=True,
     )
-    sinval_instr = MemAccess(op="sinval.vma", memory=mem, src2=0)
+    sinval_instr_src1 = LoadImmediateStep(imm=mem)
+    sinval_instr = Arithmetic(op="sinval.vma", src1=sinval_instr_src1, src2=0)
     assert_fault = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sinval_instr])
 
     return TestScenario.from_steps(
         id="6",
         name="SID_SVINVAL_06_fault_in_usermode",
         description="SINVAL.VMA in usermode should fault",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
         steps=[
             comment_1,
             mem,
+            sinval_instr_src1,
             assert_fault,
         ],
     )
@@ -448,7 +462,8 @@ def SID_SVINVAL_07_fault_in_smode_with_tvm():
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
         modify=True,
     )
-    sinval_instr = MemAccess(op="sinval.vma", memory=mem, src2=0)
+    sinval_instr_src1 = LoadImmediateStep(imm=mem)
+    sinval_instr = Arithmetic(op="sinval.vma", src1=sinval_instr_src1, src2=0)
     assert_fault = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sinval_instr])
 
     return TestScenario.from_steps(
@@ -461,19 +476,17 @@ def SID_SVINVAL_07_fault_in_smode_with_tvm():
             set_tvm,
             comment_2,
             mem,
+            sinval_instr_src1,
             assert_fault,
         ],
     )
 
 
 @svinval_scenario
-def SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir():
+def SID_SVINVAL_08_fault_sfence_w_inval_sfence_inval_ir():
     """
-    SFENCE.W.INVAL and SFENCE.INVAL.IR should NOT fault in U-mode or S-mode with TVM=1.
+    SFENCE.W.INVAL and SFENCE.INVAL.IR should fault in U-mode.
     """
-
-    comment_1 = Comment(comment="U or S-mode with TVM=1 tests")
-    set_tvm = CsrWrite(csr_name="mstatus", set_mask=1 << 20)
 
     sfence_w_inval = Arithmetic(op="sfence.w.inval")
     assert_sfence_w_inval = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_w_inval])
@@ -483,12 +496,292 @@ def SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir():
     return TestScenario.from_steps(
         id="8",
         name="SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir",
-        description="SFENCE.W.INVAL/SFENCE.INVAL.IR should NOT fault in U-mode or S-mode with TVM=1",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.U]),
+        description="SFENCE.W.INVAL/SFENCE.INVAL.IR should fault in U-mode",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        steps=[
+            assert_sfence_w_inval,
+            assert_sfence_inval_ir,
+        ],
+    )
+
+
+@svinval_scenario
+def SID_SVINVAL_09_tvm_sfence_sinval_sfence_flow():
+    """
+    Test SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR flow with mstatus.TVM=1.
+    SINVAL.VMA should fault as ILLEGAL_INSTRUCTION in S-mode when TVM is set.
+    SFENCE.W.INVAL and SFENCE.INVAL.IR should NOT fault.
+    """
+    comment_1 = Comment(comment="Set mstatus.TVM=1 (bit 20)")
+    set_tvm = CsrWrite(csr_name="mstatus", set_mask=1 << 20)
+
+    comment_2 = Comment(comment="SFENCE.W.INVAL should not fault with TVM=1")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+
+    comment_3 = Comment(comment="SINVAL.VMA should fault with TVM=1 in S-mode")
+    mem = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        modify=True,
+    )
+    sinval_instr_src1 = LoadImmediateStep(imm=mem)
+    sinval_instr = Arithmetic(op="sinval.vma", src1=sinval_instr_src1, src2=0)
+    assert_fault = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sinval_instr])
+
+    comment_4 = Comment(comment="SFENCE.INVAL.IR should not fault with TVM=1")
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+
+    return TestScenario.from_steps(
+        id="9",
+        name="SID_SVINVAL_09_tvm_sfence_sinval_sfence_flow",
+        description="SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR flow with mstatus.TVM=1",
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
         steps=[
             comment_1,
             set_tvm,
-            assert_sfence_w_inval,
-            assert_sfence_inval_ir,
+            comment_2,
+            sfence_w_inval,
+            comment_3,
+            mem,
+            sinval_instr_src1,
+            assert_fault,
+            comment_4,
+            sfence_inval_ir,
+        ],
+    )
+
+
+@svinval_scenario
+def SID_SVINVAL_10_bare_metal_sfence_sinval_sfence_flow():
+    """
+    Test SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR flow in Bare Metal mode.
+    No exceptions expected.
+    """
+    mem = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        modify=True,
+    )
+
+    comment_1 = Comment(comment="SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR in Bare Metal")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+    sinval_vma_src1 = LoadImmediateStep(imm=mem)
+    sinval_vma = Arithmetic(op="sinval.vma", src1=sinval_vma_src1, src2=0)
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+
+    comment_2 = Comment(comment="Simple assertion to verify execution")
+    one = LoadImmediateStep(imm=1)
+    assert_success = AssertEqual(src1=one, src2=one)
+
+    return TestScenario.from_steps(
+        id="10",
+        name="SID_SVINVAL_10_bare_metal_sfence_sinval_sfence_flow",
+        description="SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR flow in Bare Metal mode",
+        env=TestEnvCfg(paging_modes=[PagingMode.DISABLED], priv_modes=[PrivilegeMode.S]),
+        steps=[
+            mem,
+            comment_1,
+            sfence_w_inval,
+            sinval_vma_src1,
+            sinval_vma,
+            sfence_inval_ir,
+            comment_2,
+            one,
+            assert_success,
+        ],
+    )
+
+
+@svinval_scenario
+def SID_SVINVAL_11_mmode_sfence_sinval_sfence_flow():
+    """
+    Test SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR flow in Machine mode.
+    No exceptions expected in M-mode.
+    """
+    mem = Memory(
+        size=0x1000,
+        page_size=PageSize.SIZE_4K,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        modify=True,
+    )
+
+    comment_1 = Comment(comment="SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR in M-mode")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+    sinval_vma_src1 = LoadImmediateStep(imm=mem)
+    sinval_vma = Arithmetic(op="sinval.vma", src1=sinval_vma_src1, src2=0)
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+
+    comment_2 = Comment(comment="Simple assertion to verify execution")
+    one = LoadImmediateStep(imm=1)
+    assert_success = AssertEqual(src1=one, src2=one)
+
+    return TestScenario.from_steps(
+        id="11",
+        name="SID_SVINVAL_11_mmode_sfence_sinval_sfence_flow",
+        description="SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR flow in Machine mode",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[
+            mem,
+            comment_1,
+            sfence_w_inval,
+            sinval_vma_src1,
+            sinval_vma,
+            sfence_inval_ir,
+            comment_2,
+            one,
+            assert_success,
+        ],
+    )
+
+
+@svinval_scenario
+def SID_SVINVAL_12_sinval_vma_opcode_x0_nonx0():
+    """
+    SINVAL.VMA opcode coverage: rs1=x0, rs2=non-x0 (ASID-based invalidation).
+    Wrapped in SFENCE.W.INVAL / SFENCE.INVAL.IR sequence.
+    """
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+    load_immediate_asid = LoadImmediateStep(imm=0x1)
+
+    comment_1 = Comment(comment="SFENCE.W.INVAL")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+
+    comment_2 = Comment(comment="sinval.vma x0, rs2 (ASID-based invalidation)")
+    sinval_vma = Arithmetic(op="sinval.vma", src1=0, src2=load_immediate_asid)
+
+    comment_3 = Comment(comment="SFENCE.INVAL.IR")
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+
+    return TestScenario.from_steps(
+        id="12",
+        name="SID_SVINVAL_12_sinval_vma_opcode_x0_nonx0",
+        description="SINVAL.VMA opcode coverage: rs1=x0, rs2=non-x0 (ASID-based)",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+        ),
+        steps=[
+            mem,
+            load_immediate_asid,
+            comment_1,
+            sfence_w_inval,
+            comment_2,
+            sinval_vma,
+            comment_3,
+            sfence_inval_ir,
+        ],
+    )
+
+
+@svinval_scenario
+def SID_SVINVAL_13_sinval_vma_opcode_nonx0_x0():
+    """
+    SINVAL.VMA opcode coverage: rs1=non-x0, rs2=x0 (VA-based invalidation).
+    Wrapped in SFENCE.W.INVAL / SFENCE.INVAL.IR sequence.
+    """
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+
+    comment_1 = Comment(comment="SFENCE.W.INVAL")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+
+    comment_2 = Comment(comment="sinval.vma rs1, x0 (VA-based invalidation)")
+    sinval_vma_src1 = LoadImmediateStep(imm=mem)
+    sinval_vma = Arithmetic(op="sinval.vma", src1=sinval_vma_src1, src2=0)
+
+    comment_3 = Comment(comment="SFENCE.INVAL.IR")
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+
+    return TestScenario.from_steps(
+        id="13",
+        name="SID_SVINVAL_13_sinval_vma_opcode_nonx0_x0",
+        description="SINVAL.VMA opcode coverage: rs1=non-x0, rs2=x0 (VA-based)",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+        ),
+        steps=[
+            mem,
+            comment_1,
+            sfence_w_inval,
+            comment_2,
+            sinval_vma_src1,
+            sinval_vma,
+            comment_3,
+            sfence_inval_ir,
+        ],
+    )
+
+
+@svinval_scenario
+def SID_SVINVAL_14_sinval_vma_opcode_nonx0_nonx0():
+    """
+    SINVAL.VMA opcode coverage: rs1=non-x0, rs2=non-x0 (VA+ASID-based invalidation).
+    Wrapped in SFENCE.W.INVAL / SFENCE.INVAL.IR sequence.
+    """
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+    load_immediate_asid = LoadImmediateStep(imm=0x1)
+
+    comment_1 = Comment(comment="SFENCE.W.INVAL")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+
+    comment_2 = Comment(comment="sinval.vma rs1, rs2 (VA+ASID-based invalidation)")
+    sinval_vma_src1 = LoadImmediateStep(imm=mem)
+    sinval_vma = Arithmetic(op="sinval.vma", src1=sinval_vma_src1, src2=load_immediate_asid)
+
+    comment_3 = Comment(comment="SFENCE.INVAL.IR")
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+
+    return TestScenario.from_steps(
+        id="14",
+        name="SID_SVINVAL_14_sinval_vma_opcode_nonx0_nonx0",
+        description="SINVAL.VMA opcode coverage: rs1=non-x0, rs2=non-x0 (VA+ASID-based)",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+        ),
+        steps=[
+            mem,
+            load_immediate_asid,
+            comment_1,
+            sfence_w_inval,
+            comment_2,
+            sinval_vma_src1,
+            sinval_vma,
+            comment_3,
+            sfence_inval_ir,
+        ],
+    )
+
+
+@svinval_scenario
+def SID_SVINVAL_15_sinval_vma_opcode_x0_x0():
+    """
+    SINVAL.VMA opcode coverage: rs1=x0, rs2=x0 (VA+ASID-based invalidation).
+    Wrapped in SFENCE.W.INVAL / SFENCE.INVAL.IR sequence.
+    """
+    comment_1 = Comment(comment="SFENCE.W.INVAL")
+    sfence_w_inval = Arithmetic(op="sfence.w.inval")
+    comment_2 = Comment(comment="sinval.vma x0, x0 (VA+ASID-based invalidation)")
+    sinval_vma = Directive(directive="sinval.vma x0, x0")
+    comment_3 = Comment(comment="SFENCE.INVAL.IR")
+    sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
+
+    return TestScenario.from_steps(
+        id="15",
+        name="SID_SVINVAL_15_sinval_vma_opcode_x0_x0",
+        description="SINVAL.VMA opcode coverage: rs1=x0, rs2=x0 (VA+ASID-based)",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+        ),
+        steps=[
+            comment_1,
+            sfence_w_inval,
+            comment_2,
+            sinval_vma,
+            comment_3,
+            sfence_inval_ir,
         ],
     )
