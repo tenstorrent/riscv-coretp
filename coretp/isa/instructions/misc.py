@@ -1466,6 +1466,26 @@ wfi = InstructionDef(
     formatter="wfi",
 )
 
+mret = InstructionDef(
+    name="mret",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="mret",
+)
+
+sret = InstructionDef(
+    name="sret",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="sret",
+)
+
 pause = InstructionDef(
     name="pause",
     extension=Extension.ZIHINTPAUSE,
@@ -1474,6 +1494,26 @@ pause = InstructionDef(
     destination=None,
     source=[],
     formatter="pause",
+)
+
+mret = InstructionDef(
+    name="mret",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="mret",
+)
+
+sret = InstructionDef(
+    name="sret",
+    extension=Extension.I,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=None,
+    source=[],
+    formatter="sret",
 )
 
 misc_instrs = (
@@ -1584,7 +1624,11 @@ misc_instrs = (
         c_ntl_s1,
         c_ntl_all,
         wfi,
+        mret,
+        sret,
         pause,
+        mret,
+        sret,
     ]
     + c_mop_N
     + mop_r_N

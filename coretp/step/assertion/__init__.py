@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Assertion operations package
-from .assertion_operations import AssertEqual, AssertNotEqual, AssertException
+from .assertion_operations import AssertEqual, AssertNotEqual, AssertException, AssertFetchException
 
 __all__ = [
     "AssertEqual",
     "AssertNotEqual",
     "AssertException",
+    "AssertFetchException",
 ]

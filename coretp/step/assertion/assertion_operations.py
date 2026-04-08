@@ -2,10 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from dataclasses import dataclass, field
-from typing import Optional, Any, Union
+from typing import TYPE_CHECKING, Optional, Any, Union
 
 from ..step import TestStep
-from coretp.rv_enums import ExceptionCause
+from coretp.rv_enums import ExceptionCause, ExceptionHandlerMode
+
+if TYPE_CHECKING:
+    from ..memory import Memory
 
 
 @dataclass(frozen=True)
@@ -25,7 +28,34 @@ class AssertException(TestStep):
 
     cause: Optional[ExceptionCause] = None
     exception_type: Optional[str] = None
+    tval: Optional[int] = None
     code: list[TestStep] = field(default_factory=list)
+    tval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected stval/mtval (0 or None = skip check)
+    htval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected htval/mtval2 (0 or None = skip check)
+    gva_check: bool = False  # when True, trap handler verifies mstatus/hstatus.GVA is set
+    expected_handler_mode: ExceptionHandlerMode = ExceptionHandlerMode.ANY
+
+
+@dataclass(frozen=True)
+class AssertFetchException(TestStep):
+    """
+    Asserts an exception occurs on instruction fetch after jumping to a target.
+
+    Uses OS_SETUP_CHECK_EXCP with the return label as the exception label, then
+    overrides check_excp_expected_pc with the target address before jumping.
+    The branch succeeds; the fault occurs on the first fetch at the target.
+
+    :param target: Step whose output resolves to the jump target address
+                   (e.g., CodePage, Memory, Arithmetic, etc.)
+    :param cause: Expected exception cause (e.g., INSTRUCTION_PAGE_FAULT)
+    """
+
+    target: Any = None
+    cause: Optional[ExceptionCause] = None
+    tval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected stval/mtval (0 or None = skip check)
+    htval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected htval/mtval2 (0 or None = skip check)
+    gva_check: bool = False  # when True, trap handler verifies mstatus/hstatus.GVA is set
+    expected_handler_mode: ExceptionHandlerMode = ExceptionHandlerMode.ANY
 
 
 @dataclass(frozen=True)

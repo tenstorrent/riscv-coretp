@@ -7,31 +7,29 @@ from typing import Optional, Union
 
 from coretp.step.step import TestStep
 from coretp.step.load_store import MemoryOp
+from coretp.step.memory import Memory
 from coretp.rv_enums import Extension
 
 
 @dataclass(frozen=True)
-class Store(MemoryOp):
+class HStore(MemoryOp):
     """
-    Base class for store operations.
+    Hypervisor store operation (hsv.*).
 
-    Common behavior for Store and AmoStore operations.
-
-    This class provides the base functionality for memory store operations,
-    including memory references, address specifications, and data values.
+    Like Store but without offset support, since hsv instructions
+    use register-indirect addressing only: hsv.w {rs2}, ({rs1}).
 
     :param memory: Memory reference for the store operation
-    :type memory: Any
-    :param offset: Offset within the memory region, default 0
-    :type offset: int
     :param value: Value to store in memory
-    :type value: Optional[int]
+    :param op: Specific hsv instruction to use (e.g. "hsv.w")
+    :param access_size: Access size in bytes
+    :param extension: ISA extension
     """
 
-    memory: Optional[TestStep] = None
-    offset: int = 0
+    memory: Optional[Memory] = None
     value: Optional[Union[TestStep, int]] = None
     op: Optional[str] = None
+    access_size: Optional[int] = None
     extension: Optional[Extension] = None
 
     def deps(self) -> list[Optional[TestStep]]:

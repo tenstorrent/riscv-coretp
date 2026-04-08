@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
-from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension
+from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension, PteLevel
 from coretp.step import (
     Comment,
     Memory,
@@ -21,7 +21,8 @@ from coretp.step import (
     ModifyPte,
     MemAccess,
     Directive,
-    ReadLeafPTE,
+    ReadPTE,
+    WritePTE,
     Hart,
     HartExit,
 )

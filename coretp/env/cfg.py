@@ -19,6 +19,7 @@ class TestEnvCfg:
     reg_widths: list[int] = field(default_factory=lambda: [64])
     priv_modes: list[PrivilegeMode] = field(default_factory=lambda: [PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U])
     paging_modes: list[PagingMode] = field(default_factory=lambda: [PagingMode.DISABLED, PagingMode.SV39, PagingMode.SV48, PagingMode.SV57])
+    g_paging_modes: list[PagingMode] = field(default_factory=lambda: [PagingMode.DISABLED, PagingMode.SV39, PagingMode.SV48, PagingMode.SV57])
     page_sizes: list[PageSize] = field(default_factory=lambda: [PageSize.SIZE_4K, PageSize.SIZE_2M, PageSize.SIZE_1G])
     min_num_harts: int = 1
     virtualized: list[bool] = field(default_factory=lambda: [True, False])  #: Whether the test environment is virtualized or in bare metal (hypervisor) mode
@@ -33,6 +34,16 @@ class TestEnvCfg:
         """
 
         return [
-            TestEnv(reg_width=rw, priv=priv, paging_mode=pm, page_size=frozenset(self.page_sizes), hart_count=self.min_num_harts, virtualized=v, deleg_excp_to=de, max_test_runs=self.max_test_runs)
-            for rw, priv, pm, v, de in product(self.reg_widths, self.priv_modes, self.paging_modes, self.virtualized, self.deleg_excp_to)
+            TestEnv(
+                reg_width=rw,
+                priv=priv,
+                paging_mode=pm,
+                g_paging_mode=gpm,
+                page_size=frozenset(self.page_sizes),
+                hart_count=self.min_num_harts,
+                virtualized=v,
+                deleg_excp_to=de,
+                max_test_runs=self.max_test_runs,
+            )
+            for rw, priv, pm, gpm, v, de in product(self.reg_widths, self.priv_modes, self.paging_modes, self.g_paging_modes, self.virtualized, self.deleg_excp_to)
         ]

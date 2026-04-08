@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from coretp import TestScenario, TestEnvCfg
-from coretp.rv_enums import PagingMode, PageSize, PageFlags, ExceptionCause, PrivilegeMode
+from coretp.rv_enums import PagingMode, PageSize, PageFlags, ExceptionCause, PrivilegeMode, PteLevel
 from coretp.step import (
     Memory,
     Load,
@@ -13,8 +13,8 @@ from coretp.step import (
     AssertException,
     Call,
     Comment,
-    ReadLeafPTE,
-    WriteLeafPTE,
+    ReadPTE,
+    WritePTE,
     LoadImmediateStep,
 )
 
@@ -46,7 +46,7 @@ def SID_SVNAPOT_00_LOAD():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=0, ppn[3:0]=4'b1000 (non-NAPOT, normal 4K page)")
@@ -54,14 +54,14 @@ def SID_SVNAPOT_00_LOAD():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N0_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Perform load access - should succeed on normal 4K page")
     load = Load(memory=mem)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -99,7 +99,7 @@ def SID_SVNAPOT_00_STORE():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=0, ppn[3:0]=4'b1000 (non-NAPOT, normal 4K page)")
@@ -107,14 +107,14 @@ def SID_SVNAPOT_00_STORE():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N0_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Perform store access - should succeed on normal 4K page")
     store = Store(memory=mem, value=0xDEAD)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -152,7 +152,7 @@ def SID_SVNAPOT_00_STORE():
 #     code = CodePage(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.EXECUTE, modify=True, code=[Arithmetic()])
 
 #     comment_read = Comment(comment="Read and save original leaf PTE")
-#     read_pte = ReadLeafPTE(memory=code)
+#     read_pte = ReadPTE(memory=code, level=PteLevel.LEAF)
 #     save_pte = Arithmetic(op="mv", src1=read_pte)
 
 #     comment_modify = Comment(comment="Set N=0, ppn[3:0]=4'b1000 (non-NAPOT, normal 4K page)")
@@ -160,14 +160,14 @@ def SID_SVNAPOT_00_STORE():
 #     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
 #     set_mask = LoadImmediateStep(imm=_N0_PPN1000)
 #     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-#     write_pte = WriteLeafPTE(memory=code, src=pte_modified)
+#     write_pte = WritePTE(memory=code, level=PteLevel.LEAF, src=pte_modified)
 #     sfence = Arithmetic(op="sfence.vma")
 
 #     comment_access = Comment(comment="Perform fetch access - should succeed on normal 4K page")
 #     call = Call(target=code)
 
 #     comment_restore = Comment(comment="Restore original PTE")
-#     restore_pte = WriteLeafPTE(memory=code, src=save_pte)
+#     restore_pte = WritePTE(memory=code, level=PteLevel.LEAF, src=save_pte)
 #     sfence_restore = Arithmetic(op="sfence.vma")
 
 #     return TestScenario.from_steps(
@@ -205,7 +205,7 @@ def SID_SVNAPOT_00_AMO():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=0, ppn[3:0]=4'b1000 (non-NAPOT, normal 4K page)")
@@ -213,14 +213,14 @@ def SID_SVNAPOT_00_AMO():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N0_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Perform AMO access - should succeed on normal 4K page")
     amo = MemAccess(op="amoswap.w", memory=mem, src2=0xBEEF)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -258,7 +258,7 @@ def SID_SVNAPOT_00_LRSC():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=0, ppn[3:0]=4'b1000 (non-NAPOT, normal 4K page)")
@@ -266,7 +266,7 @@ def SID_SVNAPOT_00_LRSC():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N0_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_lr = Comment(comment="Perform LR access - should succeed on normal 4K page")
@@ -276,7 +276,7 @@ def SID_SVNAPOT_00_LRSC():
     sc = MemAccess(op="sc.w", memory=mem, src2=0xCAFE)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -321,7 +321,7 @@ def SID_SVNAPOT_01_LOAD():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b0000 (reserved NAPOT encoding)")
@@ -329,14 +329,14 @@ def SID_SVNAPOT_01_LOAD():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN0000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Load should cause page fault due to reserved NAPOT encoding")
     assert_exception = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=mem)])
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -374,7 +374,7 @@ def SID_SVNAPOT_01_STORE():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b0000 (reserved NAPOT encoding)")
@@ -382,14 +382,14 @@ def SID_SVNAPOT_01_STORE():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN0000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Store should cause page fault due to reserved NAPOT encoding")
     assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=0xDEAD)])
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -427,7 +427,7 @@ def SID_SVNAPOT_01_STORE():
 #     code = CodePage(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.EXECUTE, modify=True, code=[Arithmetic()])
 
 #     comment_read = Comment(comment="Read and save original leaf PTE")
-#     read_pte = ReadLeafPTE(memory=code)
+#     read_pte = ReadPTE(memory=code, level=PteLevel.LEAF)
 #     save_pte = Arithmetic(op="mv", src1=read_pte)
 
 #     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b0000 (reserved NAPOT encoding)")
@@ -435,14 +435,14 @@ def SID_SVNAPOT_01_STORE():
 #     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
 #     set_mask = LoadImmediateStep(imm=_N1_PPN0000)
 #     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-#     write_pte = WriteLeafPTE(memory=code, src=pte_modified)
+#     write_pte = WritePTE(memory=code, level=PteLevel.LEAF, src=pte_modified)
 #     sfence = Arithmetic(op="sfence.vma")
 
 #     comment_access = Comment(comment="Fetch should cause page fault due to reserved NAPOT encoding")
 #     assert_exception = AssertException(cause=ExceptionCause.INSTRUCTION_PAGE_FAULT, code=[Call(target=code)])
 
 #     comment_restore = Comment(comment="Restore original PTE")
-#     restore_pte = WriteLeafPTE(memory=code, src=save_pte)
+#     restore_pte = WritePTE(memory=code, level=PteLevel.LEAF, src=save_pte)
 #     sfence_restore = Arithmetic(op="sfence.vma")
 
 #     return TestScenario.from_steps(
@@ -480,7 +480,7 @@ def SID_SVNAPOT_01_AMO():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b0000 (reserved NAPOT encoding)")
@@ -488,14 +488,14 @@ def SID_SVNAPOT_01_AMO():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN0000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="AMO should cause page fault due to reserved NAPOT encoding")
     assert_exception = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[MemAccess(op="amoswap.w", memory=mem, src2=0xBEEF)])
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -533,7 +533,7 @@ def SID_SVNAPOT_01_LRSC():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b0000 (reserved NAPOT encoding)")
@@ -541,7 +541,7 @@ def SID_SVNAPOT_01_LRSC():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN0000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_lr = Comment(comment="LR should cause page fault due to reserved NAPOT encoding")
@@ -551,7 +551,7 @@ def SID_SVNAPOT_01_LRSC():
     assert_exception_sc = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[MemAccess(op="sc.w", memory=mem, src2=0xCAFE)])
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -596,7 +596,7 @@ def SID_SVNAPOT_02_LOAD():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b1000 (valid 64K NAPOT encoding)")
@@ -604,14 +604,14 @@ def SID_SVNAPOT_02_LOAD():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Perform load access - should succeed on 64K NAPOT contiguous region")
     load = Load(memory=mem)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -649,7 +649,7 @@ def SID_SVNAPOT_02_STORE():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b1000 (valid 64K NAPOT encoding)")
@@ -657,14 +657,14 @@ def SID_SVNAPOT_02_STORE():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Perform store access - should succeed on 64K NAPOT contiguous region")
     store = Store(memory=mem, value=0xDEAD)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -702,7 +702,7 @@ def SID_SVNAPOT_02_STORE():
 #     code = CodePage(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.EXECUTE, modify=True, code=[Arithmetic()])
 
 #     comment_read = Comment(comment="Read and save original leaf PTE")
-#     read_pte = ReadLeafPTE(memory=code)
+#     read_pte = ReadPTE(memory=code, level=PteLevel.LEAF)
 #     save_pte = Arithmetic(op="mv", src1=read_pte)
 
 #     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b1000 (valid 64K NAPOT encoding)")
@@ -710,14 +710,14 @@ def SID_SVNAPOT_02_STORE():
 #     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
 #     set_mask = LoadImmediateStep(imm=_N1_PPN1000)
 #     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-#     write_pte = WriteLeafPTE(memory=code, src=pte_modified)
+#     write_pte = WritePTE(memory=code, level=PteLevel.LEAF, src=pte_modified)
 #     sfence = Arithmetic(op="sfence.vma")
 
 #     comment_access = Comment(comment="Perform fetch access - should succeed on 64K NAPOT contiguous region")
 #     call = Call(target=code)
 
 #     comment_restore = Comment(comment="Restore original PTE")
-#     restore_pte = WriteLeafPTE(memory=code, src=save_pte)
+#     restore_pte = WritePTE(memory=code, level=PteLevel.LEAF, src=save_pte)
 #     sfence_restore = Arithmetic(op="sfence.vma")
 
 #     return TestScenario.from_steps(
@@ -755,7 +755,7 @@ def SID_SVNAPOT_02_AMO():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b1000 (valid 64K NAPOT encoding)")
@@ -763,14 +763,14 @@ def SID_SVNAPOT_02_AMO():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_access = Comment(comment="Perform AMO access - should succeed on 64K NAPOT contiguous region")
     amo = MemAccess(op="amoswap.w", memory=mem, src2=0xBEEF)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(
@@ -808,7 +808,7 @@ def SID_SVNAPOT_02_LRSC():
     mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
 
     comment_read = Comment(comment="Read and save original leaf PTE")
-    read_pte = ReadLeafPTE(memory=mem)
+    read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     save_pte = Arithmetic(op="mv", src1=read_pte)
 
     comment_modify = Comment(comment="Set N=1, ppn[3:0]=4'b1000 (valid 64K NAPOT encoding)")
@@ -816,7 +816,7 @@ def SID_SVNAPOT_02_LRSC():
     pte_cleared = Arithmetic(op="and", src1=save_pte, src2=clear_mask)
     set_mask = LoadImmediateStep(imm=_N1_PPN1000)
     pte_modified = Arithmetic(op="or", src1=pte_cleared, src2=set_mask)
-    write_pte = WriteLeafPTE(memory=mem, src=pte_modified)
+    write_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=pte_modified)
     sfence = Arithmetic(op="sfence.vma")
 
     comment_lr = Comment(comment="Perform LR access - should succeed on 64K NAPOT contiguous region")
@@ -826,7 +826,7 @@ def SID_SVNAPOT_02_LRSC():
     sc = MemAccess(op="sc.w", memory=mem, src2=0xCAFE)
 
     comment_restore = Comment(comment="Restore original PTE")
-    restore_pte = WriteLeafPTE(memory=mem, src=save_pte)
+    restore_pte = WritePTE(memory=mem, level=PteLevel.LEAF, src=save_pte)
     sfence_restore = Arithmetic(op="sfence.vma")
 
     return TestScenario.from_steps(

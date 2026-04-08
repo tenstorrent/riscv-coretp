@@ -16,6 +16,7 @@ class TestEnv:
     reg_width: int = 64
     priv: PrivilegeMode = PrivilegeMode.M
     paging_mode: PagingMode = PagingMode.DISABLED
+    g_paging_mode: PagingMode = PagingMode.DISABLED
     page_size: frozenset[PageSize] = field(default_factory=lambda: frozenset({PageSize.SIZE_4K}))
     hart_count: int = 1
     virtualized: bool = False  #: Whether the test environment is virtualized or in bare metal (hypervisor) mode
