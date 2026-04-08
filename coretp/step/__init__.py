@@ -2,25 +2,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .step import TestStep
-from .memory import Memory, CodePage, ModifyPte, ReadLeafPTE, WriteLeafPTE, ReadPTE, WritePTE, RequestPmpRegion
+from .memory import Memory, CodePage, ModifyPte, ReadPTE, WritePTE, RequestPmpRegion
 from .conditional_block import ConditionalBlock
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
-from .load_store import MemoryOp, Load, Store, MemAccess
+from .load_store import MemoryOp, Load, Store, MemAccess, HLoad, HXLoad, HStore
 from .csr import CsrWrite, CsrRead, CsrDirectAccess
-from .assertion import AssertEqual, AssertNotEqual, AssertException
+from .assertion import AssertEqual, AssertNotEqual, AssertException, AssertFetchException
 from .hart import Hart, HartExit
 from .miscellaneous import Directive, SetWaitTimeout
 from .system import System
 from .comment import Comment
+from .privilege_mode import MachineCode, SupervisorCode, UserCode
 
 __all__ = [
     "TestStep",
     "MemoryOp",
     "CodePage",
     "ModifyPte",
-    "ReadLeafPTE",
-    "WriteLeafPTE",
     "ReadPTE",
     "WritePTE",
     "Call",
@@ -30,6 +29,9 @@ __all__ = [
     "MemAccess",
     "Load",
     "Store",
+    "HLoad",
+    "HXLoad",
+    "HStore",
     "Memory",
     "Arithmetic",
     "LoadImmediateStep",
@@ -40,6 +42,7 @@ __all__ = [
     "AssertEqual",
     "AssertNotEqual",
     "AssertException",
+    "AssertFetchException",
     "Hart",
     "HartExit",
     "Directive",
@@ -47,4 +50,7 @@ __all__ = [
     "System",
     "Comment",
     "ConditionalBlock",
+    "MachineCode",
+    "SupervisorCode",
+    "UserCode",
 ]

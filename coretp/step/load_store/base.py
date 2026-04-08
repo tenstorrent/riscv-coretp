@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Optional, Any
 
 from coretp.step import TestStep
-from coretp.step.memory import Memory
 
 
 @dataclass(frozen=True)
@@ -17,7 +16,7 @@ class MemoryOp(TestStep):
 
     """
 
-    memory: Optional[Memory] = None
+    memory: Optional[TestStep] = None
 
     def deps(self) -> list[Optional[TestStep]]:
         return [self.memory]

@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Any, Union
 
 from .step import TestStep
-from coretp.rv_enums import PageSize, PageFlags, PmpAttribute
+from coretp.rv_enums import PageSize, PageFlags, PmpAttribute, PteLevel
 
 
 @dataclass(frozen=True)
@@ -16,10 +16,11 @@ class Memory(TestStep):
     This test step defines memory regions for test scenarios, including
     page sizes, paging modes, and memory protection configurations.
 
-    :param size: Size of memory region in bytes
-    :type size: int
-    :param page_size: Size of memory pages (e.g., "SIZE_4K", "SIZE_2M", "SIZE_1G")
-    :type page_size: PageSize
+    :param size: Size of memory region in bytes; if None, defaults to total memory needed (page_size * num_pages)
+    :type size: Optional[int]
+    :param page_size: Size of memory pages (e.g., "SIZE_4K", "SIZE_2M", "SIZE_1G"),
+        or a tuple of PageSize values to allow randomization across multiple sizes
+    :type page_size: Union[PageSize, tuple[PageSize, ...]]
     :param flags: Memory protection flags
     :type flags: PageFlags
     :param page_cross_en: Whether page crossing is enabled
@@ -32,12 +33,16 @@ class Memory(TestStep):
     :type base_va: Optional[int]
     :param modify: Whether memory can be modified
     :type modify: bool
+    :param modify_leaf: Whether G-stage leaf pagetable can be modified
+    :type modify_leaf: bool
+    :param modify_nonleaf: Whether G-stage non-leaf pagetable can be modified
+    :type modify_nonleaf: bool
     :param needs_io: Whether memory needs IO support
     :type needs_io: bool
     """
 
-    size: int = 0x1000
-    page_size: PageSize = PageSize.SIZE_4K
+    size: Optional[int] = None
+    page_size: Union[PageSize, tuple[PageSize, ...]] = PageSize.SIZE_4K
     flags: PageFlags = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE
     exclude_flags: Optional[PageFlags] = None
     page_cross_en: bool = False
@@ -47,7 +52,31 @@ class Memory(TestStep):
     num_pages: Optional[int] = 1
     or_mask: Optional[str] = None
     modify: bool = False
+    modify_leaf: bool = False
+    modify_nonleaf: bool = False
     needs_io: bool = False
+
+    # VS-stage non-leaf attributes
+    nonleaf_flags: Optional[PageFlags] = None
+    nonleaf_exclude_flags: Optional[PageFlags] = None
+
+    # G-stage attributes: VS-leaf × G-leaf
+    leaf_gleaf_flags: Optional[PageFlags] = None
+    leaf_gleaf_exclude_flags: Optional[PageFlags] = None
+    vleaf_page_size: Optional[Union[PageSize, tuple[PageSize, ...]]] = None
+
+    # G-stage attributes: VS-nonleaf × G-leaf
+    nonleaf_gleaf_flags: Optional[PageFlags] = None
+    nonleaf_gleaf_exclude_flags: Optional[PageFlags] = None
+    vnonleaf_page_size: Optional[Union[PageSize, tuple[PageSize, ...]]] = None
+
+    # G-stage attributes: VS-leaf × G-nonleaf
+    leaf_gnonleaf_flags: Optional[PageFlags] = None
+    leaf_gnonleaf_exclude_flags: Optional[PageFlags] = None
+
+    # G-stage attributes: VS-nonleaf × G-nonleaf
+    nonleaf_gnonleaf_flags: Optional[PageFlags] = None
+    nonleaf_gnonleaf_exclude_flags: Optional[PageFlags] = None
 
 
 @dataclass(frozen=True)
@@ -95,12 +124,14 @@ class ReadPTE(TestStep):
     Represents a read PTE instruction in a test scenario.
 
     :param memory: Memory to read PTE from
-    :param level: int level of PTE to read
+    :param level: level of PTE to read (int or PteLevel.NONLEAF/PteLevel.LEAF/PteLevel.FINAL)
+    :param g_level: g-stage level of PTE to read (int or PteLevel.NONLEAF/PteLevel.LEAF); only valid with level=PteLevel.FINAL
 
     """
 
     memory: Optional[Memory] = None
-    level: Optional[int] = None
+    level: Optional[Union[int, PteLevel]] = None
+    g_level: Optional[Union[int, PteLevel]] = None
 
 
 @dataclass(frozen=True)
@@ -109,38 +140,14 @@ class WritePTE(TestStep):
     Represents a write PTE instruction in a test scenario. t2 contains pte entry to write
 
     :param memory: Memory to write PTE to
-    :param level: int level of PTE to write
+    :param level: level of PTE to write (int or PteLevel.NONLEAF/PteLevel.LEAF/PteLevel.FINAL)
+    :param g_level: g-stage level of PTE to write (int or PteLevel.NONLEAF/PteLevel.LEAF); only valid with level=PteLevel.FINAL
 
     """
 
     memory: Optional[Memory] = None
-    level: Optional[int] = None
-    src: Optional[Union[TestStep, int]] = None
-
-
-@dataclass(frozen=True)
-class ReadLeafPTE(TestStep):
-    """
-    Represents a read leaf PTE instruction in a test scenario.
-    Riescue to handle via jump to machine mode - return PTE entry as T2
-
-    :param memory: Memory to read leaf PTE from
-
-    """
-
-    memory: Optional[Memory] = None
-
-
-@dataclass(frozen=True)
-class WriteLeafPTE(TestStep):
-    """
-    Represents a write leaf PTE instruction in a test scenario. t2 contains pte entry to write
-
-    :param memory: Memory to write leaf PTE to
-
-    """
-
-    memory: Optional[Memory] = None
+    level: Optional[Union[int, PteLevel]] = None
+    g_level: Optional[Union[int, PteLevel]] = None
     src: Optional[Union[TestStep, int]] = None
 
 

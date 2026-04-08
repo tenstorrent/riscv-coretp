@@ -35,7 +35,7 @@ class StepIR:
     """
 
     id: str
-    inputs: list[Union[str, int]]  # strings are other StepIR ids, ints are immediate values
+    inputs: list[Union[str, int, tuple]]  # strings are other StepIR ids, ints are immediate values, tuples are (id, offset) pairs
     code: list["StepIR"] = field(default_factory=list)
     step: Optional[TestStep] = None
 
@@ -75,7 +75,7 @@ class _IrBuilder:
 
         # gather inputs from previously processed steps
         # FIXME: hack until StepIR classes are implemented and mapped from TestStep classes
-        for fname in ["inputs", "src1", "src2", "offset", "memory", "cause", "value", "target", "src", "imm", "set_mask", "clear_mask"]:
+        for fname in ["inputs", "src1", "src2", "offset", "memory", "cause", "value", "target", "src", "imm", "set_mask", "clear_mask", "tval", "htval"]:
             val = getattr(step, fname, None)
             if val is not None:
                 if isinstance(val, list):
@@ -83,6 +83,9 @@ class _IrBuilder:
                         if isinstance(x, TestStep) and id(x) not in self.step_ids:
                             raise ValueError(f"Dependency {x} not in steps list; missing from StepIR input. Ensure step was added to steps list")
                     inputs.extend([self.step_ids.get(id(x), x) for x in val])
+                elif isinstance(val, tuple):
+                    mem, offset = val
+                    inputs.append((self.step_ids.get(id(mem), mem), offset))
                 else:
                     if isinstance(val, TestStep) and not isinstance(val, Memory) and id(val) not in self.step_ids:
                         raise ValueError(f"Dependency {val} not in steps list; missing from StepIR input. Ensure step was added to steps list")

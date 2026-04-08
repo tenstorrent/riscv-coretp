@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 from coretp.step.load_store import MemoryOp
-from coretp.step.memory import Memory
+from coretp.step.step import TestStep
 from coretp.rv_enums import Extension
 
 
@@ -26,7 +26,7 @@ class Load(MemoryOp):
     :param access_size: Access size in bytes
     """
 
-    memory: Optional[Memory] = None
+    memory: Optional[TestStep] = None
     offset: int = 0
     op: Optional[str] = None
     access_size: Optional[int] = None

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
-from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension
+from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension, PteLevel
 from coretp.step import (
     Comment,
     Memory,
@@ -21,7 +21,8 @@ from coretp.step import (
     ModifyPte,
     MemAccess,
     Directive,
-    ReadLeafPTE,
+    ReadPTE,
+    WritePTE,
     Hart,
     HartExit,
 )
@@ -119,7 +120,7 @@ def SID_SVADU_02_hardware_update_a_bit():
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)
 
     comment_2 = Comment(comment="check pte.a is 0")
-    first_read_leaf_pte = ReadLeafPTE(memory=mem)
+    first_read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     load_first_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
     and_first_op = Arithmetic(op="and", src1=first_read_leaf_pte, src2=load_first_immediate_mask_check)
     zero = LoadImmediateStep(imm=0)
@@ -128,7 +129,7 @@ def SID_SVADU_02_hardware_update_a_bit():
     comment_3 = Comment(comment="Perform load - should update A bit")
     load_op = Load(memory=mem)
 
-    read_leaf_pte = ReadLeafPTE(memory=mem)
+    read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     comment_4 = Comment(comment="A bit is bit 6 in the PTE entry")
     load_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
@@ -178,7 +179,7 @@ def SID_SVADU_02_hardware_update_d_bit():
     enable_svadu = CsrWrite(csr_name="menvcfg", set_mask=1 << 61)
 
     comment_2 = Comment(comment="check pte.d is 0")
-    first_read_leaf_pte = ReadLeafPTE(memory=mem)
+    first_read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     load_first_immediate_mask_check = LoadImmediateStep(imm=1 << 7)
     and_first_op = Arithmetic(op="and", src1=first_read_leaf_pte, src2=load_first_immediate_mask_check)
     zero = LoadImmediateStep(imm=0)
@@ -188,7 +189,7 @@ def SID_SVADU_02_hardware_update_d_bit():
     store_val = LoadImmediateStep(imm=0xBEEF)
     store_op = Store(memory=mem, value=store_val)
 
-    read_leaf_pte = ReadLeafPTE(memory=mem)
+    read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
     comment_4 = Comment(comment="D bit is bit 7 in the PTE entry")
     load_immediate_mask_check = LoadImmediateStep(imm=1 << 7)
     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
@@ -314,7 +315,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 # #     assert_fault = AssertException(cause=ExceptionCause.LOAD_ACCESS_FAULT, code=[load_op])
 
 # #     # Note: A bit may still be speculatively updated
-# #     read_leaf_pte = ReadLeafPTE(memory=mem)
+# #     read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
 # #     # A bit is bit 6 in the PTE entry
 # #     load_immediate_mask_check = LoadImmediateStep(imm=1<<6)
 # #     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
@@ -360,7 +361,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 # #     assert_fault = AssertException(cause=ExceptionCause.STORE_AMO_ACCESS_FAULT, code=[store_op])
 
 # #     # Note: D bit should NOT be updated on fault
-# #     read_leaf_pte = ReadLeafPTE(memory=mem)
+# #     read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
 # #     # D bit is bit 7 in the PTE entry
 # #     load_immediate_mask_check = LoadImmediateStep(imm=1<<7)
 # #     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
@@ -584,7 +585,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     load_fail_op = Load(memory=mem)
 #     assert_load_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[load_fail_op])
 
-#     read_leaf_pte = ReadLeafPTE(memory=mem)
+#     read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
 #     # A bit is bit 6 in the PTE entry
 #     load_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
 #     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
@@ -594,7 +595,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     store_fail_op = Store(memory=mem, value=0xDEAD)
 #     assert_store_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[store_fail_op])
 
-#     read_leaf_pte_2 = ReadLeafPTE(memory=mem)
+#     read_leaf_pte_2 = ReadPTE(memory=mem, level=PteLevel.LEAF)
 #     # D bit is bit 7 in the PTE entry
 #     load_immediate_mask_check_2 = LoadImmediateStep(imm=1 << 7)
 #     and_op_2 = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check_2)
@@ -666,14 +667,14 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     # Vector load
 #     vec_load = Load(memory=mem, extension=Extension.V)
 
-#     read_leaf_pte = ReadLeafPTE(memory=mem)
+#     read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
 #     # A bit is bit 6 in the PTE entry
 #     load_immediate_mask_check = LoadImmediateStep(imm=1 << 6)
 #     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
 #     assert_equal = AssertEqual(src1=and_op, src2=load_immediate_mask_check)
 
 #     vec_store = Store(memory=mem, value=vec_load, extension=Extension.V)
-#     read_leaf_pte_2 = ReadLeafPTE(memory=mem)
+#     read_leaf_pte_2 = ReadPTE(memory=mem, level=PteLevel.LEAF)
 #     # D bit is bit 7 in the PTE entry
 #     load_immediate_mask_check_2 = LoadImmediateStep(imm=1 << 7)
 #     and_op_2 = Arithmetic(op="and", src1=read_leaf_pte_2, src2=load_immediate_mask_check_2)
@@ -734,7 +735,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     # TLB invalidation
 #     sfence = Arithmetic(op="sfence.vma")
 
-#     read_leaf_pte = ReadLeafPTE(memory=mem)
+#     read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
 #     # Check if bit 6 or 7 is set
 #     load_immediate_mask_check = LoadImmediateStep(imm=(1 << 6) | (1 << 7))
 #     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)
@@ -838,7 +839,7 @@ def SID_SVADU_02_hardware_update_d_bit():
 #     hart_1_entry = Hart(hart_index=1)
 #     fence = Arithmetic(op="fence")
 
-#     read_leaf_pte = ReadLeafPTE(memory=mem)
+#     read_leaf_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
 #     # Check if bit 6 or 7 is set
 #     load_immediate_mask_check = LoadImmediateStep(imm=(1 << 6) | (1 << 7))
 #     and_op = Arithmetic(op="and", src1=read_leaf_pte, src2=load_immediate_mask_check)

@@ -20,6 +20,14 @@ from .zicbom_zicboz_zicbop_zic64b import zicbom_zicboz_zicbop_zic64b_scenarios
 from .zicntr_zihpm_sscounterenw import zicntr_zihpm_sscounterenw_scenarios
 from .sscofpmf import sscofpmf_scenarios
 from .hypervisor import hypervisor_scenarios
+from .hypervisor_paging import (
+    hypervisor_paging_basic_scenarios,
+    hypervisor_paging_faults_scenarios,
+    hypervisor_paging_permissions_023_scenarios,
+    hypervisor_paging_permissions_024_scenarios,
+    hypervisor_paging_csr_ad_scenarios,
+)
+from .hypervisor_exceptions import hypervisor_exceptions_scenarios
 from .ssu64xl import ssu64xl_scenarios
 from .smstateen_ssstateen import smstateen_ssstateen_scenarios
 from .zihintntl import zihintntl_scenarios
@@ -27,5 +35,6 @@ from .zawrs import zawrs_scenarios
 from .zihintpause import zihintpause_scenarios
 from .zicsr import zicsr_scenarios
 from .svnapot import svnapot_scenarios
+from .exceptions import exceptions_scenarios
 
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]

@@ -29,6 +29,12 @@ class PagingMode(Enum):
         return self.name.lower()
 
 
+class PteLevel(Enum):
+    NONLEAF = "nonleaf"  # level immediately before leaf
+    LEAF = "leaf"
+    FINAL = "final"
+
+
 class PageFlags(IntFlag):
     VALID = 0b0000_0001
     READ = 0b0000_0010

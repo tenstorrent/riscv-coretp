@@ -4,6 +4,13 @@
 from enum import Enum, IntFlag, auto
 
 
+class ExceptionHandlerMode(Enum):
+    ANY = 0  # don't check (default)
+    MACHINE = 1  # machine-mode trap handler
+    HS = 2  # HS-mode handler (supervisor, V=0)
+    VS = 3  # VS-mode handler (virtual supervisor, V=1)
+
+
 class PrivilegeMode(Enum):
     M = auto()
     S = auto()
