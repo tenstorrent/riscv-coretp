@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
-# SPDX-License-Identifier: Apache-2.0
-
 from ..test_plan_registry import new_test_plan
 
 hypervisor_paging_scenario = new_test_plan(
@@ -15,10 +12,28 @@ hypervisor_paging_basic_scenario = new_test_plan(
     tags=["hypervisor", "paging", "two-stage"],
 )
 
-hypervisor_paging_faults_scenario = new_test_plan(
-    name="hypervisor_paging_faults",
-    description="Hypervisor paging fault scenarios: invalid PTEs, non-canonical addresses, misaligned superpages, reserved bits",
-    tags=["hypervisor", "paging", "faults", "two-stage"],
+hypervisor_paging_faults_vs_scenario = new_test_plan(
+    name="hypervisor_paging_faults_vs",
+    description="Hypervisor paging fault scenarios originating from VS-stage: non-canonical addresses, invalid VS PTEs, VS reserved bits, VS misaligned superpages",
+    tags=["hypervisor", "paging", "faults", "vs-stage", "two-stage"],
+)
+
+hypervisor_paging_faults_g_invalid_scenario = new_test_plan(
+    name="hypervisor_paging_faults_g_invalid",
+    description="G-stage invalid PTE fault scenarios: V=0 at various positions, U-bit faults, trap CSR verification, page boundary crossing",
+    tags=["hypervisor", "paging", "faults", "g-stage", "invalid-pte", "two-stage"],
+)
+
+hypervisor_paging_faults_g_reserved_scenario = new_test_plan(
+    name="hypervisor_paging_faults_g_reserved",
+    description="G-stage reserved bit (60:54) fault scenarios at various PTE positions",
+    tags=["hypervisor", "paging", "faults", "g-stage", "reserved-bits", "two-stage"],
+)
+
+hypervisor_paging_faults_g_misaligned_scenario = new_test_plan(
+    name="hypervisor_paging_faults_g_misaligned",
+    description="G-stage misaligned superpage fault scenarios at various PTE positions",
+    tags=["hypervisor", "paging", "faults", "g-stage", "misaligned-superpage", "two-stage"],
 )
 
 hypervisor_paging_permissions_023_scenario = new_test_plan(
@@ -33,17 +48,34 @@ hypervisor_paging_permissions_024_scenario = new_test_plan(
     tags=["hypervisor", "paging", "permissions", "sum", "mxr", "two-stage"],
 )
 
-hypervisor_paging_csr_ad_scenario = new_test_plan(
-    name="hypervisor_paging_csr_ad",
-    description="Hypervisor paging CSR control and A/D bit scenarios: accessed/dirty bit updates, CSR accessibility, TVM/VTVM traps",
-    tags=["hypervisor", "paging", "csr", "ad-bits", "two-stage"],
+hypervisor_paging_a_bit_scenario = new_test_plan(
+    name="hypervisor_paging_a_bit",
+    description="Hypervisor paging A-bit (Accessed) update scenarios across VS-stage and G-stage PTE positions",
+    tags=["hypervisor", "paging", "a-bit", "two-stage"],
+)
+
+hypervisor_paging_d_bit_scenario = new_test_plan(
+    name="hypervisor_paging_d_bit",
+    description="Hypervisor paging D-bit (Dirty) update scenarios across VS-stage and G-stage PTE positions",
+    tags=["hypervisor", "paging", "d-bit", "two-stage"],
+)
+
+hypervisor_paging_csr_scenario = new_test_plan(
+    name="hypervisor_paging_csr",
+    description="Hypervisor paging CSR control scenarios: accessibility, WARL, mode enforcement, TVM/VTVM traps, non-canonical VA faults",
+    tags=["hypervisor", "paging", "csr", "two-stage"],
 )
 
 __all__ = [
     "hypervisor_paging_scenario",
     "hypervisor_paging_basic_scenario",
-    "hypervisor_paging_faults_scenario",
+    "hypervisor_paging_faults_vs_scenario",
+    "hypervisor_paging_faults_g_invalid_scenario",
+    "hypervisor_paging_faults_g_reserved_scenario",
+    "hypervisor_paging_faults_g_misaligned_scenario",
     "hypervisor_paging_permissions_023_scenario",
     "hypervisor_paging_permissions_024_scenario",
-    "hypervisor_paging_csr_ad_scenario",
+    "hypervisor_paging_a_bit_scenario",
+    "hypervisor_paging_d_bit_scenario",
+    "hypervisor_paging_csr_scenario",
 ]

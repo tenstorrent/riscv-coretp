@@ -146,20 +146,22 @@ def SID_SSCOFPMF_03B_MCOUNTEREN_MINSTRET():
 
     clear_ir = CsrWrite(csr_name="mcounteren", clear_mask=0x4)
     read_before = CsrRead(csr_name="minstret")
+    hold_gpr = Arithmetic(op="mv", src1=read_before)
 
-    steps = [clear_ir, read_before]
+    steps = [clear_ir, read_before, hold_gpr]
 
     for _ in range(NUM_FILL):
         steps.append(Arithmetic())
 
     read_after = CsrRead(csr_name="minstret")
-    delta = Arithmetic(op="sub", src1=read_after, src2=read_before)
+    hold_gpr_2 = Arithmetic(op="mv", src1=read_after)
+    delta = Arithmetic(op="sub", src1=hold_gpr_2, src2=hold_gpr)
     zero = LoadImmediateStep(imm=0)
     assert_incremented = AssertNotEqual(src1=delta, src2=zero)
 
     clear_mcounteren = CsrWrite(csr_name="mcounteren", value=0)
 
-    steps.extend([read_after, delta, zero, assert_incremented, clear_mcounteren])
+    steps.extend([read_after, hold_gpr_2, delta, zero, assert_incremented, clear_mcounteren])
 
     return TestScenario.from_steps(
         id="3b",
@@ -221,18 +223,21 @@ def SID_SSCOFPMF_04B_MCOUNTINHIBIT_MCYCLE_RESUMES():
     steps.append(clear_cy)
 
     read_before = CsrRead(csr_name="mcycle")
+    csr_save_read_before = Arithmetic(op="mv", src1=read_before)
     steps.append(read_before)
+    steps.append(csr_save_read_before)
 
     for _ in range(NUM_FILL):
         steps.append(Arithmetic())
 
     read_after = CsrRead(csr_name="mcycle")
-    delta = Arithmetic(op="sub", src1=read_after, src2=read_before)
+    csr_save_read_after = Arithmetic(op="mv", src1=read_after)
+    delta = Arithmetic(op="sub", src1=csr_save_read_after, src2=csr_save_read_before)
     zero = LoadImmediateStep(imm=0)
     assert_resumed = AssertNotEqual(src1=delta, src2=zero)
     clear_mcountinhibit = CsrWrite(csr_name="mcountinhibit", value=0)
 
-    steps.extend([read_after, delta, zero, assert_resumed, clear_mcountinhibit])
+    steps.extend([read_after, csr_save_read_after, delta, zero, assert_resumed, clear_mcountinhibit])
 
     return TestScenario.from_steps(
         id="4b",
