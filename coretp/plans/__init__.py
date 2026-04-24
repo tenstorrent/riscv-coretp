@@ -22,10 +22,15 @@ from .sscofpmf import sscofpmf_scenarios
 from .hypervisor import hypervisor_scenarios
 from .hypervisor_paging import (
     hypervisor_paging_basic_scenarios,
-    hypervisor_paging_faults_scenarios,
+    hypervisor_paging_faults_vs_scenarios,
+    hypervisor_paging_faults_g_invalid_scenarios,
+    hypervisor_paging_faults_g_reserved_scenarios,
+    hypervisor_paging_faults_g_misaligned_scenarios,
     hypervisor_paging_permissions_023_scenarios,
     hypervisor_paging_permissions_024_scenarios,
-    hypervisor_paging_csr_ad_scenarios,
+    hypervisor_paging_a_bit_scenarios,
+    hypervisor_paging_d_bit_scenarios,
+    hypervisor_paging_csr_scenarios,
 )
 from .hypervisor_exceptions import hypervisor_exceptions_scenarios
 from .ssu64xl import ssu64xl_scenarios
@@ -34,6 +39,7 @@ from .zihintntl import zihintntl_scenarios
 from .zawrs import zawrs_scenarios
 from .zihintpause import zihintpause_scenarios
 from .zicsr import zicsr_scenarios
+from .zjpm import zjpm_scenarios
 from .svnapot import svnapot_scenarios
 from .exceptions import exceptions_scenarios
 

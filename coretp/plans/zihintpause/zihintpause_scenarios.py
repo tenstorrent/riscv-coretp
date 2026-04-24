@@ -22,6 +22,7 @@ from coretp.step import (
     MemAccess,
     System,
     SetWaitTimeout,
+    Directive,
 )
 
 from . import zihintpause_scenario
@@ -35,7 +36,7 @@ def SID_ZHP_01():
     """
     comment = Comment(comment="Setup exception before pause")
 
-    illegal_instr = System(instruction="unimp")
+    illegal_instr = Directive(directive="unimp")
     assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[illegal_instr])
     pause = System(instruction="pause")
     return TestScenario.from_steps(
@@ -111,7 +112,7 @@ def SID_ZHP_03():
 
 
 @zihintpause_scenario
-def SID_ZHP_04a():
+def SID_ZHP_04a_M():
     """
     Scenario: Pause around special instructions - CSR serialization
     Use CSR serialisation before Pause instruction.
@@ -132,10 +133,100 @@ def SID_ZHP_04a():
 
     return TestScenario.from_steps(
         id="5",
-        name="SID_ZHP_04b",
+        name="SID_ZHP_04a_M",
         description="Use CSR serialisation before Pause instruction",
-        env=TestEnvCfg(),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
         steps=[
+            comment,
+            pause,
+            csr_read,
+            pause_2,
+            csr_write,
+            pause_3,
+            comment_pass,
+        ],
+    )
+
+
+@zihintpause_scenario
+def SID_ZHP_04a_S():
+    """
+    Scenario: Pause around special instructions - CSR serialization
+    Use CSR serialisation before Pause instruction.
+    """
+
+    pre_comment = Comment(comment="Set up mcounteren.tm=1")
+    set_up_mcounteren = CsrWrite(csr_name="mcounteren", set_mask=0x2)
+
+    comment = Comment(comment="Pause after CSR serialization")
+
+    pause = System(instruction="pause")
+
+    csr_read = CsrRead(csr_name="time", direct_read=True)
+
+    pause_2 = System(instruction="pause")
+
+    csr_write = CsrWrite(csr_name="frm", value=0)
+
+    pause_3 = System(instruction="pause")
+
+    comment_pass = Comment(comment="Pause executed after CSR serialization")
+
+    return TestScenario.from_steps(
+        id="5",
+        name="SID_ZHP_04a_S",
+        description="Use CSR serialisation before Pause instruction",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        steps=[
+            pre_comment,
+            set_up_mcounteren,
+            comment,
+            pause,
+            csr_read,
+            pause_2,
+            csr_write,
+            pause_3,
+            comment_pass,
+        ],
+    )
+
+
+@zihintpause_scenario
+def SID_ZHP_04a_U():
+    """
+    Scenario: Pause around special instructions - CSR serialization
+    Use CSR serialisation before Pause instruction.
+    """
+    pre_comment = Comment(comment="Set up mcounteren.tm=1")
+    set_up_mcounteren = CsrWrite(csr_name="mcounteren", set_mask=0x2)
+
+    pre_comment_2 = Comment(comment="Set up scounteren.tm=1")
+    set_up_scounteren = CsrWrite(csr_name="scounteren", set_mask=0x2)
+
+    comment = Comment(comment="Pause after CSR serialization")
+
+    pause = System(instruction="pause")
+
+    csr_read = CsrRead(csr_name="time", direct_read=True)
+
+    pause_2 = System(instruction="pause")
+
+    csr_write = CsrWrite(csr_name="frm", value=0)
+
+    pause_3 = System(instruction="pause")
+
+    comment_pass = Comment(comment="Pause executed after CSR serialization")
+
+    return TestScenario.from_steps(
+        id="5",
+        name="SID_ZHP_04a_U",
+        description="Use CSR serialisation before Pause instruction",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        steps=[
+            pre_comment,
+            set_up_mcounteren,
+            pre_comment_2,
+            set_up_scounteren,
             comment,
             pause,
             csr_read,
@@ -163,7 +254,7 @@ def SID_ZHP_04b():
 
     return TestScenario.from_steps(
         id="6",
-        name="SID_ZHP_04c",
+        name="SID_ZHP_04b",
         description="Use Fence before Pause instruction",
         env=TestEnvCfg(),
         steps=[
@@ -203,7 +294,7 @@ def SID_ZHP_04c():
 
     return TestScenario.from_steps(
         id="7",
-        name="SID_ZHP_04d",
+        name="SID_ZHP_04c",
         description="Use random instruction before Pause instruction",
         env=TestEnvCfg(),
         steps=[
