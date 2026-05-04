@@ -59,6 +59,8 @@ class _TestPlanInfo:
     description: str = ""
     tags: list[str] = field(default_factory=list)
     features: list[str] = field(default_factory=list)
+    excp_handler_pre: Optional[str] = None
+    excp_handler_post: Optional[str] = None
     _scenarios: list[Callable[[], TestScenario]] = field(default_factory=list)
     _built_plan: Optional[TestPlan] = field(default=None, init=False)
 
@@ -75,6 +77,8 @@ class _TestPlanInfo:
                 name=self.name,
                 description=self.description,
                 scenarios=[func() for func in self._scenarios],
+                excp_handler_pre=self.excp_handler_pre,
+                excp_handler_post=self.excp_handler_post,
             )
         return self._built_plan
 
@@ -90,10 +94,25 @@ class _TestPlanRegistry:
     def __init__(self):
         self._plans: dict[str, _TestPlanInfo] = {}
 
-    def register_plan(self, name: str, description: str = "", tags: Optional[list[str]] = None, features: Optional[list[str]] = None) -> None:
+    def register_plan(
+        self,
+        name: str,
+        description: str = "",
+        tags: Optional[list[str]] = None,
+        features: Optional[list[str]] = None,
+        excp_handler_pre: Optional[str] = None,
+        excp_handler_post: Optional[str] = None,
+    ) -> None:
         """Register a new test plan"""
         if name not in self._plans:
-            self._plans[name] = _TestPlanInfo(name=name, description=description, tags=tags or [], features=features or [])
+            self._plans[name] = _TestPlanInfo(
+                name=name,
+                description=description,
+                tags=tags or [],
+                features=features or [],
+                excp_handler_pre=excp_handler_pre,
+                excp_handler_post=excp_handler_post,
+            )
 
     def add_scenario(self, plan_name: str, scenario_func: Callable[[], TestScenario]) -> None:
         """Add scenario to existing plan"""
@@ -146,6 +165,8 @@ def new_test_plan(
     description: str = "",
     tags: Optional[list[str]] = None,
     features: Optional[list[str]] = None,
+    excp_handler_pre: Optional[str] = None,
+    excp_handler_post: Optional[str] = None,
 ) -> Callable[[Callable[[], TestScenario]], Callable[[], TestScenario]]:
     """
     Create decorator for test plan scenarios
@@ -154,8 +175,16 @@ def new_test_plan(
     :param description: description of the test plan
     :param tags: Optional tags for the test plan, e.g. "security", "memory"
     :param features: Optional features for the test plan. unused for now, but can be used later to track dependencies or required features
+    :param excp_handler_pre: Optional plan-wide assembly body emitted into the
+        test-side ``excp_handler_pre:`` label by downstream generators. Tests
+        that consume the plan must be run with ``--excp_hooks``. When the plan
+        sets only one of pre/post, the missing label is emitted with a ``nop``
+        body.
+    :param excp_handler_post: Optional plan-wide assembly body emitted into the
+        test-side ``excp_handler_post:`` label by downstream generators. Tests
+        that consume the plan must be run with ``--excp_hooks``.
     """
-    _registry.register_plan(name, description, tags, features)
+    _registry.register_plan(name, description, tags, features, excp_handler_pre=excp_handler_pre, excp_handler_post=excp_handler_post)
 
     def scenario_decorator(func: Callable[[], TestScenario]) -> Callable[[], TestScenario]:
         _registry.add_scenario(name, func)

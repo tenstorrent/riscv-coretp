@@ -1382,7 +1382,7 @@ ntl_p1 = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="add x0, x0, x2",
+    formatter="ntl.p1",
 )
 
 ntl_pall = InstructionDef(
@@ -1392,7 +1392,7 @@ ntl_pall = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="add x0, x0, x3",
+    formatter="ntl.pall",
 )
 
 ntl_s1 = InstructionDef(
@@ -1402,7 +1402,7 @@ ntl_s1 = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="add x0, x0, x4",
+    formatter="ntl.s1",
 )
 
 ntl_all = InstructionDef(
@@ -1412,10 +1412,14 @@ ntl_all = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="add x0, x0, x5",
+    formatter="ntl.all",
 )
 
 # Compressed Zihintntl instructions
+# These are encoded as C.ADD x0, xN (hint encodings)
+# C.NTL.P1 = C.ADD x0, x2, C.NTL.PALL = C.ADD x0, x3
+# C.NTL.S1 = C.ADD x0, x4, C.NTL.ALL = C.ADD x0, x5
+# Note: .option rvc/norvc is required because the loader sets .option norvc by default
 c_ntl_p1 = InstructionDef(
     name="c.ntl.p1",
     extension=Extension.ZIHINTNTL,
@@ -1423,7 +1427,7 @@ c_ntl_p1 = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="c.add x0, x2",
+    formatter=".option rvc\n\tc.add x0, x2\n\t.option norvc",
 )
 
 c_ntl_pall = InstructionDef(
@@ -1433,7 +1437,7 @@ c_ntl_pall = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="c.add x0, x3",
+    formatter=".option rvc\n\tc.add x0, x3\n\t.option norvc",
 )
 
 c_ntl_s1 = InstructionDef(
@@ -1443,7 +1447,7 @@ c_ntl_s1 = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="c.add x0, x4",
+    formatter=".option rvc\n\tc.add x0, x4\n\t.option norvc",
 )
 
 c_ntl_all = InstructionDef(
@@ -1453,7 +1457,7 @@ c_ntl_all = InstructionDef(
     category=Category.SYSTEM,
     destination=None,
     source=[],
-    formatter="c.add x0, x5",
+    formatter=".option rvc\n\tc.add x0, x5\n\t.option norvc",
 )
 
 wfi = InstructionDef(

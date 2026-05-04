@@ -34,6 +34,32 @@ class AssertException(TestStep):
     htval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected htval/mtval2 (0 or None = skip check)
     gva_check: bool = False  # when True, trap handler verifies mstatus/hstatus.GVA is set
     expected_handler_mode: ExceptionHandlerMode = ExceptionHandlerMode.ANY
+    # When True, the OS trap handler validates only the cause, not the faulting
+    # PC. Required for sdtrig icount where the trigger fires inside the
+    # OS_SETUP_CHECK_EXCP setup macro (instruction count includes the setup),
+    # so the actual faulting PC is non-deterministic relative to the user
+    # fault label. Voyager2 has the same flag (skip_pc_check) on its
+    # setup_check_exception_cause_only / _reexecute APIs.
+    skip_pc_check: bool = False
+    # When True (default for BREAKPOINT), the trap handler returns to the
+    # faulting PC so the trigger-clearing logic re-executes the original
+    # instruction without re-firing. Scenarios that delegate the BREAKPOINT
+    # to a non-M trap handler (e.g. set medeleg.bit3=1) cannot disable the
+    # trigger from S/U mode (csrw tselect is M-only), so re-execution would
+    # loop. Setting ``re_execute=False`` makes the handler advance xepc past
+    # the faulting instruction instead, breaking the loop. ``None`` (default)
+    # means "use the cause-driven default" — re_execute=True for BREAKPOINT,
+    # False for everything else.
+    re_execute: Optional[bool] = None
+    # When True AND the actual cause is NOT BREAKPOINT, the OS trap handler
+    # walks every implemented sdtrig trigger and clears its priv-enable bits
+    # before xret. Use this when the assert block arms an icount trigger
+    # whose action would otherwise fire on the very next user instruction
+    # after the expected (non-BP) exception is handled — e.g. a readback
+    # step after an ILLEGAL_INSTRUCTION. No-op for BREAKPOINT cause (the
+    # plan-wide ``excp_handler_post`` body, emitted when --excp_hooks is set,
+    # handles the BP case).
+    disable_triggers_after: bool = False
 
 
 @dataclass(frozen=True)
