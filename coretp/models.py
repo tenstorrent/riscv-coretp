@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Union
+from typing import Optional, Union
 from dataclasses import dataclass, field
 
 from .step import TestStep
@@ -70,11 +70,26 @@ class TestPlan:
     :type name: str
     :param scenarios: List of test scenarios
     :type scenarios: list[TestScenario]
+    :param excp_handler_pre: Optional plan-wide assembly body emitted into a test-side
+        ``excp_handler_pre:`` label by downstream generators (RiescueC, Voyager2).
+        The generator wraps the body with the label and a trailing ``ret``. Tests
+        that consume the plan must be run with ``--excp_hooks``. When the plan
+        sets ``excp_handler_post`` but not ``excp_handler_pre`` (or vice versa),
+        the missing label is still emitted with a ``nop`` body so the hook
+        pointer pair the runtime expects always resolves.
+    :type excp_handler_pre: Optional[str]
+    :param excp_handler_post: Optional plan-wide assembly body emitted into a test-side
+        ``excp_handler_post:`` label by downstream generators (RiescueC, Voyager2).
+        The generator wraps the body with the label and a trailing ``ret``. Tests
+        that consume the plan must be run with ``--excp_hooks``.
+    :type excp_handler_post: Optional[str]
     """
 
     name: str
     description: str = ""
     scenarios: list[TestScenario] = field(default_factory=list)
+    excp_handler_pre: Optional[str] = None
+    excp_handler_post: Optional[str] = None
 
     def __post_init__(self):
         """Check that scenarios were included"""
