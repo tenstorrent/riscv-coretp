@@ -44,6 +44,5 @@ from .svnapot import svnapot_scenarios
 from .exceptions import exceptions_scenarios
 from .sdtrig import sdtrig_scenarios
 from .sdtrig_icount import sdtrig_icount_scenarios
-from .vector_illegals import vector_illegals_scenarios
 
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]
