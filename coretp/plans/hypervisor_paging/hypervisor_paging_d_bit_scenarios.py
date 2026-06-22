@@ -168,9 +168,8 @@ def _d_bit_scenario_steps(variant):
     check_amo, d_mask_amo = _d_bit_check_steps(mem_amo, pte_level=pte_level, g_level=g_level, label=f"AMO {label}")
     steps.extend(check_amo)
     comment_amo = Comment(comment="Perform AMO to trigger D bit update")
-    amo_val = LoadImmediateStep(imm=0x1)
-    amo_op = MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)
-    steps.extend([comment_amo, amo_val, amo_op])
+    amo_op = MemAccess(memory=mem_amo, extension=Extension.A)
+    steps.extend([comment_amo, amo_op])
     steps.extend(d_write_verify(mem_amo, d_mask_amo, pte_level=pte_level, g_level=g_level, label=f"AMO {label}"))
 
     # --- Load: D bit should NOT be set ---
@@ -237,8 +236,7 @@ def SID_HPBVMS_030():
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY, exclude_flags=DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY, modify=True)
     ReadPTE(memory=mem_amo, level=PteLevel.LEAF) -> verify D=0
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)
+    MemAccess(memory=mem_amo, extension=Extension.A)
     ReadPTE(memory=mem_amo, level=PteLevel.LEAF) -> verify D=1
 
     # --- Load: D bit should NOT be set ---
@@ -254,9 +252,6 @@ def SID_HPBVMS_030():
     ReadPTE(memory=cp, level=PteLevel.LEAF) -> verify D=0
     Call(target=cp)
     ReadPTE(memory=cp, level=PteLevel.LEAF) -> verify D still 0
-
-    CsrWrite(csr_name="menvcfg", clear_mask=1<<61)
-    CsrWrite(csr_name="henvcfg", clear_mask=1<<61)
     """
     return TestScenario.from_steps(
         id="22",

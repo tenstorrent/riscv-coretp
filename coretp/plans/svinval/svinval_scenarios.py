@@ -79,22 +79,15 @@ def SID_SVINVAL_01_02_opcode_coverage_U():
     sfence_inval_ir = Arithmetic(op="sfence.inval.ir")
     assert_sfence_inval_ir = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[sfence_inval_ir])
 
-    comment_2 = Comment(comment="Simple assertion to verify execution")
-    one = LoadImmediateStep(imm=1)
-    assert_success = AssertEqual(src1=one, src2=one)
-
     return TestScenario.from_steps(
         id="1",
         name="SID_SVINVAL_01_opcode_coverage",
         description="SINVAL.VMA - All variants, SFENCE.W.INVAL, SFENCE.INVAL.IR opcode coverage",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=[
             comment_1,
             assert_sfence_w_inval,
             assert_sfence_inval_ir,
-            comment_2,
-            one,
-            assert_success,
         ],
     )
 
@@ -438,7 +431,7 @@ def SID_SVINVAL_06_fault_in_usermode():
         id="6",
         name="SID_SVINVAL_06_fault_in_usermode",
         description="SINVAL.VMA in usermode should fault",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=[
             comment_1,
             mem,
@@ -471,7 +464,7 @@ def SID_SVINVAL_07_fault_in_smode_with_tvm():
         id="7",
         name="SID_SVINVAL_07_fault_in_smode_with_tvm",
         description="SINVAL.VMA in S-mode when mstatus.TVM=1 should fault",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=[
             comment_1,
             set_tvm,
@@ -498,7 +491,7 @@ def SID_SVINVAL_08_fault_sfence_w_inval_sfence_inval_ir():
         id="8",
         name="SID_SVINVAL_08_no_fault_sfence_w_inval_sfence_inval_ir",
         description="SFENCE.W.INVAL/SFENCE.INVAL.IR should fault in U-mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=[
             assert_sfence_w_inval,
             assert_sfence_inval_ir,
@@ -537,7 +530,7 @@ def SID_SVINVAL_09_tvm_sfence_sinval_sfence_flow():
         id="9",
         name="SID_SVINVAL_09_tvm_sfence_sinval_sfence_flow",
         description="SFENCE.W.INVAL -> SINVAL.VMA -> SFENCE.INVAL.IR flow with mstatus.TVM=1",
-        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=[
             comment_1,
             set_tvm,

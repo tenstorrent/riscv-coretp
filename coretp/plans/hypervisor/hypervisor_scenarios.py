@@ -36,7 +36,9 @@ def SID_HPMODE_001():
 
     comment_1 = Comment(comment="Verify we are in HS mode")
     misa_read = CsrRead(csr_name="misa")
-    check_misa = AssertEqual(src1=misa_read, src2=0x80)
+    h_bit_mask = LoadImmediateStep(imm=0x80)
+    h_bit_value = Arithmetic(op="and", src1=misa_read, src2=h_bit_mask)
+    check_misa = AssertEqual(src1=h_bit_value, src2=h_bit_mask)
     hstatus_val = CsrRead(csr_name="hstatus")
     expected_zero = LoadImmediateStep(imm=0)
     assert_not_equal = AssertNotEqual(src1=hstatus_val, src2=expected_zero)
@@ -49,6 +51,8 @@ def SID_HPMODE_001():
         steps=[
             comment_1,
             misa_read,
+            h_bit_mask,
+            h_bit_value,
             check_misa,
             hstatus_val,
             expected_zero,
@@ -192,7 +196,7 @@ def SID_HPCSR_005():
         id="76",
         name="SID_HPCSR_005",
         description="Make sure accessing all H-CSRs takes an illegal trap in HU mode",
-        env=test_env("H", virtualized=False),
+        env=test_env("U", virtualized=False),
         steps=steps,
     )
 

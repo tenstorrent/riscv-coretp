@@ -87,10 +87,9 @@ def _misaligned_superpage_steps(
         code=[Store(memory=mem_rw, value=st_val)],
     )
     comment_amo = Comment(comment=f"AMO on misaligned superpage - expect {store_cause.name}")
-    amo_val = LoadImmediateStep(imm=0x1)
     assert_amo = AssertException(
         cause=store_cause,
-        code=[MemAccess(memory=mem_rw, src2=amo_val, extension=Extension.A)],
+        code=[MemAccess(memory=mem_rw, extension=Extension.A)],
     )
 
     # --- Instruction fetch ---
@@ -125,7 +124,6 @@ def _misaligned_superpage_steps(
         st_val,
         assert_st,
         comment_amo,
-        amo_val,
         assert_amo,
         nop_val,
         nop,
@@ -203,8 +201,9 @@ def SID_HPBVMS_019():
     G-stage:  pick_all {SV39x4, SV48x4, SV57x4}
 
     Pseudocode:
-    #   Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-    #          leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY, modify=True)
+    #   Memory(flags=VALID|READ|WRITE|ACCESSED|DIRTY,
+    #          leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
+    #          modify_leaf=True, vleaf_page_size=(SIZE_2M, SIZE_1G, SIZE_512G, SIZE_256T))
     #   ReadPTE(memory=mem, level=PteLevel.FINAL, g_level=PteLevel.LEAF)
     #   ppn_mask = LoadImmediateStep(imm=1 << 10)
     #   corrupt = Arithmetic(op="or", src1=read, src2=ppn_mask)
@@ -212,9 +211,8 @@ def SID_HPBVMS_019():
     #   AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)])
     #   LoadImmediateStep(imm=0xAB)
     #   AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
-    #   LoadImmediateStep(imm=0x1)
-    #   AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)])
-    #   CodePage(... read-execute ..., modify=True, code=[nop])
+    #   AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)])
+    #   CodePage(... read-execute ..., modify_leaf=True, vleaf_page_size=(...), code=[nop])
     #   ReadPTE(memory=cp, level=PteLevel.FINAL, g_level=PteLevel.LEAF)
     #   WritePTE(memory=cp, src=corrupt, level=PteLevel.FINAL, g_level=PteLevel.LEAF)
     #   AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
@@ -252,7 +250,7 @@ def SID_HPBVMS_019_nonleaf_gleaf():
     WritePTE(memory=mem, src=corrupt, level=LEAF, g_level=LEAF)
     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)])
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)])
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)])
     CodePage(..., modify_nonleaf=True, vnonleaf_page_size=(...), code=[nop])
     ReadPTE(memory=cp, level=LEAF, g_level=LEAF)
     WritePTE(memory=cp, src=corrupt, level=LEAF, g_level=LEAF)
@@ -289,16 +287,16 @@ def SID_HPBVMS_019_leaf_gleaf():
     Memory(flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            modify_leaf=True, vleaf_page_size=(SIZE_2M, SIZE_1G, SIZE_512G, SIZE_256T))
-    ReadPTE(memory=mem, level=LEAF, g_level=LEAF)
+    ReadPTE(memory=mem, level=FINAL, g_level=LEAF)
     ppn_mask = LoadImmediateStep(imm=1 << 10)
     corrupt = Arithmetic(op="or", src1=read, src2=ppn_mask)
-    WritePTE(memory=mem, src=corrupt, level=LEAF, g_level=LEAF)
+    WritePTE(memory=mem, src=corrupt, level=FINAL, g_level=LEAF)
     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)])
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)])
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)])
     CodePage(..., modify_leaf=True, vleaf_page_size=(...), code=[nop])
-    ReadPTE(memory=cp, level=LEAF, g_level=LEAF)
-    WritePTE(memory=cp, src=corrupt, level=LEAF, g_level=LEAF)
+    ReadPTE(memory=cp, level=FINAL, g_level=LEAF)
+    WritePTE(memory=cp, src=corrupt, level=FINAL, g_level=LEAF)
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(

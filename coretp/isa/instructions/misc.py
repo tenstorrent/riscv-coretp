@@ -1222,7 +1222,7 @@ hinval_gvma = InstructionDef(
         OperandSlot(name="rs1", type=OperandType.GPR),
         OperandSlot(name="rs2", type=OperandType.GPR),
     ],
-    formatter="hinval.gvma {rs1} {rs2}",
+    formatter="hinval.gvma {rs1}, {rs2}",
 )
 
 
@@ -1236,7 +1236,7 @@ hinval_vvma = InstructionDef(
         OperandSlot(name="rs1", type=OperandType.GPR),
         OperandSlot(name="rs2", type=OperandType.GPR),
     ],
-    formatter="hinval.vvma {rs1} {rs2}",
+    formatter="hinval.vvma {rs1}, {rs2}",
 )
 
 # mops
@@ -1520,6 +1520,36 @@ sret = InstructionDef(
     formatter="sret",
 )
 
+rdtime = InstructionDef(
+    name="rdtime",
+    extension=Extension.ZICNTR,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=OperandSlot("rd", OperandType.GPR),
+    source=[],
+    formatter="rdtime {rd}",
+)
+
+rdcycle = InstructionDef(
+    name="rdcycle",
+    extension=Extension.ZICNTR,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=OperandSlot("rd", OperandType.GPR),
+    source=[],
+    formatter="rdcycle {rd}",
+)
+
+rdinstret = InstructionDef(
+    name="rdinstret",
+    extension=Extension.ZICNTR,
+    xlen=Xlen.XLEN32,
+    category=Category.SYSTEM,
+    destination=OperandSlot("rd", OperandType.GPR),
+    source=[],
+    formatter="rdinstret {rd}",
+)
+
 misc_instrs = (
     [
         amoadd_b,
@@ -1633,6 +1663,9 @@ misc_instrs = (
         pause,
         mret,
         sret,
+        rdtime,
+        rdcycle,
+        rdinstret,
     ]
     + c_mop_N
     + mop_r_N

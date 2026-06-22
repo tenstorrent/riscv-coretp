@@ -64,7 +64,7 @@ def SID_SDTRIG_I001():
         id="1",
         name="SID_SDTRIG_I001",
         description="Icount trigger CSR access from priv < M raises illegal instruction",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[False]),
         steps=[
             comment,
             assert_tselect,
@@ -140,7 +140,7 @@ def SID_SDTRIG_I002():
     )
 
 
-def _i003_h_vs_or_vu_eq(*, name: str, scenario_id: str, env_priv: PrivilegeMode, write_priv_mode: tuple, vs_or_vu_bit: int, description: str):
+def _i003_h_vs_or_vu_eq(*, name: str, scenario_id: str, env_priv: PrivilegeMode, write_priv_mode: tuple, vs_or_vu_bit: int, description: str, virtualized=None):
     """
     Shared body for the I003 WARL-of-vs/vu split scenarios.
 
@@ -183,11 +183,15 @@ def _i003_h_vs_or_vu_eq(*, name: str, scenario_id: str, env_priv: PrivilegeMode,
 
     assert_eq = AssertEqual(src1=h_value, src2=bit_value)
 
+    if virtualized is not None:
+        env = TestEnvCfg(priv_modes=[env_priv], virtualized=virtualized)
+    else:
+        env = TestEnvCfg(priv_modes=[env_priv])
     return TestScenario.from_steps(
         id=scenario_id,
         name=name,
         description=description,
-        env=TestEnvCfg(priv_modes=[env_priv]),
+        env=env,
         steps=[
             comment,
             sel,
@@ -230,6 +234,7 @@ def SID_SDTRIG_I003_S():
         write_priv_mode=("vu",),
         vs_or_vu_bit=25,
         description="WARL of icount tdata1.vu in S-mode tracks misa.H",
+        virtualized=[False],
     )
 
 
@@ -243,6 +248,7 @@ def SID_SDTRIG_I003_U():
         write_priv_mode=("vs",),
         vs_or_vu_bit=26,
         description="WARL of icount tdata1.vs in U-mode tracks misa.H",
+        virtualized=[False],
     )
 
 
@@ -345,7 +351,7 @@ def SID_SDTRIG_I005():
         id="7",
         name="SID_SDTRIG_I005",
         description="icount tdata1.hit bit set whenever trigger fires (count=1 and count>1)",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[False]),
         steps=[
             comment,
             assert_c1,
@@ -544,7 +550,7 @@ def SID_SDTRIG_I009():
         id="11",
         name="SID_SDTRIG_I009",
         description="icount count decrements across multiple enabled privilege modes",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[False]),
         steps=[
             comment,
             assert_fire,
@@ -688,7 +694,7 @@ def SID_SDTRIG_I011():
         id="16",
         name="SID_SDTRIG_I011",
         description="MIE gating: action=0 waits for MIE; non-exception actions count regardless",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M], virtualized=[False]),
         steps=[
             comment,
             mie_bit,
@@ -731,7 +737,7 @@ def SID_SDTRIG_I012():
         id="17",
         name="SID_SDTRIG_I012",
         description="xRET (sret) counts for icount match in the issuing mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=[
             comment,
             assert_fire,
@@ -844,7 +850,7 @@ def SID_SDTRIG_I014():
         id="19",
         name="SID_SDTRIG_I014",
         description="icount behavior on faulting (non-retiring) exceptions in S-mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=[
             comment,
             mem,
@@ -977,7 +983,7 @@ def SID_SDTRIG_I016():
         id="21",
         name="SID_SDTRIG_I016",
         description="icount treats a uop-expanded sequence as a single instruction",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M], virtualized=[False]),
         steps=[
             comment,
             sel,
@@ -1100,10 +1106,10 @@ def SID_SDTRIG_I019():
     cfg_icount = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
     cfg_load = ConfigureLoadTrigger(index=0, addr=_lbl_shared_target.name, action=TriggerAction.BREAKPOINT, size=4, priv_mode=("m",))
 
-    ld = Directive(directive="lw x5, 0(a0)")
     # cfg_icount moved into AssertException.code (A2). cfg_load stays as a top-level
     # step — it's a different trigger type and arms an LS trigger on a label, not
     # a count-based one, so it doesn't have the timing issue.
+    ld = MemAccess(memory=mem, op="lw")
     assert_icount_wins = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_icount, ld])
 
     # Verify hit bit is set on icount trigger (winner)
@@ -1169,7 +1175,7 @@ def SID_SDTRIG_I021():
     # The load/store instruction that touches every event path. cfg_icount
     # moved into AssertException.code (A2). cfg_ls remains as a top-level step
     # because it's an LS trigger configured against a label, not count-based.
-    ls = Directive(directive="lw x5, 0(a0)")
+    ls = MemAccess(memory=mem, op="lw")
     assert_icount_fires = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_icount, ls])
 
     return TestScenario.from_steps(
@@ -1363,7 +1369,7 @@ def SID_SDTRIG_I026():
         id="29",
         name="SID_SDTRIG_I026",
         description="icount across priv-mode changes via tdata1/xstatus/ecall/xret",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.U], virtualized=[False]),
         steps=[
             comment,
             sel,

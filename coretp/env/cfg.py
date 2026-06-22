@@ -4,7 +4,7 @@
 from dataclasses import dataclass, field
 from itertools import product
 
-from coretp.rv_enums import PagingMode, PageSize, PrivilegeMode
+from coretp.rv_enums import PagingMode, PageSize, PrivilegeMode, InterruptMode
 from .env import TestEnv
 
 
@@ -24,6 +24,8 @@ class TestEnvCfg:
     min_num_harts: int = 1
     virtualized: list[bool] = field(default_factory=lambda: [True, False])  #: Whether the test environment is virtualized or in bare metal (hypervisor) mode
     deleg_excp_to: list[PrivilegeMode] = field(default_factory=lambda: [PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U])
+    deleg_intr_to: list[PrivilegeMode] = field(default_factory=lambda: [PrivilegeMode.M])
+    interrupt_modes: list[InterruptMode] = field(default_factory=lambda: [InterruptMode.VECTORED])
     max_test_runs: int = 1000000  # Arbitrary large number to ensure test runs indefinitely
 
     def generate_all_cfgs(self) -> list[TestEnv]:
@@ -43,7 +45,18 @@ class TestEnvCfg:
                 hart_count=self.min_num_harts,
                 virtualized=v,
                 deleg_excp_to=de,
+                deleg_intr_to=di,
+                interrupt_mode=im,
                 max_test_runs=self.max_test_runs,
             )
-            for rw, priv, pm, gpm, v, de in product(self.reg_widths, self.priv_modes, self.paging_modes, self.g_paging_modes, self.virtualized, self.deleg_excp_to)
+            for rw, priv, pm, gpm, v, de, di, im in product(
+                self.reg_widths,
+                self.priv_modes,
+                self.paging_modes,
+                self.g_paging_modes,
+                self.virtualized,
+                self.deleg_excp_to,
+                self.deleg_intr_to,
+                self.interrupt_modes,
+            )
         ]

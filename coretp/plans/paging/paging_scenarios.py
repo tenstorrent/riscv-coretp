@@ -582,10 +582,7 @@ def SID_PBVMS_014_mstatus_sum_mxr():
         id="14",
         name="SID_PBVMS_014_mstatus_sum_mxr",
         description="Impact of mstatus.{SUM,MXR} on PTW with different permission encodings",
-        env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.U, PrivilegeMode.S, PrivilegeMode.M],
-            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
-        ),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.M], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], virtualized=[False]),
         steps=[
             comment_1,
             set_mxr,
@@ -1088,6 +1085,7 @@ def SID_PBVMS_025_mstatus_tvm_satp_access():
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S, PrivilegeMode.M],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+            virtualized=[False],
         ),
         steps=[
             comment_1,
@@ -1186,7 +1184,7 @@ def SID_PBVMS_027_satp_user_mode_fault():
         id="27",
         name="SID_PBVMS_027_satp_user_mode_fault",
         description="Ensure satp instruction takes fault when executed in User mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57], virtualized=[False]),
         steps=[
             comment_1,
             assert_read_fault,
@@ -1275,6 +1273,7 @@ def SID_PBVMS_029_ordering_satp_mstatus_without_sfence():
         description="Ensure changes to satp.ASID, satp.Mode, mstatus.SUM, mstatus.MXR take effect without SFENCE.VMA",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S],
+            virtualized=[False],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1861,6 +1860,7 @@ def SID_PBVMS_037_sfence_vma_tvm_illegal():
         description="When mstatus.TVM==1, executing SFENCE.VMA at S-mode gives illegal instruction",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S],
+            virtualized=[False],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[

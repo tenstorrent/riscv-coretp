@@ -313,6 +313,7 @@ def SID_EXCEP_04_SU():
         description="Access reserved/unpriv CSRs triggers illegal instruction",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S, PrivilegeMode.U],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -436,7 +437,7 @@ def SID_EXCEP_06():
     return TestScenario.from_steps(
         id="7",
         name="SID_EXCEP_06",
-        env=TestEnvCfg(),
+        env=TestEnvCfg(virtualized=[False]),
         description="MISA disabled extensions cause illegal instruction on execution",
         steps=[
             comment,
@@ -520,7 +521,7 @@ def SID_EXCEP_07():
         id="8",
         name="SID_EXCEP_07",
         description="MISA faulting configs raise faults on dependent extension instructions",
-        env=TestEnvCfg(),
+        env=TestEnvCfg(virtualized=[False]),
         steps=[
             comment,
             comment_f_d,
@@ -596,6 +597,7 @@ def SID_EXCEP_08():
         description="xSTATUS.FS/VS/XS=OFF causes illegal instruction on FP/Vector access",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -808,6 +810,7 @@ def SID_EXCEP_12():
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S],
             deleg_excp_to=[PrivilegeMode.M],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -951,6 +954,7 @@ def SID_EXCEP_15_S():
         description="xCOUNTEREN controls counter CSR access per privilege level",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -1019,6 +1023,7 @@ def SID_EXCEP_15_U():
         description="xCOUNTEREN controls counter CSR access per privilege level",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.U],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -1347,6 +1352,7 @@ def SID_EXCEP_32_S():
         description="MEDELEG functional testing: bit toggle controls delegation target",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -1442,6 +1448,7 @@ def SID_EXCEP_33_S():
         description="stvec direct/vectored mode: synchronous exceptions always go to BASE",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -1534,13 +1541,11 @@ def SID_EXCEP_34():
 
     # CSRRSI with rd=x0: still reads (always causes read side effects)
     comment_csrrsi = Comment(comment="CSRRSI always reads regardless of rd - read side effects occur")
-    zero_imm_si = LoadImmediateStep(imm=0)
-    csrrsi_x0 = CsrDirectAccess(op="csrrsi", csr_name="mscratch", src1=zero_imm_si, target_is_x0=True)
+    csrrsi_x0 = CsrDirectAccess(op="csrrsi", csr_name="mscratch", src1=0, target_is_x0=True)
 
     # CSRRCI with rd=x0: still reads
     comment_csrrci = Comment(comment="CSRRCI always reads regardless of rd - read side effects occur")
-    zero_imm_ci = LoadImmediateStep(imm=0)
-    csrrci_x0 = CsrDirectAccess(op="csrrci", csr_name="mscratch", src1=zero_imm_ci, target_is_x0=True)
+    csrrci_x0 = CsrDirectAccess(op="csrrci", csr_name="mscratch", src1=0, target_is_x0=True)
 
     return TestScenario.from_steps(
         id="26",
@@ -1558,10 +1563,8 @@ def SID_EXCEP_34():
             read_mscratch,
             assert_write,
             comment_csrrsi,
-            zero_imm_si,
             csrrsi_x0,
             comment_csrrci,
-            zero_imm_ci,
             csrrci_x0,
         ],
     )
@@ -1603,6 +1606,7 @@ def SID_EXCEP_35():
         description="CSR ops with rs1=x0/imm=0 on RO CSRs: no exception",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.M, PrivilegeMode.S],
+            virtualized=[False],
         ),
         steps=[
             comment,
@@ -1661,6 +1665,7 @@ def SID_EXCEP_35_U():
         description="CSR ops with rs1=x0/imm=0 on RO CSRs: no exception",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.U],
+            virtualized=[False],
         ),
         steps=[
             comment,

@@ -310,7 +310,8 @@ def SID_SMSTATEEN_003():
     )
 
 
-@smstateen_ssstateen_scenario
+# We can't test the reset value of a CSR in a scenario
+# @smstateen_ssstateen_scenario
 def SID_SMSTATEEN_004():
     """
     Test mstateen* bits should be zero at reset
@@ -380,7 +381,7 @@ def SID_SMSTATEEN_005_U():
         id="6",
         name="SID_SMSTATEEN_005_U",
         description="mstateen* should not be accessible in U mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=steps,
     )
 
@@ -388,15 +389,18 @@ def SID_SMSTATEEN_005_U():
 @smstateen_ssstateen_scenario
 def SID_SMSTATEEN_005_VS():
     """
-    Test mstateen* not accessible in VS mode - virtual instruction
+    Test mstateen* not accessible in VS mode - illegal instruction.
+    mstateen* are machine-level CSRs (not supervisor/hypervisor/VS CSRs), so the
+    H-extension virtual-instruction circumstances do not apply: a VS-mode access
+    raises an illegal-instruction exception, not a virtual-instruction exception.
     """
     steps = []
 
-    comment_1 = Comment(comment="Test mstateen* not accessible in VS mode - virtual instruction")
+    comment_1 = Comment(comment="Test mstateen* not accessible in VS mode - illegal instruction (machine CSR)")
     steps.append(comment_1)
 
     read_step = CsrRead(csr_name="mstateen0", direct_read=True)
-    assert_exception = AssertException(cause=ExceptionCause.VIRTUAL_INSTRUCTION, code=[read_step])
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_step])
     steps.append(assert_exception)
 
     return TestScenario.from_steps(
@@ -411,15 +415,18 @@ def SID_SMSTATEEN_005_VS():
 @smstateen_ssstateen_scenario
 def SID_SMSTATEEN_005_VU():
     """
-    Test mstateen* not accessible in VU mode - virtual instruction
+    Test mstateen* not accessible in VU mode - illegal instruction.
+    mstateen* are machine-level CSRs (not supervisor/hypervisor/VS CSRs), so the
+    H-extension virtual-instruction circumstances do not apply: a VU-mode access
+    raises an illegal-instruction exception, not a virtual-instruction exception.
     """
     steps = []
 
-    comment_1 = Comment(comment="Test mstateen* not accessible in VU mode - virtual instruction")
+    comment_1 = Comment(comment="Test mstateen* not accessible in VU mode - illegal instruction (machine CSR)")
     steps.append(comment_1)
 
     read_step = CsrRead(csr_name="mstateen0", direct_read=True)
-    assert_exception = AssertException(cause=ExceptionCause.VIRTUAL_INSTRUCTION, code=[read_step])
+    assert_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_step])
     steps.append(assert_exception)
 
     return TestScenario.from_steps(
@@ -565,7 +572,7 @@ def SID_SMSTATEEN_006():
         id="9",
         name="SID_SMSTATEEN_006",
         description="hstateen0 implemented bits should be writable in M and HS mode given that corresponding mstateen bits are set",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], virtualized=[False]),
         steps=steps,
     )
 
@@ -604,7 +611,7 @@ def SID_SMSTATEEN_007():
         id="10",
         name="SID_SMSTATEEN_007",
         description="hstateen* bits should be read-only zero in M and HS mode given that corresponding mstateen bits are zero",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], virtualized=[False]),
         steps=steps,
     )
 
@@ -724,7 +731,7 @@ def SID_SMSTATEEN_008():
         id="11",
         name="SID_SMSTATEEN_008",
         description="hstateen0 unimplement and reserved bits should be read-only zero",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=steps,
     )
 
@@ -765,12 +772,13 @@ def SID_SMSTATEEN_009():
         id="12",
         name="SID_SMSTATEEN_009",
         description="hstateen(1/2/3) implemented bits should be writable in M and HS mode given that corresponding mstateen bits are set",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=steps,
     )
 
 
-@smstateen_ssstateen_scenario
+# Can't determine if misa.H is writable
+# @smstateen_ssstateen_scenario
 def SID_SMSTATEEN_010():
     """
     Test hstateen* should not be accessible in all priv modes when misa.H==0
@@ -859,7 +867,7 @@ def SID_SMSTATEEN_011_case2():
         id="15",
         name="SID_SMSTATEEN_011_case2",
         description="hstateen* accessibility in HS mode - mstateen[63]=1, accessible",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=steps,
     )
 
@@ -882,7 +890,7 @@ def SID_SMSTATEEN_012_U():
         id="16",
         name="SID_SMSTATEEN_012_U",
         description="hstateen* should not be accessible in U mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=steps,
     )
 
@@ -1022,7 +1030,7 @@ def SID_SMSTATEEN_019_case1():
     hstateen0_clear = LoadImmediateStep(imm=0)
     steps.append(hstateen0_clear)
 
-    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_clear)
+    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_clear, force_machine_mode=True)
     steps.append(write_h)
 
     # Try to access sstateen0 in VS mode
@@ -1053,14 +1061,14 @@ def SID_SMSTATEEN_019_case2():
     mstateen0_clear = LoadImmediateStep(imm=0)
     steps.append(mstateen0_clear)
 
-    write_m = CsrWrite(csr_name="mstateen0", value=mstateen0_clear, direct_write=True)
+    write_m = CsrWrite(csr_name="mstateen0", value=mstateen0_clear)
     steps.append(write_m)
 
     # Set hstateen0
     hstateen0_set = LoadImmediateStep(imm=0x8000000000000000)
     steps.append(hstateen0_set)
 
-    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_set, direct_write=True)
+    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_set, force_machine_mode=True)
     steps.append(write_h)
 
     # Try to access sstateen0 in VS mode
@@ -1091,14 +1099,14 @@ def SID_SMSTATEEN_019_case3():
     mstateen0_set = LoadImmediateStep(imm=0x8000000000000000)
     steps.append(mstateen0_set)
 
-    write_m = CsrWrite(csr_name="mstateen0", value=mstateen0_set, direct_write=True)
+    write_m = CsrWrite(csr_name="mstateen0", value=mstateen0_set)
     steps.append(write_m)
 
     # Clear hstateen0
     hstateen0_clear = LoadImmediateStep(imm=0)
     steps.append(hstateen0_clear)
 
-    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_clear, direct_write=True)
+    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_clear, force_machine_mode=True)
     steps.append(write_h)
 
     # Try to access sstateen0 in VS mode
@@ -1136,7 +1144,7 @@ def SID_SMSTATEEN_019_case4():
     hstateen0_set = LoadImmediateStep(imm=0x8000000000000000)
     steps.append(hstateen0_set)
 
-    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_set)
+    write_h = CsrWrite(csr_name="hstateen0", value=hstateen0_set, force_machine_mode=True)
     steps.append(write_h)
 
     # Access sstateen0 in VS mode should succeed
@@ -1177,7 +1185,7 @@ def SID_SMSTATEEN_020_U():
         id="31",
         name="SID_SMSTATEEN_020_U",
         description="sstateen* should not be accessible in U mode",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=steps,
     )
 
@@ -1255,6 +1263,6 @@ def SID_SMSTATEEN_026():
         id="33",
         name="SID_SMSTATEEN_026",
         description="hstateen is read-only zero when corresponding mstateen bit is zero",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=steps,
     )

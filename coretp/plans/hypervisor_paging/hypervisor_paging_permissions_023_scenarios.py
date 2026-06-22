@@ -107,15 +107,11 @@ def _perm_encoding_2level_steps(gstage_only=False):
     )
 
     # AMO -> fault
-    amo_val_r = LoadImmediateStep(imm=0x1)
-    steps.extend(
-        [
-            amo_val_r,
-            AssertException(
-                cause=_store_fault,
-                code=[MemAccess(memory=mem_r, src2=amo_val_r, extension=Extension.A)],
-            ),
-        ]
+    steps.append(
+        AssertException(
+            cause=_store_fault,
+            code=[MemAccess(memory=mem_r, extension=Extension.A)],
+        )
     )
 
     # Fetch -> fault (no X bit)
@@ -148,8 +144,7 @@ def _perm_encoding_2level_steps(gstage_only=False):
     steps.extend([st_val_rw, Store(memory=mem_rw, value=st_val_rw)])
 
     # AMO OK
-    amo_val_rw = LoadImmediateStep(imm=0x2)
-    steps.extend([amo_val_rw, MemAccess(memory=mem_rw, src2=amo_val_rw, extension=Extension.A)])
+    steps.append(MemAccess(memory=mem_rw, extension=Extension.A))
 
     # Fetch -> fault (no X bit)
     nop_val_rw = LoadImmediateStep(imm=0)
@@ -195,15 +190,11 @@ def _perm_encoding_2level_steps(gstage_only=False):
             ),
         ]
     )
-    amo_val_x = LoadImmediateStep(imm=0x3)
-    steps.extend(
-        [
-            amo_val_x,
-            AssertException(
-                cause=_store_fault,
-                code=[MemAccess(memory=mem_x, src2=amo_val_x, extension=Extension.A)],
-            ),
-        ]
+    steps.append(
+        AssertException(
+            cause=_store_fault,
+            code=[MemAccess(memory=mem_x, extension=Extension.A)],
+        )
     )
     steps.append(Call(target=cp_x))
 
@@ -221,15 +212,11 @@ def _perm_encoding_2level_steps(gstage_only=False):
             ),
         ]
     )
-    amo_val_x_mxr = LoadImmediateStep(imm=0x33)
-    steps.extend(
-        [
-            amo_val_x_mxr,
-            AssertException(
-                cause=_store_fault,
-                code=[MemAccess(memory=mem_x, src2=amo_val_x_mxr, extension=Extension.A)],
-            ),
-        ]
+    steps.append(
+        AssertException(
+            cause=_store_fault,
+            code=[MemAccess(memory=mem_x, extension=Extension.A)],
+        )
     )
     steps.append(Call(target=cp_x))
 
@@ -255,15 +242,11 @@ def _perm_encoding_2level_steps(gstage_only=False):
     )
 
     # AMO -> fault
-    amo_val_rx = LoadImmediateStep(imm=0x4)
-    steps.extend(
-        [
-            amo_val_rx,
-            AssertException(
-                cause=_store_fault,
-                code=[MemAccess(memory=mem_rx, src2=amo_val_rx, extension=Extension.A)],
-            ),
-        ]
+    steps.append(
+        AssertException(
+            cause=_store_fault,
+            code=[MemAccess(memory=mem_rx, extension=Extension.A)],
+        )
     )
 
     # Fetch OK
@@ -286,8 +269,7 @@ def _perm_encoding_2level_steps(gstage_only=False):
     steps.extend([st_val_rwx, Store(memory=mem_rwx, value=st_val_rwx)])
 
     # AMO OK
-    amo_val_rwx = LoadImmediateStep(imm=0x5)
-    steps.extend([amo_val_rwx, MemAccess(memory=mem_rwx, src2=amo_val_rwx, extension=Extension.A)])
+    steps.append(MemAccess(memory=mem_rwx, extension=Extension.A))
 
     # Fetch OK
     nop_val_rwx = LoadImmediateStep(imm=0)
@@ -329,15 +311,11 @@ def _perm_encoding_2level_dside_steps():
             ),
         ]
     )
-    amo_val_r = LoadImmediateStep(imm=0x1)
-    steps.extend(
-        [
-            amo_val_r,
-            AssertException(
-                cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
-                code=[MemAccess(memory=mem_r, src2=amo_val_r, extension=Extension.A)],
-            ),
-        ]
+    steps.append(
+        AssertException(
+            cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
+            code=[MemAccess(memory=mem_r, extension=Extension.A)],
+        )
     )
 
     # ===== 2. Read-write page =====
@@ -348,8 +326,7 @@ def _perm_encoding_2level_dside_steps():
     steps.append(Load(memory=mem_rw))
     st_val_rw = LoadImmediateStep(imm=0xBB)
     steps.extend([st_val_rw, Store(memory=mem_rw, value=st_val_rw)])
-    amo_val_rw = LoadImmediateStep(imm=0x2)
-    steps.extend([amo_val_rw, MemAccess(memory=mem_rw, src2=amo_val_rw, extension=Extension.A)])
+    steps.append(MemAccess(memory=mem_rw, extension=Extension.A))
 
     # ===== 3. Execute-only page =====
     x_flags = base_flags | PageFlags.EXECUTE
@@ -372,15 +349,11 @@ def _perm_encoding_2level_dside_steps():
             ),
         ]
     )
-    amo_val_x = LoadImmediateStep(imm=0x3)
-    steps.extend(
-        [
-            amo_val_x,
-            AssertException(
-                cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
-                code=[MemAccess(memory=mem_x, src2=amo_val_x, extension=Extension.A)],
-            ),
-        ]
+    steps.append(
+        AssertException(
+            cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
+            code=[MemAccess(memory=mem_x, extension=Extension.A)],
+        )
     )
 
     # ===== 4. Read-execute page =====
@@ -399,15 +372,11 @@ def _perm_encoding_2level_dside_steps():
             ),
         ]
     )
-    amo_val_rx = LoadImmediateStep(imm=0x4)
-    steps.extend(
-        [
-            amo_val_rx,
-            AssertException(
-                cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
-                code=[MemAccess(memory=mem_rx, src2=amo_val_rx, extension=Extension.A)],
-            ),
-        ]
+    steps.append(
+        AssertException(
+            cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
+            code=[MemAccess(memory=mem_rx, extension=Extension.A)],
+        )
     )
 
     # ===== 5. Read-write-execute page =====
@@ -418,8 +387,7 @@ def _perm_encoding_2level_dside_steps():
     steps.append(Load(memory=mem_rwx))
     st_val_rwx = LoadImmediateStep(imm=0xEE)
     steps.extend([st_val_rwx, Store(memory=mem_rwx, value=st_val_rwx)])
-    amo_val_rwx = LoadImmediateStep(imm=0x5)
-    steps.extend([amo_val_rwx, MemAccess(memory=mem_rwx, src2=amo_val_rwx, extension=Extension.A)])
+    steps.append(MemAccess(memory=mem_rwx, extension=Extension.A))
 
     return steps
 
@@ -590,7 +558,7 @@ def SID_HPBVMS_023_vu_vs():
     Memory(size=0x1000, flags=V|R|A|D, leaf_gleaf_flags=V|R|A|D)
     Load(memory=mem_r)  # OK
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem_r, value=0xAA)])
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem_r, src2=0x1, extension=Extension.A)])
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem_r, extension=Extension.A)])
     CodePage(flags=V|R|A|D, leaf_gleaf_flags=V|R|A|D, code=[nop])
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp_r)
 
@@ -598,23 +566,31 @@ def SID_HPBVMS_023_vu_vs():
     Memory(size=0x1000, flags=V|R|W|A|D, leaf_gleaf_flags=V|R|W|A|D)
     Load(memory=mem_rw)  # OK
     Store(memory=mem_rw, value=0xBB)  # OK
-    MemAccess(memory=mem_rw, src2=0x2, extension=Extension.A)  # OK
+    MemAccess(memory=mem_rw, extension=Extension.A)  # OK
     CodePage(flags=V|R|W|A|D, leaf_gleaf_flags=V|R|W|A|D, code=[nop])
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp_rw)
 
     # --- Execute-only page (V|X|A|D) ---
     Memory(size=0x1000, flags=V|X|A|D, leaf_gleaf_flags=V|X|A|D)
+    CodePage(flags=V|X|A|D, leaf_gleaf_flags=V|X|A|D, code=[nop])
+    # MXR=0: load faults
+    SupervisorCode([csrrc vsstatus MXR, csrrc sstatus MXR])
     AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem_x)])
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem_x, value=0xCC)])
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem_x, src2=0x3, extension=Extension.A)])
-    CodePage(flags=V|X|A|D, leaf_gleaf_flags=V|X|A|D, code=[nop])
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem_x, extension=Extension.A)])
+    Call(target=cp_x)  # OK
+    # MXR=1: load succeeds
+    SupervisorCode([csrrs sstatus MXR])
+    Load(memory=mem_x)  # OK
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem_x, value=0xCD)])
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem_x, extension=Extension.A)])
     Call(target=cp_x)  # OK
 
     # --- Read-execute page (V|R|X|A|D) ---
     Memory(size=0x1000, flags=V|R|X|A|D, leaf_gleaf_flags=V|R|X|A|D)
     Load(memory=mem_rx)  # OK
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem_rx, value=0xDD)])
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem_rx, src2=0x4, extension=Extension.A)])
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem_rx, extension=Extension.A)])
     CodePage(flags=V|R|X|A|D, leaf_gleaf_flags=V|R|X|A|D, code=[nop])
     Call(target=cp_rx)  # OK
 
@@ -622,7 +598,7 @@ def SID_HPBVMS_023_vu_vs():
     Memory(size=0x1000, flags=V|R|W|X|A|D, leaf_gleaf_flags=V|R|W|X|A|D)
     Load(memory=mem_rwx)  # OK
     Store(memory=mem_rwx, value=0xEE)  # OK
-    MemAccess(memory=mem_rwx, src2=0x5, extension=Extension.A)  # OK
+    MemAccess(memory=mem_rwx, extension=Extension.A)  # OK
     CodePage(flags=V|R|W|X|A|D, leaf_gleaf_flags=V|R|W|X|A|D, code=[nop])
     Call(target=cp_rwx)  # OK
     """
