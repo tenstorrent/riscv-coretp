@@ -35,9 +35,10 @@ Retrieve built plans:
 .. note::
    The registry ensures that:
 
-   - Same TestPlan object is returned for repeated calls (safe for dict keys)
    - Scenarios cannot be added after first plan retrieval
-   - Plans are built only once and cached
+   - Each call to ``get_plan()`` rebuilds scenarios by re-invoking their
+     registered functions, so :class:`coretp.step.Label` instances get
+     fresh uuid-suffixed names instead of repeating across selections.
 """
 
 
@@ -62,25 +63,28 @@ class _TestPlanInfo:
     excp_handler_pre: Optional[str] = None
     excp_handler_post: Optional[str] = None
     _scenarios: list[Callable[[], TestScenario]] = field(default_factory=list)
-    _built_plan: Optional[TestPlan] = field(default=None, init=False)
+    _frozen: bool = field(default=False, init=False)
 
     def add_scenario(self, scenario_func: Callable[[], TestScenario]) -> None:
         """Add a scenario function to this plan"""
-        if self._built_plan is not None:
+        if self._frozen:
             raise RuntimeError(f"Cannot add scenarios to already-built plan '{self.name}'")
         self._scenarios.append(scenario_func)
 
     def build(self) -> TestPlan:
-        """Build and cache TestPlan"""
-        if self._built_plan is None:
-            self._built_plan = TestPlan(
-                name=self.name,
-                description=self.description,
-                scenarios=[func() for func in self._scenarios],
-                excp_handler_pre=self.excp_handler_pre,
-                excp_handler_post=self.excp_handler_post,
-            )
-        return self._built_plan
+        # Rebuild scenarios on every call so each invocation gets fresh Label
+        # instances (Label.__post_init__ bakes a uuid into name at construction).
+        # Caching the built plan caused the same Label.name to be emitted twice
+        # whenever the same scenario was picked more than once, producing
+        # duplicate-symbol assembler errors.
+        self._frozen = True
+        return TestPlan(
+            name=self.name,
+            description=self.description,
+            scenarios=[func() for func in self._scenarios],
+            excp_handler_pre=self.excp_handler_pre,
+            excp_handler_post=self.excp_handler_post,
+        )
 
 
 class _TestPlanRegistry:
@@ -195,7 +199,8 @@ def new_test_plan(
 
 def get_plan(name: str) -> TestPlan:
     """
-    Get a test plan by name. If the plan has already been built, returns the cached plan
+    Get a test plan by name. Scenarios are rebuilt on every call so any
+    ``Label`` instances inside them get fresh uuid-suffixed names.
 
     :param name: name of the test plan
     """

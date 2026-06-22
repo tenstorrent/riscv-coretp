@@ -103,10 +103,9 @@ def _invalid_pte_steps(
         gva_check=True,
     )
     comment_amo = Comment(comment=f"AMO on invalid PTE - expect {store_cause.name}")
-    amo_val = LoadImmediateStep(imm=0x1)
     assert_amo = AssertException(
         cause=store_cause,
-        code=[MemAccess(memory=mem_rw, src2=amo_val, extension=Extension.A)],
+        code=[MemAccess(memory=mem_rw, extension=Extension.A)],
         tval=mem_rw,
         htval=mem_rw if is_guest_fault else None,
         gva_check=True,
@@ -142,7 +141,6 @@ def _invalid_pte_steps(
         st_val,
         assert_st,
         comment_amo,
-        amo_val,
         assert_amo,
         nop_val,
         nop,
@@ -280,10 +278,9 @@ def _misaligned_superpage_steps(
         code=[Store(memory=mem_rw, value=st_val)],
     )
     comment_amo = Comment(comment=f"AMO on misaligned superpage - expect {store_cause.name}")
-    amo_val = LoadImmediateStep(imm=0x1)
     assert_amo = AssertException(
         cause=store_cause,
-        code=[MemAccess(memory=mem_rw, src2=amo_val, extension=Extension.A)],
+        code=[MemAccess(memory=mem_rw, extension=Extension.A)],
     )
 
     # --- Instruction fetch ---
@@ -318,7 +315,6 @@ def _misaligned_superpage_steps(
         st_val,
         assert_st,
         comment_amo,
-        amo_val,
         assert_amo,
         nop_val,
         nop,
@@ -413,17 +409,16 @@ def SID_HPBVMS_015():
     All accesses must trigger a 1st-level (VS-stage) page fault.
 
     Pseudocode:
-    mem = Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-                 leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY)
-    Comment("D-side load to non-canonical gVA - expect LOAD_PAGE_FAULT")
-    AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=1<<63)])
+    mem = LoadImmediateStep(imm=1<<63)
+    Comment("D-side load to non-canonical gVA (1<<63)")
+    AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)])
 
-    Comment("D-side store to non-canonical gVA - expect STORE_AMO_PAGE_FAULT")
+    Comment("D-side store to non-canonical gVA (1<<63)")
     store_val = LoadImmediateStep(imm=0xAB)
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, offset=1<<63, value=store_val)])
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=store_val)])
 
-    # Comment("I-side fetch of non-canonical gVA - expect INSTRUCTION_PAGE_FAULT")
-    # AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=mem, offset=1<<63)
+    Comment("I-side fetch of non-canonical gVA (1<<63)")
+    AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=mem)
     """
     mem = LoadImmediateStep(imm=1 << 63)
 
@@ -489,12 +484,12 @@ def SID_HPBVMS_016():
     CsrWrite(csr_name="hedeleg", set_mask=(1<<12)|(1<<13)|(1<<15))
     mem = LoadImmediateStep(imm=1<<63)
     Comment("D-side load to non-canonical gVA (1<<63) - page fault delegated to VS-mode")
-    AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)])
+    AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)], expected_handler_mode=VS)
     Comment("D-side store to non-canonical gVA (1<<63) - page fault delegated to VS-mode")
     store_val = LoadImmediateStep(imm=0xAB)
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=store_val)])
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=store_val)], expected_handler_mode=VS)
     Comment("I-side fetch of non-canonical gVA (1<<63) - page fault delegated to VS-mode")
-    AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=mem)
+    AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=mem, expected_handler_mode=VS)
     """
     # --- Delegate page faults to VS-mode via hedeleg ---
     # Bits: 12 = instruction page fault, 13 = load page fault, 15 = store/AMO page fault
@@ -932,7 +927,7 @@ def SID_HPBVMS_018_implicit_trap():
     Memory(size=0x1000, page_size=SIZE_4K,
            flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           nonleaf_gleaf_exclude_flags=VALID)
+           nonleaf_gleaf_exclude_flags=VALID, modify_nonleaf=True)
     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem_rw)], gva_check=True)
 
     # --- D-side: Store triggering implicit PTW fault ---
@@ -943,7 +938,7 @@ def SID_HPBVMS_018_implicit_trap():
     CodePage(size=0x1000, page_size=SIZE_4K,
              flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             nonleaf_gleaf_exclude_flags=VALID, code=[nop])
+             nonleaf_gleaf_exclude_flags=VALID, modify_nonleaf=True, code=[nop])
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp, gva_check=True)
     """
     rw_flags = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED | PageFlags.DIRTY
@@ -1039,13 +1034,13 @@ def SID_HPBVMS_018_leaf():
     CsrWrite(csr_name="mstatus", clear_mask=1<<38)  # clear mstatus.GVA
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           exclude_flags=VALID)
+           modify=True, exclude_flags=VALID)
     AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)], tval=mem, gva_check=True)
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=st_val)], tval=mem, gva_check=True)
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)], tval=mem, gva_check=True)
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)], tval=mem, gva_check=True)
     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             exclude_flags=VALID, code=[nop])
+             modify=True, exclude_flags=VALID, code=[nop])
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp, tval=cp, gva_check=True)
     """
     return TestScenario.from_steps(
@@ -1075,13 +1070,13 @@ def SID_HPBVMS_018_nonleaf():
     CsrWrite(csr_name="mstatus", clear_mask=1<<38)  # clear mstatus.GVA
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           nonleaf_exclude_flags=VALID)
+           modify=True, nonleaf_exclude_flags=VALID)
     AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)], tval=mem, gva_check=True)
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=st_val)], tval=mem, gva_check=True)
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)], tval=mem, gva_check=True)
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)], tval=mem, gva_check=True)
     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             nonleaf_exclude_flags=VALID, code=[nop])
+             modify=True, nonleaf_exclude_flags=VALID, code=[nop])
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp, tval=cp, gva_check=True)
     """
     return TestScenario.from_steps(
@@ -1108,15 +1103,17 @@ def SID_HPBVMS_020_leaf():
     Pseudocode:
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY, modify=True)
-    ReadPTE(memory=mem, level=LEAF)
+    read_rw = ReadPTE(memory=mem, level=LEAF)
     reserved_mask = LoadImmediateStep(imm=1 << 54)
-    corrupt = Arithmetic(op="or", src1=read, src2=reserved_mask)
-    WritePTE(memory=mem, src=corrupt, level=LEAF)
+    corrupt_rw = Arithmetic(op="or", src1=read_rw, src2=reserved_mask)
+    WritePTE(memory=mem, src=corrupt_rw, level=LEAF)
     AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)])
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
-    CodePage(..., modify=True, code=[nop])
-    ReadPTE(memory=cp, level=LEAF)
-    WritePTE(memory=cp, src=corrupt, level=LEAF)
+    CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
+             leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, modify=True, code=[nop])
+    read_if = ReadPTE(memory=cp, level=LEAF)
+    corrupt_if = Arithmetic(op="or", src1=read_if, src2=reserved_mask)
+    WritePTE(memory=cp, src=corrupt_if, level=LEAF)
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(
@@ -1146,15 +1143,17 @@ def SID_HPBVMS_020_nonleaf():
     Pseudocode:
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY, modify=True)
-    ReadPTE(memory=mem, level=NONLEAF)
+    read_rw = ReadPTE(memory=mem, level=NONLEAF)
     reserved_mask = LoadImmediateStep(imm=1 << 54)
-    corrupt = Arithmetic(op="or", src1=read, src2=reserved_mask)
-    WritePTE(memory=mem, src=corrupt, level=NONLEAF)
+    corrupt_rw = Arithmetic(op="or", src1=read_rw, src2=reserved_mask)
+    WritePTE(memory=mem, src=corrupt_rw, level=NONLEAF)
     AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)])
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
-    CodePage(..., modify=True, code=[nop])
-    ReadPTE(memory=cp, level=NONLEAF)
-    WritePTE(memory=cp, src=corrupt, level=NONLEAF)
+    CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
+             leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, modify=True, code=[nop])
+    read_if = ReadPTE(memory=cp, level=NONLEAF)
+    corrupt_if = Arithmetic(op="or", src1=read_if, src2=reserved_mask)
+    WritePTE(memory=cp, src=corrupt_if, level=NONLEAF)
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(
@@ -1186,16 +1185,19 @@ def SID_HPBVMS_019_leaf():
     Memory(flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            modify=True, page_size=(SIZE_2M, SIZE_1G, SIZE_512G, SIZE_256T))
-    ReadPTE(memory=mem, level=LEAF)
+    read_rw = ReadPTE(memory=mem, level=LEAF)
     ppn_mask = LoadImmediateStep(imm=1 << 10)
-    corrupt = Arithmetic(op="or", src1=read, src2=ppn_mask)
-    WritePTE(memory=mem, src=corrupt, level=LEAF)
+    corrupt_rw = Arithmetic(op="or", src1=read_rw, src2=ppn_mask)
+    WritePTE(memory=mem, src=corrupt_rw, level=LEAF)
     AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem)])
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)])
-    CodePage(..., modify=True, page_size=(SIZE_2M, SIZE_1G, SIZE_512G, SIZE_256T), code=[nop])
-    ReadPTE(memory=cp, level=LEAF)
-    WritePTE(memory=cp, src=corrupt, level=LEAF)
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)])
+    CodePage(flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
+             leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
+             modify=True, page_size=(SIZE_2M, SIZE_1G, SIZE_512G, SIZE_256T), code=[nop])
+    read_if = ReadPTE(memory=cp, level=LEAF)
+    corrupt_if = Arithmetic(op="or", src1=read_if, src2=ppn_mask)
+    WritePTE(memory=cp, src=corrupt_if, level=LEAF)
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(
@@ -1232,14 +1234,14 @@ def SID_HPBVMS_021_leaf():
     Memory(num_pages=2, size=0x2000, page_size=SIZE_4K, page_cross_en=True,
            flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           exclude_flags=VALID)
+           exclude_flags=VALID, modify=True)
     AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem, offset=0xFFF)])
     AssertException(cause=STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=st_val, offset=0xFFF)])
-    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)])
+    AssertException(cause=STORE_AMO_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)])
     CodePage(num_pages=2, size=0x2000, page_size=SIZE_4K, page_cross_en=True,
              flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             exclude_flags=VALID, code=[nop])
+             exclude_flags=VALID, modify=True, code=[nop])
     AssertFetchException(cause=INSTRUCTION_PAGE_FAULT, target=cp)
     """
     rw_flags = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED | PageFlags.DIRTY
@@ -1271,10 +1273,9 @@ def SID_HPBVMS_021_leaf():
     )
 
     comment_amo = Comment(comment="Page-crossing AMO with invalid VS leaf PTE - expect STORE_AMO_PAGE_FAULT")
-    amo_val = LoadImmediateStep(imm=0x1)
     assert_amo = AssertException(
         cause=ExceptionCause.STORE_AMO_PAGE_FAULT,
-        code=[MemAccess(memory=mem_rw, src2=amo_val, extension=Extension.A)],
+        code=[MemAccess(memory=mem_rw, extension=Extension.A)],
     )
 
     # --- I-side: Page-crossing instruction fetch ---
@@ -1315,7 +1316,6 @@ def SID_HPBVMS_021_leaf():
             st_val,
             assert_st,
             comment_amo,
-            amo_val,
             assert_amo,
             nop_val,
             nop,

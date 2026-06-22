@@ -27,8 +27,10 @@ class Memory(TestStep):
     :type page_cross_en: bool
     :param alignment: Memory alignment requirements
     :type alignment: Optional[int]
-    :param base_pa: Physical address - used to request a specific PPN
-    :type base_pa: Optional[int]
+    :param base_pa: Physical address - used to request a specific PPN. Accepts
+        either a literal ``int`` or a :class:`RetrieveAddress` step whose
+        resolved value (from FeatMgr/cpu_config.json) is used at lowering time.
+    :type base_pa: Optional[Union[int, TestStep]]
     :param base_va: Virtual address - used to request a specific VPN
     :type base_va: Optional[int]
     :param modify: Whether memory can be modified
@@ -39,6 +41,9 @@ class Memory(TestStep):
     :type modify_nonleaf: bool
     :param needs_io: Whether memory needs IO support
     :type needs_io: bool
+    :param secure: Whether memory should be allocated from the secure region (sets PA bit 55).
+        Requires a CPU config with secure region defined in mmap.
+    :type secure: bool
     """
 
     size: Optional[int] = None
@@ -47,7 +52,7 @@ class Memory(TestStep):
     exclude_flags: Optional[PageFlags] = None
     page_cross_en: bool = False
     alignment: Optional[int] = None
-    base_pa: Optional[int] = None
+    base_pa: Optional[Union[int, TestStep]] = None
     base_va: Optional[int] = None
     num_pages: Optional[int] = 1
     or_mask: Optional[str] = None
@@ -55,6 +60,7 @@ class Memory(TestStep):
     modify_leaf: bool = False
     modify_nonleaf: bool = False
     needs_io: bool = False
+    secure: bool = False
 
     # VS-stage non-leaf attributes
     nonleaf_flags: Optional[PageFlags] = None

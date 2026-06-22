@@ -8,6 +8,8 @@ from .privilege import PrivilegeMode, ExceptionHandlerMode
 from .instruction import Category, OperandType
 from .register import RegisterClass
 from .exception_cause import ExceptionCause
+from .interrupt_cause import InterruptCause, InterruptMode
+from .secure import SecureMode
 
 __all__ = [
     "Xlen",
@@ -24,4 +26,7 @@ __all__ = [
     "OperandType",
     "RegisterClass",
     "ExceptionCause",
+    "InterruptCause",
+    "InterruptMode",
+    "SecureMode",
 ]

@@ -79,36 +79,47 @@ def _sum_mxr_permission_memories(user_flag, vstage_only=False, gstage_only=False
         "rx": PageFlags.READ | PageFlags.EXECUTE,
         "rwx": PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
     }
+    all_rwx = PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE
 
     if gstage_only:
         # G-stage only: permissions on leaf_gleaf_flags, no VS-stage flags
         base = PageFlags.VALID | PageFlags.ACCESSED | PageFlags.DIRTY
-        all_rwx = PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE
         return {lbl: Memory(size=0x1000, leaf_gleaf_flags=base | perm, leaf_gleaf_exclude_flags=all_rwx & ~perm) for lbl, perm in perms.items()}
 
     base = PageFlags.VALID | PageFlags.ACCESSED | PageFlags.DIRTY | user_flag
 
     if vstage_only:
-        # VS-stage only: no G-stage configurations
-        return {lbl: Memory(size=0x1000, flags=base | perm) for lbl, perm in perms.items()}
+        # VS-stage only: no G-stage configurations.
+        # exclude_flags pins the absent R/W/X bits to 0 so the address allocator
+        # does not give a "ro" page write permission (or an "xo" page read
+        # permission), which would make the expected fault cause wrong.
+        return {lbl: Memory(size=0x1000, flags=base | perm, exclude_flags=all_rwx & ~perm) for lbl, perm in perms.items()}
 
-    # Two-stage: VS-stage flags + multiple G-stage configurations
+    # Two-stage: VS-stage flags + multiple G-stage configurations.
+    # exclude_flags on the VS-stage flags ensures the absent R/W/X bits are
+    # pinned to 0; without it the address allocator may assign a page whose
+    # VS-stage has unexpected write/execute permission, causing a wrong
+    # expected exception cause (e.g. STORE_AMO_GUEST_PAGE_FAULT instead of
+    # STORE_AMO_PAGE_FAULT for a "ro|gleaf_r" memory).
     g_full = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE | PageFlags.ACCESSED | PageFlags.DIRTY
     g_r = PageFlags.VALID | PageFlags.READ | PageFlags.ACCESSED | PageFlags.DIRTY
     g_x = PageFlags.VALID | PageFlags.EXECUTE | PageFlags.ACCESSED | PageFlags.DIRTY
 
     mems = {}
     for lbl, perm in perms.items():
+        vs_exclude = all_rwx & ~perm
         # G-leaf full RWX (existing behaviour — only VS-stage matters)
         mems[lbl] = Memory(
             size=0x1000,
             flags=base | perm,
+            exclude_flags=vs_exclude,
             leaf_gleaf_flags=g_full,
         )
         # G-leaf R-only — stores blocked by G-stage
         mems[f"{lbl}|gleaf_r"] = Memory(
             size=0x1000,
             flags=base | perm,
+            exclude_flags=vs_exclude,
             leaf_gleaf_flags=g_r,
             leaf_gleaf_exclude_flags=PageFlags.WRITE | PageFlags.EXECUTE,
         )
@@ -116,6 +127,7 @@ def _sum_mxr_permission_memories(user_flag, vstage_only=False, gstage_only=False
         mems[f"{lbl}|gleaf_x"] = Memory(
             size=0x1000,
             flags=base | perm,
+            exclude_flags=vs_exclude,
             leaf_gleaf_flags=g_x,
             leaf_gleaf_exclude_flags=PageFlags.READ | PageFlags.WRITE,
         )
@@ -123,6 +135,7 @@ def _sum_mxr_permission_memories(user_flag, vstage_only=False, gstage_only=False
         mems[f"{lbl}|ngleaf_r"] = Memory(
             size=0x1000,
             flags=base | perm,
+            exclude_flags=vs_exclude,
             leaf_gleaf_flags=g_full,
             nonleaf_gleaf_flags=g_r,
             nonleaf_gleaf_exclude_flags=PageFlags.WRITE | PageFlags.EXECUTE,
@@ -145,21 +158,35 @@ def SID_HPBVMS_024_vs():
       SUM=1: load_ok = has_R or (has_X and (MXR_VS or MXR_HS)), store_ok = has_W
 
     Pseudocode:
+    # mems = _sum_mxr_permission_memories(USER): build, ONCE up front, one
+    #   Memory per (perm, gcfg) in 5 perms x {gleaf_full, gleaf_r, gleaf_x, ngleaf_r},
+    #   each Memory(size=0x1000, flags=VALID|perm|USER|A|D, exclude_flags=absent RWX,
+    #   leaf_gleaf_flags=gcfg)
     # For each (SUM, MXR_VS, MXR_HS) in {0,1}^3:
     #   CsrWrite("vsstatus", set/clear SUM bit 18)
     #   CsrWrite("vsstatus", set/clear MXR bit 19)
-    #   CsrWrite("sstatus",  set/clear MXR bit 19)
-    #   For each perm in {RO, RW, XO, RX, RWX}:
-    #     Memory(size=0x1000, flags=VALID|perm|USER|A|D, leaf_gleaf_flags=full-RWX)
-    #     if SUM=0 or not load_ok:  AssertException(LOAD_PAGE_FAULT, [Load(mem)])
-    #     else:                     Load(mem)
-    #     if SUM=0 or not store_ok: AssertException(STORE_AMO_PAGE_FAULT, [Store(mem, val)])
-    #     else:                     Store(mem, val)
+    #   SupervisorCode([csrrs/csrrc sstatus, MXR bit 19])
+    #   For each (lbl, mem) in mems:
+    #     vs_load_ok  = SUM and (has_R or (has_X and (MXR_VS or MXR_HS)))
+    #     vs_store_ok = SUM and has_W
+    #     g_load_ok   = g_has_R or (g_has_X and MXR_HS); g_store_ok = g_has_W
+    #     if   not vs_load_ok:  AssertException(LOAD_PAGE_FAULT,        [Load(mem)])
+    #     elif not g_load_ok:   AssertException(LOAD_GUEST_PAGE_FAULT,  [Load(mem)])
+    #     else:                 Load(mem)
+    #     if   not vs_store_ok: AssertException(STORE_AMO_PAGE_FAULT,       [Store(mem, val)])
+    #     elif not g_store_ok:  AssertException(STORE_AMO_GUEST_PAGE_FAULT, [Store(mem, val)])
+    #     else:                 Store(mem, val)
     """
     SUM_BIT = 1 << 18
     MXR_BIT = 1 << 19
 
     all_steps = []
+
+    mems = _sum_mxr_permission_memories(PageFlags.USER)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
 
     for sum_val in [0, 1]:
         for mxr_vs in [0, 1]:
@@ -190,16 +217,12 @@ def SID_HPBVMS_024_vs():
                     )
                 )
 
-                mems = _sum_mxr_permission_memories(PageFlags.USER)
-                st_val = LoadImmediateStep(imm=0xAB)
-                all_steps.append(st_val)
                 for lbl, mem in mems.items():
                     has_r, has_w, has_x = _parse_vs_perm(lbl)
                     vs_load_ok = sum_val and (has_r or (has_x and (mxr_vs or mxr_hs)))
                     vs_store_ok = sum_val and has_w
                     g_load_ok, g_store_ok = _g_stage_access_ok(mem, mxr_hs)
 
-                    all_steps.append(mem)
                     all_steps.append(Comment(comment=f"VS-mode Load from {lbl} ({label})"))
                     if not vs_load_ok:
                         all_steps.append(
@@ -264,17 +287,32 @@ def SID_HPBVMS_024_vu():
       store_ok = has_W
 
     Pseudocode:
+    # mems = _sum_mxr_permission_memories(USER): build, ONCE up front, one
+    #   Memory per (perm, gcfg) in 5 perms x {gleaf_full, gleaf_r, gleaf_x, ngleaf_r},
+    #   each Memory(size=0x1000, flags=VALID|perm|USER|A|D, exclude_flags=absent RWX,
+    #   leaf_gleaf_flags=gcfg)
     # For each (MXR_VS, MXR_HS) in {0,1}^2:
     #   CsrWrite("vsstatus", set/clear MXR bit 19)
-    #   CsrWrite("sstatus",  set/clear MXR bit 19)
-    #   For each perm in {RO, RW, XO, RX, RWX}:
-    #     Memory(size=0x1000, flags=VALID|perm|USER|A|D, leaf_gleaf_flags=full-RWX)
-    #     Load(mem) or AssertException(LOAD_PAGE_FAULT, [Load(mem)])
-    #     Store(mem, val) or AssertException(STORE_AMO_PAGE_FAULT, [Store(mem, val)])
+    #   SupervisorCode([csrrs/csrrc sstatus, MXR bit 19])
+    #   For each (lbl, mem) in mems:
+    #     vs_load_ok  = has_R or (has_X and (MXR_VS or MXR_HS)); vs_store_ok = has_W
+    #     g_load_ok   = g_has_R or (g_has_X and MXR_HS); g_store_ok = g_has_W
+    #     if   not vs_load_ok:  AssertException(LOAD_PAGE_FAULT,        [Load(mem)])
+    #     elif not g_load_ok:   AssertException(LOAD_GUEST_PAGE_FAULT,  [Load(mem)])
+    #     else:                 Load(mem)
+    #     if   not vs_store_ok: AssertException(STORE_AMO_PAGE_FAULT,       [Store(mem, val)])
+    #     elif not g_store_ok:  AssertException(STORE_AMO_GUEST_PAGE_FAULT, [Store(mem, val)])
+    #     else:                 Store(mem, val)
     """
     MXR_BIT = 1 << 19
 
     all_steps = []
+
+    mems = _sum_mxr_permission_memories(PageFlags.USER)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
 
     for mxr_vs in [0, 1]:
         for mxr_hs in [0, 1]:
@@ -299,16 +337,12 @@ def SID_HPBVMS_024_vu():
                 )
             )
 
-            mems = _sum_mxr_permission_memories(PageFlags.USER)
-            st_val = LoadImmediateStep(imm=0xAB)
-            all_steps.append(st_val)
             for lbl, mem in mems.items():
                 has_r, has_w, has_x = _parse_vs_perm(lbl)
                 vs_load_ok = has_r or (has_x and (mxr_vs or mxr_hs))
                 vs_store_ok = has_w
                 g_load_ok, g_store_ok = _g_stage_access_ok(mem, mxr_hs)
 
-                all_steps.append(mem)
                 all_steps.append(Comment(comment=f"VU-mode Load from {lbl} ({label})"))
                 if not vs_load_ok:
                     all_steps.append(
@@ -541,16 +575,23 @@ def SID_HPBVMS_024_hload_hstore_spvp0():
       SUM is irrelevant for U-mode; MXR_HS does not affect VS-stage checks.
 
     Pseudocode:
+    # mems = _sum_mxr_permission_memories(USER): build, ONCE up front, one
+    #   Memory per (perm, gcfg) in 5 perms x {gleaf_full, gleaf_r, gleaf_x, ngleaf_r},
+    #   each Memory(flags=VALID|perm|USER|A|D, exclude_flags=absent RWX,
+    #   leaf_gleaf_flags=gcfg)
     # CsrWrite("hstatus", clear SPVP bit 8)
     # For each (SUM, MXR_VS, MXR_HS) in {0,1}^3:
     #   CsrWrite("vsstatus", set/clear SUM, MXR)
-    #   CsrWrite("sstatus", set/clear MXR)
-    #   For each perm in {RO, RW, XO, RX, RWX}:
-    #     load_ok  = perm has R, or (perm has X and MXR_VS=1)
-    #     store_ok = perm has W
-    #     Memory(flags=VALID|perm|USER|ACCESSED|DIRTY, leaf_gleaf_flags=full-RWX)
-    #     SupervisorCode([HLoad or AssertException(LOAD_PAGE_FAULT, [HLoad])])
-    #     SupervisorCode([HStore or AssertException(STORE_AMO_PAGE_FAULT, [HStore])])
+    #   SupervisorCode([csrrs/csrrc sstatus, MXR bit 19])
+    #   For each (lbl, mem) in mems:
+    #     vs_load_ok  = has_R or (has_X and (MXR_VS or MXR_HS)); vs_store_ok = has_W
+    #     g_load_ok   = g_has_R or (g_has_X and MXR_HS); g_store_ok = g_has_W
+    #     load:  if not vs_load_ok -> SupervisorCode([AssertException(LOAD_PAGE_FAULT, [HLoad])])
+    #            elif not g_load_ok -> SupervisorCode([AssertException(LOAD_GUEST_PAGE_FAULT, [HLoad])])
+    #            else -> SupervisorCode([HLoad])
+    #     store: if not vs_store_ok -> SupervisorCode([AssertException(STORE_AMO_PAGE_FAULT, [HStore])])
+    #            elif not g_store_ok -> SupervisorCode([AssertException(STORE_AMO_GUEST_PAGE_FAULT, [HStore])])
+    #            else -> SupervisorCode([HStore])
     """
     SPVP_BIT = 1 << 8
     SUM_BIT = 1 << 18
@@ -561,6 +602,12 @@ def SID_HPBVMS_024_hload_hstore_spvp0():
     # Set hstatus: SPVP=0
     all_steps.append(Comment(comment="Set hstatus: SPVP=0 for effective VU HLoad/HStore"))
     all_steps.append(CsrWrite(csr_name="hstatus", clear_mask=SPVP_BIT))
+
+    mems = _sum_mxr_permission_memories(PageFlags.USER)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
 
     for sum_val in [0, 1]:
         for mxr_vs in [0, 1]:
@@ -589,9 +636,6 @@ def SID_HPBVMS_024_hload_hstore_spvp0():
                     )
                 )
 
-                mems = _sum_mxr_permission_memories(PageFlags.USER)
-                st_val = LoadImmediateStep(imm=0xAB)
-                all_steps.append(st_val)
                 for lbl, mem in mems.items():
                     has_r, has_w, has_x = _parse_vs_perm(lbl)
                     vs_load_ok = has_r or (has_x and (mxr_vs or mxr_hs))
@@ -612,7 +656,6 @@ def SID_HPBVMS_024_hload_hstore_spvp0():
                     else:
                         st_status = "OK"
 
-                    all_steps.append(mem)
                     all_steps.append(Comment(comment=f"HS SPVP=0: HLoad from {lbl} page ({ld_status})"))
                     if not vs_load_ok:
                         all_steps.append(
@@ -697,16 +740,24 @@ def SID_HPBVMS_024_hload_hstore_spvp1():
       MXR_HS (sstatus.MXR) does not affect VS-stage permission checks.
 
     Pseudocode:
+    # mems = _sum_mxr_permission_memories(USER): build, ONCE up front, one
+    #   Memory per (perm, gcfg) in 5 perms x {gleaf_full, gleaf_r, gleaf_x, ngleaf_r},
+    #   each Memory(flags=VALID|perm|USER|A|D, exclude_flags=absent RWX,
+    #   leaf_gleaf_flags=gcfg)
     # CsrWrite("hstatus", set SPVP bit 8)
     # For each (SUM, MXR_VS, MXR_HS) in {0,1}^3:
     #   CsrWrite("vsstatus", set/clear SUM, MXR)
-    #   SupervisorCode([csrrs/csrrc sstatus, MXR])
-    #   For each perm in {RO, RW, XO, RX, RWX}:
-    #     if SUM=0:         load_ok = False,  store_ok = False
-    #     else:             load_ok = has_R or (has_X and MXR_VS),  store_ok = has_W
-    #     Memory(flags=VALID|perm|USER|ACCESSED|DIRTY, leaf_gleaf_flags=full-RWX)
-    #     SupervisorCode([HLoad or AssertException(LOAD_PAGE_FAULT, [HLoad])])
-    #     SupervisorCode([HStore or AssertException(STORE_AMO_PAGE_FAULT, [HStore])])
+    #   SupervisorCode([csrrs/csrrc sstatus, MXR bit 19])
+    #   For each (lbl, mem) in mems:
+    #     if SUM=0: vs_load_ok = False, vs_store_ok = False
+    #     else:     vs_load_ok = has_R or (has_X and (MXR_VS or MXR_HS)), vs_store_ok = has_W
+    #     g_load_ok = g_has_R or (g_has_X and MXR_HS); g_store_ok = g_has_W
+    #     load:  if not vs_load_ok -> SupervisorCode([AssertException(LOAD_PAGE_FAULT, [HLoad])])
+    #            elif not g_load_ok -> SupervisorCode([AssertException(LOAD_GUEST_PAGE_FAULT, [HLoad])])
+    #            else -> SupervisorCode([HLoad])
+    #     store: if not vs_store_ok -> SupervisorCode([AssertException(STORE_AMO_PAGE_FAULT, [HStore])])
+    #            elif not g_store_ok -> SupervisorCode([AssertException(STORE_AMO_GUEST_PAGE_FAULT, [HStore])])
+    #            else -> SupervisorCode([HStore])
     """
     SPVP_BIT = 1 << 8
     SUM_BIT = 1 << 18
@@ -717,6 +768,12 @@ def SID_HPBVMS_024_hload_hstore_spvp1():
     # Set hstatus: SPVP=1
     all_steps.append(Comment(comment="Set hstatus: SPVP=1 for effective VS HLoad/HStore"))
     all_steps.append(CsrWrite(csr_name="hstatus", set_mask=SPVP_BIT))
+
+    mems = _sum_mxr_permission_memories(PageFlags.USER)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
 
     for sum_val in [0, 1]:
         for mxr_vs in [0, 1]:
@@ -745,9 +802,6 @@ def SID_HPBVMS_024_hload_hstore_spvp1():
                     )
                 )
 
-                mems = _sum_mxr_permission_memories(PageFlags.USER)
-                st_val = LoadImmediateStep(imm=0xAB)
-                all_steps.append(st_val)
                 for lbl, mem in mems.items():
                     has_r, has_w, has_x = _parse_vs_perm(lbl)
                     if not sum_val:
@@ -772,7 +826,6 @@ def SID_HPBVMS_024_hload_hstore_spvp1():
                     else:
                         st_status = "OK"
 
-                    all_steps.append(mem)
                     all_steps.append(Comment(comment=f"HS SPVP=1: HLoad from {lbl} page ({ld_status})"))
                     if not vs_load_ok:
                         all_steps.append(
@@ -861,6 +914,12 @@ def SID_HPBVMS_024_vs_vstage_only():
 
     all_steps = []
 
+    mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
+
     for sum_val in [0, 1]:
         for mxr_vs in [0, 1]:
             for mxr_hs in [0, 1]:
@@ -890,9 +949,6 @@ def SID_HPBVMS_024_vs_vstage_only():
                     )
                 )
 
-                mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
-                st_val = LoadImmediateStep(imm=0xAB)
-                all_steps.append(st_val)
                 for lbl, mem in mems.items():
                     has_r = "r" in lbl
                     has_w = "w" in lbl
@@ -901,7 +957,6 @@ def SID_HPBVMS_024_vs_vstage_only():
                     load_ok = sum_val and (has_r or (has_x and (mxr_vs or mxr_hs)))
                     store_ok = sum_val and has_w
 
-                    all_steps.append(mem)
                     all_steps.append(Comment(comment=f"VS-mode Load from {lbl} ({label})"))
                     if not load_ok:
                         all_steps.append(
@@ -954,6 +1009,12 @@ def SID_HPBVMS_024_vu_vstage_only():
 
     all_steps = []
 
+    mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
+
     for mxr_vs in [0, 1]:
         for mxr_hs in [0, 1]:
             label = f"MXR_VS={mxr_vs}, MXR_HS={mxr_hs}"
@@ -977,9 +1038,6 @@ def SID_HPBVMS_024_vu_vstage_only():
                 )
             )
 
-            mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
-            st_val = LoadImmediateStep(imm=0xAB)
-            all_steps.append(st_val)
             for lbl, mem in mems.items():
                 has_r = "r" in lbl
                 has_w = "w" in lbl
@@ -988,7 +1046,6 @@ def SID_HPBVMS_024_vu_vstage_only():
                 load_ok = has_r or (has_x and (mxr_vs or mxr_hs))
                 store_ok = has_w
 
-                all_steps.append(mem)
                 all_steps.append(Comment(comment=f"VU-mode Load from {lbl} ({label})"))
                 if not load_ok:
                     all_steps.append(
@@ -1045,6 +1102,12 @@ def SID_HPBVMS_024_hload_hstore_spvp0_vstage_only():
     all_steps.append(Comment(comment="Set hstatus: SPVP=0 for effective VU HLoad/HStore"))
     all_steps.append(CsrWrite(csr_name="hstatus", clear_mask=SPVP_BIT))
 
+    mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
+
     for sum_val in [0, 1]:
         for mxr_vs in [0, 1]:
             for mxr_hs in [0, 1]:
@@ -1072,9 +1135,6 @@ def SID_HPBVMS_024_hload_hstore_spvp0_vstage_only():
                     )
                 )
 
-                mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
-                st_val = LoadImmediateStep(imm=0xAB)
-                all_steps.append(st_val)
                 for lbl, mem in mems.items():
                     has_r = "r" in lbl
                     has_w = "w" in lbl
@@ -1084,7 +1144,6 @@ def SID_HPBVMS_024_hload_hstore_spvp0_vstage_only():
                     load_ok = has_r or (has_x and (mxr_vs or mxr_hs))
                     store_ok = has_w
 
-                    all_steps.append(mem)
                     all_steps.append(Comment(comment=f"HS SPVP=0: HLoad from {lbl} ({label})"))
                     if not load_ok:
                         all_steps.append(
@@ -1149,6 +1208,12 @@ def SID_HPBVMS_024_hload_hstore_spvp1_vstage_only():
     all_steps.append(Comment(comment="Set hstatus: SPVP=1 for effective VS HLoad/HStore"))
     all_steps.append(CsrWrite(csr_name="hstatus", set_mask=SPVP_BIT))
 
+    mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
+
     for sum_val in [0, 1]:
         for mxr_vs in [0, 1]:
             for mxr_hs in [0, 1]:
@@ -1176,9 +1241,6 @@ def SID_HPBVMS_024_hload_hstore_spvp1_vstage_only():
                     )
                 )
 
-                mems = _sum_mxr_permission_memories(PageFlags.USER, vstage_only=True)
-                st_val = LoadImmediateStep(imm=0xAB)
-                all_steps.append(st_val)
                 for lbl, mem in mems.items():
                     has_r = "r" in lbl
                     has_w = "w" in lbl
@@ -1191,7 +1253,6 @@ def SID_HPBVMS_024_hload_hstore_spvp1_vstage_only():
                         load_ok = has_r or (has_x and (mxr_vs or mxr_hs))
                         store_ok = has_w
 
-                    all_steps.append(mem)
                     all_steps.append(Comment(comment=f"HS SPVP=1: HLoad from {lbl} ({label})"))
                     if not load_ok:
                         all_steps.append(
@@ -1253,16 +1314,24 @@ def SID_HPBVMS_024_gstage_only():
       store_ok = g_has_W
 
     Pseudocode:
+    # mems = _sum_mxr_permission_memories(gstage_only=True): build, ONCE up front,
+    #   one Memory per perm in {RO, RW, XO, RX, RWX}, each
+    #   Memory(size=0x1000, leaf_gleaf_flags=VALID|perm|A|D, leaf_gleaf_exclude_flags=absent RWX)
     # For MXR_HS in {0, 1}:
     #   SupervisorCode([csrrs/csrrc sstatus, MXR])
-    #   For each perm in {RO, RW, XO, RX, RWX}:
-    #     Memory(size=0x1000, leaf_gleaf_flags=VALID|perm|A|D)
+    #   For each (lbl, mem) in mems:
     #     Load(mem) or AssertException(LOAD_GUEST_PAGE_FAULT, [Load(mem)])
     #     Store(mem, val) or AssertException(STORE_AMO_GUEST_PAGE_FAULT, [Store(mem, val)])
     """
     MXR_BIT = 1 << 19
 
     all_steps = []
+
+    mems = _sum_mxr_permission_memories(PageFlags(0), gstage_only=True)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
 
     for mxr_hs in [0, 1]:
         label = f"MXR_HS={mxr_hs}"
@@ -1280,9 +1349,6 @@ def SID_HPBVMS_024_gstage_only():
             )
         )
 
-        mems = _sum_mxr_permission_memories(PageFlags(0), gstage_only=True)
-        st_val = LoadImmediateStep(imm=0xAB)
-        all_steps.append(st_val)
         for lbl, mem in mems.items():
             has_r = "r" in lbl
             has_w = "w" in lbl
@@ -1291,7 +1357,6 @@ def SID_HPBVMS_024_gstage_only():
             load_ok = has_r or (has_x and mxr_hs)
             store_ok = has_w
 
-            all_steps.append(mem)
             all_steps.append(Comment(comment=f"G-stage Load from {lbl} ({label})"))
             if not load_ok:
                 all_steps.append(
@@ -1340,16 +1405,24 @@ def SID_HPBVMS_024_hload_hstore_gstage_only():
       store_ok = g_has_W
 
     Pseudocode:
+    # mems = _sum_mxr_permission_memories(gstage_only=True): build, ONCE up front,
+    #   one Memory per perm in {RO, RW, XO, RX, RWX}, each
+    #   Memory(size=0x1000, leaf_gleaf_flags=VALID|perm|A|D, leaf_gleaf_exclude_flags=absent RWX)
     # For MXR_HS in {0, 1}:
     #   SupervisorCode([csrrs/csrrc sstatus, MXR])
-    #   For each perm in {RO, RW, XO, RX, RWX}:
-    #     Memory(size=0x1000, leaf_gleaf_flags=VALID|perm|A|D)
+    #   For each (lbl, mem) in mems:
     #     SupervisorCode([HLoad or AssertException(LOAD_GUEST_PAGE_FAULT)])
     #     SupervisorCode([HStore or AssertException(STORE_AMO_GUEST_PAGE_FAULT)])
     """
     MXR_BIT = 1 << 19
 
     all_steps = []
+
+    mems = _sum_mxr_permission_memories(PageFlags(0), gstage_only=True)
+    st_val = LoadImmediateStep(imm=0xAB)
+    all_steps.append(st_val)
+    for mem in mems.values():
+        all_steps.append(mem)
 
     for mxr_hs in [0, 1]:
         label = f"MXR_HS={mxr_hs}"
@@ -1367,9 +1440,6 @@ def SID_HPBVMS_024_hload_hstore_gstage_only():
             )
         )
 
-        mems = _sum_mxr_permission_memories(PageFlags(0), gstage_only=True)
-        st_val = LoadImmediateStep(imm=0xAB)
-        all_steps.append(st_val)
         for lbl, mem in mems.items():
             has_r = "r" in lbl
             has_w = "w" in lbl
@@ -1378,7 +1448,6 @@ def SID_HPBVMS_024_hload_hstore_gstage_only():
             load_ok = has_r or (has_x and mxr_hs)
             store_ok = has_w
 
-            all_steps.append(mem)
             all_steps.append(Comment(comment=f"G-stage HLoad from {lbl} ({label})"))
             if not load_ok:
                 all_steps.append(

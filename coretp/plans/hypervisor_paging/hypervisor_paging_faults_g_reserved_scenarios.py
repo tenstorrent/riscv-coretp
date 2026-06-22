@@ -190,7 +190,7 @@ def SID_HPBVMS_020():
 
     Pseudocode:
     #   Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-    #          leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY, modify=True)
+    #          leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY, modify_leaf=True)
     #   ReadPTE(memory=mem, level=PteLevel.FINAL, g_level=PteLevel.LEAF)
     #   reserved_mask = LoadImmediateStep(imm=1 << 54)
     #   corrupt = Arithmetic(op="or", src1=read, src2=reserved_mask)
@@ -198,9 +198,10 @@ def SID_HPBVMS_020():
     #   AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)])
     #   LoadImmediateStep(imm=0xAB)
     #   AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
-    #   CodePage(... read-execute ..., modify=True, code=[nop])
+    #   CodePage(size=0x1000, read-execute, leaf_gleaf_flags=..., modify_leaf=True, code=[nop])
     #   ReadPTE(memory=cp, level=PteLevel.FINAL, g_level=PteLevel.LEAF)
-    #   WritePTE(memory=cp, src=corrupt, level=PteLevel.FINAL, g_level=PteLevel.LEAF)
+    #   corrupt_if = Arithmetic(op="or", src1=read_if, src2=reserved_mask)
+    #   WritePTE(memory=cp, src=corrupt_if, level=PteLevel.FINAL, g_level=PteLevel.LEAF)
     #   AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(
@@ -240,7 +241,8 @@ def SID_HPBVMS_020_nonleaf_gleaf():
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
     CodePage(..., modify_nonleaf=True, code=[nop])
     ReadPTE(memory=cp, level=LEAF, g_level=LEAF)
-    WritePTE(memory=cp, src=corrupt, level=LEAF, g_level=LEAF)
+    corrupt_if = Arithmetic(op="or", src1=read_if, src2=reserved_mask)
+    WritePTE(memory=cp, src=corrupt_if, level=LEAF, g_level=LEAF)
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(
@@ -278,7 +280,8 @@ def SID_HPBVMS_020_leaf_gnonleaf():
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
     CodePage(..., modify_leaf=True, code=[nop])
     ReadPTE(memory=cp, level=FINAL, g_level=NONLEAF)
-    WritePTE(memory=cp, src=corrupt, level=FINAL, g_level=NONLEAF)
+    corrupt_if = Arithmetic(op="or", src1=read_if, src2=reserved_mask)
+    WritePTE(memory=cp, src=corrupt_if, level=FINAL, g_level=NONLEAF)
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(
@@ -316,7 +319,8 @@ def SID_HPBVMS_020_nonleaf_gnonleaf():
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)])
     CodePage(..., modify_nonleaf=True, code=[nop])
     ReadPTE(memory=cp, level=LEAF, g_level=NONLEAF)
-    WritePTE(memory=cp, src=corrupt, level=LEAF, g_level=NONLEAF)
+    corrupt_if = Arithmetic(op="or", src1=read_if, src2=reserved_mask)
+    WritePTE(memory=cp, src=corrupt_if, level=LEAF, g_level=NONLEAF)
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
     """
     return TestScenario.from_steps(

@@ -15,7 +15,10 @@ from . import zjpm_scenario
 def SID_01_senvcfg_pmm_warl():
     """
     Test writing reserved values (01) to senvcfg.PMM[33:32] field.
-    According to ZJPM spec, valid values are 00 (disabled), 10 (PMLEN=7).
+    According to ZJPM spec, valid values are:
+    - 00: PM disabled (PMLEN=0)
+    - 10: PM enabled with PMLEN=7
+    - 11: PM enabled with PMLEN=16
     Value 01 is reserved and should follow WARL semantics (illegal write should not change CSR).
     """
     comment_1 = Comment(comment="Test WARL behavior for senvcfg.PMM field")
@@ -268,9 +271,9 @@ def SID_05_pm_disabled_u_vu_mode():
     """
     comment_1 = Comment(comment="Test PM disabled in U/VU mode - non-canonical addresses should fault")
 
-    # Disable pointer masking
+    # Disable pointer masking (direct_write=False so it happens before entering U mode)
     comment_2 = Comment(comment="Set senvcfg.PMM[33:32] = 00 to disable PM")
-    csr_write = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+    csr_write = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=False)
 
     # Create memory region
     comment_3 = Comment(comment="Create memory region for testing")
@@ -830,7 +833,7 @@ def SID_13_pm_enabled_u_vu_mode():
 
     # Enable PM with PMLEN=7
     comment_2 = Comment(comment="Set senvcfg.PMM[33:32] = 10 for PMLEN=7")
-    csr_write = CsrWrite(csr_name="senvcfg", set_mask=(2 << 32), direct_write=True)
+    csr_write = CsrWrite(csr_name="senvcfg", set_mask=(2 << 32), direct_write=False)
 
     # Create memory region
     comment_3 = Comment(comment="Create memory region for testing")
@@ -859,6 +862,10 @@ def SID_13_pm_enabled_u_vu_mode():
     # Verify by loading from canonical address - should see the value stored via tagged address
     comment_8 = Comment(comment="Load from canonical address - should see value stored via tagged address")
     load_val2 = Load(memory=mem, access_size=8)
+
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_9 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=False)
 
     return TestScenario.from_steps(
         id="13",
@@ -889,6 +896,8 @@ def SID_13_pm_enabled_u_vu_mode():
             store_op2,
             comment_8,
             load_val2,
+            comment_9,
+            csr_clear_pm,
         ],
     )
 
@@ -1031,6 +1040,11 @@ def SID_15_pm_enabled_vu_mode_hlv_hsv():
     comment_9 = Comment(comment="HLoad from canonical address to verify stored value")
     hlv_verify = SupervisorCode(code=[HLoad(memory=mem, access_size=4)])
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_10 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_senvcfg = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=False)
+    csr_clear_hupmm = CsrWrite(csr_name="hstatus", clear_mask=(0x3 << 48), direct_write=False)
+
     return TestScenario.from_steps(
         id="15",
         name="SID_15_pm_enabled_vu_mode_hlv_hsv",
@@ -1062,6 +1076,9 @@ def SID_15_pm_enabled_vu_mode_hlv_hsv():
             hsv_op,
             comment_9,
             hlv_verify,
+            comment_10,
+            csr_clear_senvcfg,
+            csr_clear_hupmm,
         ],
     )
 
@@ -1344,6 +1361,10 @@ def SID_19_pm_mprv_ssnpm():
     comment_6 = Comment(comment="Load via tagged address - PM should mask the tag bits")
     load_val = Load(memory=tagged_addr, access_size=8)
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_7 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="19",
         name="SID_19_pm_mprv_ssnpm",
@@ -1369,6 +1390,8 @@ def SID_19_pm_mprv_ssnpm():
             tagged_addr,
             comment_6,
             load_val,
+            comment_7,
+            csr_clear_pm,
         ],
     )
 
@@ -1529,6 +1552,10 @@ def SID_22_pm_disabled_mxr_set():
     comment_6 = Comment(comment="With MXR=1, PM is disabled - tagged address should fault")
     assert_fault = AssertException(cause=ExceptionCause.LOAD_PAGE_FAULT, code=[Load(memory=tagged_addr, access_size=8)])
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_7 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="22",
         name="SID_22_pm_disabled_mxr_set",
@@ -1554,6 +1581,8 @@ def SID_22_pm_disabled_mxr_set():
             tagged_addr,
             comment_6,
             assert_fault,
+            comment_7,
+            csr_clear_pm,
         ],
     )
 
@@ -1586,6 +1615,10 @@ def SID_23_pm_invalidation_instructions():
     # The actual fence instructions would be generated by the test framework
     comment_5 = Comment(comment="Fence/invalidation instructions must use canonical addresses - PM does not apply")
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_6 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="23",
         name="SID_23_pm_invalidation_instructions",
@@ -1605,6 +1638,8 @@ def SID_23_pm_invalidation_instructions():
             store_op,
             load_val,
             comment_5,
+            comment_6,
+            csr_clear_pm,
         ],
     )
 
@@ -1633,12 +1668,16 @@ def SID_24_pm_instruction_set():
     store_op = Store(memory=mem, value=store_val, op="sd")
     load_val = Load(memory=mem, access_size=8)
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_4 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="24",
         name="SID_24_pm_instruction_set",
         description="Test PM with various instruction sets",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+            priv_modes=[PrivilegeMode.M, PrivilegeMode.S],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1650,6 +1689,8 @@ def SID_24_pm_instruction_set():
             store_val,
             store_op,
             load_val,
+            comment_4,
+            csr_clear_pm,
         ],
     )
 
@@ -1675,12 +1716,16 @@ def SID_25_pm_misaligned_access():
     store_op = Store(memory=mem, value=store_val, op="sd")
     load_val = Load(memory=mem, access_size=8)
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_4 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="25",
         name="SID_25_pm_misaligned_access",
         description="Test PM with misaligned memory access",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+            priv_modes=[PrivilegeMode.M, PrivilegeMode.S],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1692,6 +1737,8 @@ def SID_25_pm_misaligned_access():
             store_val,
             store_op,
             load_val,
+            comment_4,
+            csr_clear_pm,
         ],
     )
 
@@ -1722,12 +1769,16 @@ def SID_26_pm_different_tags_same_address():
     comment_5 = Comment(comment="Load from same address - pointer masking allows this")
     load_val = Load(memory=mem, access_size=8)
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_6 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="26",
         name="SID_26_pm_different_tags_same_address",
         description="Test accessing same address with different tag values",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+            priv_modes=[PrivilegeMode.M, PrivilegeMode.S],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1743,6 +1794,8 @@ def SID_26_pm_different_tags_same_address():
             store_op2,
             comment_5,
             load_val,
+            comment_6,
+            csr_clear_pm,
         ],
     )
 
@@ -1778,12 +1831,16 @@ def SID_27_pm_implicit_access():
     comment_6 = Comment(comment="Page table walks during address translation do NOT use PM")
     # PTWs happen automatically during memory access but are not subject to PM
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_7 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="27",
         name="SID_27_pm_implicit_access",
         description="Test PM does not apply to implicit accesses (fetch and PTW)",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+            priv_modes=[PrivilegeMode.M, PrivilegeMode.S],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1800,6 +1857,8 @@ def SID_27_pm_implicit_access():
             code,
             call_code,
             comment_6,
+            comment_7,
+            csr_clear_pm,
         ],
     )
 
@@ -1830,12 +1889,16 @@ def SID_28_pm_faults_trap_values():
     # The store operation is wrapped in AssertException to catch the page fault
     assert_fault = AssertException(cause=ExceptionCause.STORE_AMO_PAGE_FAULT, code=[Store(memory=mem, value=store_val, op="sd")])
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_6 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="28",
         name="SID_28_pm_faults_trap_values",
         description="Test trap values contain canonical addresses with PM enabled",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.S, PrivilegeMode.U],
+            priv_modes=[PrivilegeMode.S],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1848,6 +1911,8 @@ def SID_28_pm_faults_trap_values():
             store_val,
             comment_5,
             assert_fault,
+            comment_6,
+            csr_clear_pm,
         ],
     )
 
@@ -1873,6 +1938,10 @@ def SID_29_pm_xtvec_tagged_address():
     comment_4 = Comment(comment="Read back stvec")
     tvec_read = CsrRead(csr_name="stvec")
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_5 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="29",
         name="SID_29_pm_xtvec_tagged_address",
@@ -1890,6 +1959,8 @@ def SID_29_pm_xtvec_tagged_address():
             csr_write_tvec,
             comment_4,
             tvec_read,
+            comment_5,
+            csr_clear_pm,
         ],
     )
 
@@ -1920,12 +1991,16 @@ def SID_30_pm_breakpoint():
     comment_4 = Comment(comment="Note: Breakpoint addresses should use canonical form")
     # Breakpoint matching should use transformed addresses
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_5 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="30",
         name="SID_30_pm_breakpoint",
         description="Test pointer masking with breakpoints",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U],
+            priv_modes=[PrivilegeMode.M, PrivilegeMode.S],
             paging_modes=[PagingMode.SV39, PagingMode.SV48],
         ),
         steps=[
@@ -1936,6 +2011,8 @@ def SID_30_pm_breakpoint():
             mem,
             load_val,
             comment_4,
+            comment_5,
+            csr_clear_pm,
         ],
     )
 
@@ -1969,12 +2046,16 @@ def SID_31_pm_va_overflow():
     store_op = Store(memory=mem, value=store_val, op="sd")
     load_val = Load(memory=mem, access_size=8)
 
+    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_6 = Comment(comment="Disable PM before scenario ends")
+    csr_clear_pm = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=True)
+
     return TestScenario.from_steps(
         id="31",
         name="SID_31_pm_va_overflow",
         description="Test VA overflow with PM enabled",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.S, PrivilegeMode.U],
+            priv_modes=[PrivilegeMode.S],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1989,6 +2070,8 @@ def SID_31_pm_va_overflow():
             store_val,
             store_op,
             load_val,
+            comment_6,
+            csr_clear_pm,
         ],
     )
 

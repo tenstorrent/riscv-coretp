@@ -166,9 +166,8 @@ def _a_bit_scenario_steps(variant):
     check_amo, a_mask_amo = _a_bit_check_steps(mem_amo, pte_level=pte_level, g_level=g_level, label=f"AMO {label}")
     steps.extend(check_amo)
     comment_amo = Comment(comment="Perform AMO to trigger A bit update")
-    amo_val = LoadImmediateStep(imm=0x1)
-    amo_op = MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)
-    steps.extend([comment_amo, amo_val, amo_op])
+    amo_op = MemAccess(memory=mem_amo, extension=Extension.A)
+    steps.extend([comment_amo, amo_op])
     steps.extend(_a_bit_verify_steps(mem_amo, a_mask_amo, pte_level=pte_level, g_level=g_level, label=f"AMO {label}"))
 
     # --- Instruction fetch ---
@@ -205,6 +204,9 @@ def SID_HPBVMS_029_vu_vs():
     and G-stage paging modes, and page sizes 4K plus superpages.
 
     Pseudocode:
+    # --- Enable hardware A/D bit updates ---
+    CsrWrite(csr_name="menvcfg", set_mask=(1<<61))  # ADUE
+    CsrWrite(csr_name="henvcfg", set_mask=(1<<61))  # ADUE
     # --- Load ---
     Memory(size=0x1000, flags=VALID|READ|ACCESSED|DIRTY, exclude_flags=ACCESSED,
            leaf_gleaf_flags=VALID|READ|ACCESSED|DIRTY, modify=True)
@@ -228,8 +230,7 @@ def SID_HPBVMS_029_vu_vs():
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY, exclude_flags=ACCESSED,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY, modify=True)
     ReadPTE -> verify A=0
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)
+    MemAccess(memory=mem_amo, extension=Extension.A)
     ReadPTE -> verify A=1
     # --- Instruction fetch ---
     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, exclude_flags=ACCESSED,
@@ -736,6 +737,7 @@ def SID_HPBVMS_029_hsmode_vu():
     - SPVP=1 (VS): HLoad/HStore on USER pages fault (VS cannot access U pages without SUM).
 
     Pseudocode:
+    # enable ADUE: CsrWrite(menvcfg, set_mask=1<<61); CsrWrite(henvcfg, set_mask=1<<61)
     # memories: USER-flagged for success, same flags for fault
     # verify A=0 on success memories
     SupervisorCode([
@@ -743,8 +745,11 @@ def SID_HPBVMS_029_hsmode_vu():
         HLoad(mem_ld)                    # succeeds, A bit set
         hstore_val; HStore(mem_st)       # succeeds, A bit set
         csrrs hstatus, SPVP              # SPVP=1 (VS)
+        csrrc vsstatus, SUM              # clear vsstatus.SUM
         AssertException(LOAD_PAGE_FAULT,      [HLoad(fault_mem_ld)])
+        fault_hstore_val
         AssertException(STORE_AMO_PAGE_FAULT, [HStore(fault_mem_st)])
+        csrrs vsstatus, SUM              # restore vsstatus.SUM
         csrrc hstatus, SPVP              # cleanup
     ])
     # verify A=1 on success memories
@@ -875,6 +880,7 @@ def SID_HPBVMS_029_hsmode_vs():
     - SPVP=0 (VU): HLoad/HStore on non-USER pages fault (VU requires U flag).
 
     Pseudocode:
+    # enable ADUE: CsrWrite(menvcfg, set_mask=1<<61); CsrWrite(henvcfg, set_mask=1<<61)
     # memories: non-USER for success, same flags for fault
     # verify A=0 on success memories
     SupervisorCode([
@@ -883,8 +889,9 @@ def SID_HPBVMS_029_hsmode_vs():
         hstore_val; HStore(mem_st)       # succeeds, A bit set
         csrrc hstatus, SPVP              # SPVP=0 (VU)
         AssertException(LOAD_PAGE_FAULT,      [HLoad(fault_mem_ld)])
+        fault_hstore_val
         AssertException(STORE_AMO_PAGE_FAULT, [HStore(fault_mem_st)])
-        csrrc hstatus, SPVP              # cleanup (already 0)
+        # cleanup comment only (SPVP already 0, no CSR write)
     ])
     # verify A=1 on success memories
     """

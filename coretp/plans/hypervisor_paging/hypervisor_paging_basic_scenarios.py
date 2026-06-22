@@ -69,10 +69,11 @@ def SID_HPBVMS_001_spvp1():
     - Read-write-execute page (R+W+X): HLV and HSV should succeed
 
     Pseudocode:
+    CsrWrite(csr_name="hstatus", set_mask=1<<8)  # SPVP=1
+
     # --- Read-only page: HLV succeeds ---
     Memory(size=0x1000, flags=VALID|READ|ACCESSED|DIRTY, exclude_flags=USER,
            leaf_gleaf_flags=VALID|READ|ACCESSED|DIRTY)
-    CsrWrite(csr_name="hstatus", set_mask=1<<8)  # SPVP=1
     SupervisorCode([HLoad(memory=mem_ro)])
 
     # --- Read-write page: HLV and HSV both succeed ---
@@ -217,10 +218,11 @@ def SID_HPBVMS_001_spvp0():
     Pages must have USER flag set since SPVP=0 means VU-mode permission checks.
 
     Pseudocode:
+    CsrWrite(csr_name="hstatus", clear_mask=1<<8)  # SPVP=0
+
     # --- Read-only page (USER): HLV succeeds ---
     Memory(size=0x1000, flags=VALID|READ|USER|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|ACCESSED|DIRTY)
-    CsrWrite(csr_name="hstatus", clear_mask=1<<8)  # SPVP=0
     SupervisorCode([HLoad(memory=mem_ro)])
 
     # --- Read-write page (USER): HLV and HSV succeed ---
@@ -668,12 +670,11 @@ def SID_HPBVMS_004():
     Comment("Perform a load from the memory region")
     Load(memory=mem)
     Comment("Perform atomic operations (AMO) on the memory region")
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)  # System randomizes operation type, size, and ordering flags
-    Comment("Perform an instruction fetch via CodePage + Call")
-    CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, code=[nop])
+    MemAccess(memory=mem, extension=Extension.A)  # System randomizes operation type, size, and ordering flags
     LoadImmediateStep(imm=0)
     Arithmetic(op="addi", src1=nop_val, src2=0)
+    CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, code=[nop])
+    Comment("Perform an instruction fetch via CodePage + Call")
     Call(target=code_page)
     """
     # --- Memory region for load and store ---
@@ -690,9 +691,7 @@ def SID_HPBVMS_004():
     load_result = Load(memory=mem)
 
     comment_amo = Comment(comment="Perform atomic operations (AMO) on a separate memory region")
-    amo_val = LoadImmediateStep(imm=0x1)
-    # Use proper Amo step for atomic operations - let system randomize operation type and flags
-    amo_op = MemAccess(memory=mem, src2=amo_val, extension=Extension.A)
+    amo_op = MemAccess(memory=mem, extension=Extension.A)
 
     # --- Code page for instruction fetch ---
     nop_val = LoadImmediateStep(imm=0)
@@ -725,7 +724,6 @@ def SID_HPBVMS_004():
             comment_load,
             load_result,
             comment_amo,
-            amo_val,
             amo_op,
             nop_val,
             nop,
@@ -754,16 +752,14 @@ def SID_HPBVMS_005():
     Store(memory=mem, value=store_val)
     Comment("Perform a load from the memory region")
     Load(memory=mem)
-    # Memory for AMO (VS-stage: valid, readable, writable, accessed, dirty)
-    Memory(size=0x1000, page_size=SIZE_4K, flags=VALID|READ|WRITE|ACCESSED|DIRTY)
+    # AMO reuses the same load/store memory region
     Comment("Perform atomic operations (AMO)")
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)  # System randomizes operation type, size, and ordering flags
+    MemAccess(memory=mem, extension=Extension.A)  # System randomizes operation type, size, and ordering flags
     # Code page for instruction fetch (VS-stage: valid, readable, executable, accessed, dirty)
-    Comment("Perform instruction fetch via CodePage call")
     LoadImmediateStep(imm=0)
     Arithmetic(op="addi", src1=nop_val, src2=0)
     CodePage(size=0x1000, page_size=SIZE_4K, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, code=[nop])
+    Comment("Perform instruction fetch via CodePage call")
     Call(target=code_page)
     """
     # --- Memory region for load and store (VS-stage paging, G-stage bare) ---
@@ -781,9 +777,7 @@ def SID_HPBVMS_005():
     load_result = Load(memory=mem)
 
     comment_amo = Comment(comment="Perform atomic operations (AMO) on a separate memory region")
-    amo_val = LoadImmediateStep(imm=0x1)
-    # Use proper Amo step - system randomizes operation type, size, and ordering flags
-    amo_op = MemAccess(memory=mem, src2=amo_val, extension=Extension.A)
+    amo_op = MemAccess(memory=mem, extension=Extension.A)
 
     # --- Code page for instruction fetch (VS-stage paging, G-stage bare) ---
     nop_val = LoadImmediateStep(imm=0)
@@ -817,7 +811,6 @@ def SID_HPBVMS_005():
             comment_load,
             load_result,
             comment_amo,
-            amo_val,
             amo_op,
             nop_val,
             nop,
@@ -849,18 +842,15 @@ def SID_HPBVMS_006():
     Store(memory=mem, value=store_val)
     Comment("Perform a load from the memory region")
     Load(memory=mem)
-    # Memory for AMO (G-stage leaf: valid, readable, writable, accessed, dirty)
-    Memory(size=0x1000, page_size=SIZE_4K, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY)
+    # AMO reuses the same load/store memory region
     Comment("Perform atomic operations (AMO)")
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)  # System randomizes operation type, size, and ordering flags
+    MemAccess(memory=mem, extension=Extension.A)  # System randomizes operation type, size, and ordering flags
     # Code page for instruction fetch (G-stage leaf: valid, readable, executable, accessed, dirty)
-    Comment("Perform instruction fetch via CodePage call")
     LoadImmediateStep(imm=0)
     Arithmetic(op="addi", src1=nop_val, src2=0)
     CodePage(size=0x1000, page_size=SIZE_4K, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, code=[nop])
+    Comment("Perform instruction fetch via CodePage call")
     Call(target=code_page)
     """
     # --- Memory region for load and store (VS-stage bare, G-stage paging) ---
@@ -879,9 +869,7 @@ def SID_HPBVMS_006():
     load_result = Load(memory=mem)
 
     comment_amo = Comment(comment="Perform atomic operations (AMO) on a separate memory region")
-    amo_val = LoadImmediateStep(imm=0x1)
-    # Use proper Amo step - system randomizes operation type, size, and ordering flags
-    amo_op = MemAccess(memory=mem, src2=amo_val, extension=Extension.A)
+    amo_op = MemAccess(memory=mem, extension=Extension.A)
 
     # --- Code page for instruction fetch (VS-stage bare, G-stage paging) ---
     nop_val = LoadImmediateStep(imm=0)
@@ -916,7 +904,6 @@ def SID_HPBVMS_006():
             comment_load,
             load_result,
             comment_amo,
-            amo_val,
             amo_op,
             nop_val,
             nop,
@@ -949,20 +936,16 @@ def SID_HPBVMS_007():
     Store(memory=mem, value=store_val)
     Comment("Perform a load from the memory region")
     Load(memory=mem)
-    # Memory for AMO with 2-level PTW
-    Memory(size=0x1000, page_size=SIZE_4K,
-           flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY)
+    # AMO reuses the same load/store memory region
     Comment("Perform atomic operations (AMO)")
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)
+    MemAccess(memory=mem, extension=Extension.A)
     # Code page for instruction fetch with 2-level PTW
-    Comment("Perform instruction fetch via CodePage call")
     LoadImmediateStep(imm=0)
     Arithmetic(op="addi", src1=nop_val, src2=0)
     CodePage(size=0x1000, page_size=SIZE_4K,
              flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY, code=[nop])
+    Comment("Perform instruction fetch via CodePage call")
     Call(target=code_page)
     # Memory for HLV/HLVX/HSV with 2-level PTW
     Memory(size=0x1000, page_size=SIZE_4K,
@@ -994,9 +977,7 @@ def SID_HPBVMS_007():
     load_result = Load(memory=mem)
 
     comment_amo = Comment(comment="Perform atomic operations (AMO) on a separate memory region")
-    amo_val = LoadImmediateStep(imm=0x1)
-    # Use proper Amo step - system randomizes operation type, size, and ordering flags
-    amo_op = MemAccess(memory=mem, src2=amo_val, extension=Extension.A)
+    amo_op = MemAccess(memory=mem, extension=Extension.A)
 
     # --- Code page for instruction fetch (2-level PTW: VS-stage + G-stage) ---
     nop_val = LoadImmediateStep(imm=0)
@@ -1054,7 +1035,6 @@ def SID_HPBVMS_007():
             comment_load,
             load_result,
             comment_amo,
-            amo_val,
             amo_op,
             nop_val,
             nop,
@@ -1100,12 +1080,9 @@ def SID_HPBVMS_008():
     Load(memory=mem)
     Comment("Load from memory - D-side access with non-zero offset")
     Load(memory=mem, offset=8)
-    # Memory for AMO with both VS-stage and G-stage flags
-    Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY)
+    # AMO reuses the same load/store memory region
     Comment("AMO on memory region with two-stage translation")
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)
+    MemAccess(memory=mem, extension=Extension.A)
     # Code page for instruction fetch (I-side) with both VS-stage and G-stage flags
     LoadImmediateStep(imm=0)
     Arithmetic(op="addi", src1=nop_val, src2=0)
@@ -1115,7 +1092,9 @@ def SID_HPBVMS_008():
     Call(target=code_page)
     # HLV/HSV/HLVX from HS-mode via SupervisorCode - two-stage translation as if V=1
     Memory(size=0x1000, flags=VALID|READ|WRITE|EXECUTE|ACCESSED|DIRTY,
-           leaf_gleaf_flags=VALID|READ|WRITE|EXECUTE|ACCESSED|DIRTY)
+           leaf_gleaf_flags=VALID|READ|WRITE|EXECUTE|ACCESSED|DIRTY,
+           page_size=(SIZE_4K, SIZE_2M, SIZE_1G, SIZE_512G, SIZE_256T),
+           vleaf_page_size=(SIZE_4K, SIZE_2M, SIZE_1G, SIZE_512G, SIZE_256T))
     CsrWrite(csr_name="hstatus", set_mask=1<<8)  # Set SPVP=1 for VS-mode-like access
     Comment("HLV - hypervisor load via two-stage translation")
     SupervisorCode([HLoad(memory=mem_h)])
@@ -1144,8 +1123,7 @@ def SID_HPBVMS_008():
     load_nonzero = Load(memory=mem, offset=8)
 
     comment_amo = Comment(comment="AMO on memory region with two-stage translation")
-    amo_val = LoadImmediateStep(imm=0x1)
-    amo_op = MemAccess(memory=mem, src2=amo_val, extension=Extension.A)
+    amo_op = MemAccess(memory=mem, extension=Extension.A)
 
     # --- Code page for instruction fetch (I-side, both stages enabled) ---
     nop_val = LoadImmediateStep(imm=0)
@@ -1206,7 +1184,6 @@ def SID_HPBVMS_008():
             comment_load_nonzero,
             load_nonzero,
             comment_amo,
-            amo_val,
             amo_op,
             nop_val,
             nop,
@@ -1246,13 +1223,9 @@ def SID_HPBVMS_009_vu_vs_mode():
     Store(memory=mem, value=store_val)
     Comment("Perform a load through 2-level PTW")
     Load(memory=mem)
-    # Memory for AMO with both VS-stage and G-stage PTEs
-    Memory(size=0x1000, page_size=SIZE_4K,
-           flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY)
+    # AMO reuses the same load/store memory region
     Comment("Perform AMO through 2-level PTW")
-    LoadImmediateStep(imm=0x1)
-    MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)
+    MemAccess(memory=mem, extension=Extension.A)
     # Code page for instruction fetch with both VS-stage and G-stage PTEs
     LoadImmediateStep(imm=0)
     Arithmetic(op="addi", src1=nop_val, src2=0)
@@ -1278,8 +1251,7 @@ def SID_HPBVMS_009_vu_vs_mode():
     load_result = Load(memory=mem)
 
     comment_amo = Comment(comment="Perform AMO through 2-level PTW")
-    amo_val = LoadImmediateStep(imm=0x1)
-    amo_op = MemAccess(memory=mem, src2=amo_val, extension=Extension.A)
+    amo_op = MemAccess(memory=mem, extension=Extension.A)
 
     # --- Code page for instruction fetch (two-stage paging: VS-stage + G-stage) ---
     nop_val = LoadImmediateStep(imm=0)
@@ -1314,7 +1286,6 @@ def SID_HPBVMS_009_vu_vs_mode():
             comment_load,
             load_result,
             comment_amo,
-            amo_val,
             amo_op,
             nop_val,
             nop,
@@ -1581,16 +1552,17 @@ def SID_HPBVMS_027():
     Modes: pick_all {SV39, SV48, SV57}
 
     Pseudocode:
+    LoadImmediateStep(imm=0x300)  # RSW mask = bits 9:8
+    LoadImmediateStep(imm=0)      # zero
+
     # --- D-side: RSW writability on VS-stage leaf and non-leaf PTEs, then access ---
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            modify=True, modify_leaf=True, modify_nonleaf=True)
 
-    Comment("Read VS-stage leaf PTE and verify RSW bits are initially 0")
+    Comment("Read leaf PTE and verify RSW bits are initially 0")
     ReadPTE(memory=mem, level=PteLevel.LEAF)
-    LoadImmediateStep(imm=0x300)  # RSW mask = bits 9:8
     Arithmetic(op="and", src1=read_leaf, src2=rsw_mask)
-    LoadImmediateStep(imm=0)
     AssertEqual(src1=leaf_rsw_initial, src2=zero)
 
     Comment("Set RSW bits on VS-stage leaf PTE and verify they persist")
@@ -1600,10 +1572,12 @@ def SID_HPBVMS_027():
     Arithmetic(op="and", src1=read_leaf_after, src2=rsw_mask)
     AssertEqual(src1=leaf_rsw_after, src2=rsw_mask)
 
-    Comment("Read VS-stage non-leaf PTE, set RSW bits, and verify they persist")
+    Comment("Read VS-stage non-leaf PTE, verify RSW bits are initially 0")
     ReadPTE(memory=mem, level=PteLevel.NONLEAF)
     Arithmetic(op="and", src1=read_nonleaf, src2=rsw_mask)
     AssertEqual(src1=nonleaf_rsw_initial, src2=zero)
+
+    Comment("Set RSW bits on VS-stage non-leaf PTE and verify they persist")
     Arithmetic(op="or", src1=read_nonleaf, src2=rsw_mask)
     WritePTE(memory=mem, src=nonleaf_with_rsw, level=PteLevel.NONLEAF)
     ReadPTE(memory=mem, level=PteLevel.NONLEAF)
@@ -1622,10 +1596,12 @@ def SID_HPBVMS_027():
     Arithmetic(op="and", src1=read_gleaf_after, src2=rsw_mask)
     AssertEqual(src1=gleaf_rsw_after, src2=rsw_mask)
 
-    Comment("Read G-stage non-leaf PTE, set RSW bits, and verify they persist")
+    Comment("Read G-stage non-leaf PTE, verify RSW bits are initially 0")
     ReadPTE(memory=mem, level=PteLevel.FINAL, g_level=PteLevel.NONLEAF)
     Arithmetic(op="and", src1=read_gnonleaf, src2=rsw_mask)
     AssertEqual(src1=gnonleaf_rsw_initial, src2=zero)
+
+    Comment("Set RSW bits on G-stage non-leaf PTE and verify they persist")
     Arithmetic(op="or", src1=read_gnonleaf, src2=rsw_mask)
     WritePTE(memory=mem, src=gnonleaf_with_rsw, level=PteLevel.FINAL, g_level=PteLevel.NONLEAF)
     ReadPTE(memory=mem, level=PteLevel.FINAL, g_level=PteLevel.NONLEAF)
@@ -1636,6 +1612,8 @@ def SID_HPBVMS_027():
     Load(memory=mem)
 
     # --- I-side: RSW writability on VS-stage and G-stage PTEs, then fetch ---
+    LoadImmediateStep(imm=0)
+    Arithmetic(op="addi", src1=nop_val, src2=0)
     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              modify=True, modify_leaf=True, modify_nonleaf=True, code=[nop])

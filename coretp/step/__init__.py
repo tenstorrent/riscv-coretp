@@ -6,14 +6,26 @@ from .memory import Memory, CodePage, ModifyPte, ReadPTE, WritePTE, RequestPmpRe
 from .conditional_block import ConditionalBlock
 from .call import Call
 from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
+from .retrieve_address import RetrieveAddress
 from .load_store import MemoryOp, Load, Store, MemAccess, HLoad, HXLoad, HStore
 from .csr import CsrWrite, CsrRead, CsrDirectAccess
 from .assertion import AssertEqual, AssertNotEqual, AssertException, AssertFetchException
 from .hart import Hart, HartExit
 from .miscellaneous import Directive, SetWaitTimeout
+from .counters import AssignRandomEventToCounter
 from .system import System
 from .comment import Comment
 from .privilege_mode import MachineCode, SupervisorCode, UserCode
+from .interrupt import (
+    EnableInterrupts,
+    DisableInterrupts,
+    ConfigureInterruptMode,
+    DelegateInterrupt,
+    TriggerInterrupt,
+    ClearInterrupt,
+    AssertInterrupt,
+    RegisterInterruptHandler,
+)
 from .label import Label
 from .debug import (
     TriggerType,
@@ -61,6 +73,7 @@ __all__ = [
     "Arithmetic",
     "LoadImmediateStep",
     "LoadAddressStep",
+    "RetrieveAddress",
     "CsrWrite",
     "CsrRead",
     "CsrDirectAccess",
@@ -72,12 +85,21 @@ __all__ = [
     "HartExit",
     "Directive",
     "SetWaitTimeout",
+    "AssignRandomEventToCounter",
     "System",
     "Comment",
     "ConditionalBlock",
     "MachineCode",
     "SupervisorCode",
     "UserCode",
+    "EnableInterrupts",
+    "DisableInterrupts",
+    "ConfigureInterruptMode",
+    "DelegateInterrupt",
+    "TriggerInterrupt",
+    "ClearInterrupt",
+    "AssertInterrupt",
+    "RegisterInterruptHandler",
     "Label",
     "TriggerType",
     "TriggerAction",

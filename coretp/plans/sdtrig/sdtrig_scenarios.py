@@ -1588,49 +1588,195 @@ def SID_SDTRIG_034():
 # =============================================================================
 
 
-@sdtrig_scenario
-def SID_SDTRIG_035():
-    """
-    Ensure matching algorithm accounts for match type selected.
-    match_type == equal:
-      - exact match fires, partial does not
-      - only [31:0] same does not match, only [63:32] same does not match
-    Repeat for NAPOT, GE, LT, MASK_LOW, MASK_HIGH, NE, etc.
-    """
-    # Distinct labels for each match-type check — same label cannot be emitted twice.
-    _lbl_match_eq = Label(prefix="match_eq_")
-    _lbl_match_napot = Label(prefix="match_napot_")
+# env priv_modes for match-type scenarios: non-M only. The trigger arms via an
+# ecall trampoline that executes in M, so any match type looser than EQUAL
+# (GE, NAPOT region, MASK_*, NE, LT, NOT_*) would fire on the trampoline if
+# the trigger were active in M. The trigger's priv_mode defaults to ("env",)
+# which resolves to whichever of S/U the framework picks here.
+_SDTRIG_MATCH_PRIV_MODES = [PrivilegeMode.S, PrivilegeMode.U]
 
-    comment = Comment(comment="match=EQUAL must match exact address; partial matches don't fire")
 
-    cfg_eq = ConfigureExecuteTrigger(
+def _sdtrig_035_positive_match_scenario(match: TriggerMatch, suffix: str, prefix: str, blurb: str):
+    """SID_SDTRIG_035_<suffix> for a positive match type (EQUAL, NAPOT, GE,
+    MASK_LOW, MASK_HIGH).
+
+    Trigger ``priv_mode`` defaults to ``("env",)`` — resolves to whichever
+    of S/U the framework selects via ``env.priv_modes``. The arming syscall
+    trampoline executes in M and so cannot fire it. After the cfg expansion
+    mrets back to the test priv, the test reaches the target label ``_lbl``
+    whose address equals tdata2 — the BP fires there for all positive
+    matches (PC == _lbl trivially satisfies EQUAL, NAPOT, GE, MASK_LOW,
+    MASK_HIGH with default tdata2 encoding).
+    """
+    _lbl = Label(prefix=prefix)
+    comment = Comment(comment=f"match={match.directive_str}: {blurb}")
+    cfg = ConfigureExecuteTrigger(
         index=0,
-        addr=_lbl_match_eq.name,
+        addr=_lbl.name,
         action=TriggerAction.BREAKPOINT,
-        match=TriggerMatch.EQUAL,
+        match=match,
     )
-    cfg_napot = ConfigureExecuteTrigger(
-        index=1,
-        addr=_lbl_match_napot.name,
-        action=TriggerAction.BREAKPOINT,
-        match=TriggerMatch.NAPOT,
+    assert_bp = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        code=[_lbl, Directive(directive="nop")],
     )
-    assert_bp = AssertException(cause=ExceptionCause.BREAKPOINT, code=[_lbl_match_eq, cfg_napot])
-
-    # Reconfigure with NAPOT to ensure region match fires
-    assert_napot_bp = AssertException(cause=ExceptionCause.BREAKPOINT, code=[_lbl_match_napot, Directive(directive="nop")])
-
     return TestScenario.from_steps(
-        id="35",
-        name="SID_SDTRIG_035",
-        description="Match types (EQUAL, NAPOT, GE, LT, MASK) match per spec",
-        env=TestEnvCfg(deleg_excp_to=[PrivilegeMode.M]),
-        steps=[
-            comment,
-            cfg_eq,
-            assert_bp,
-            assert_napot_bp,
-        ],
+        id=f"35_{suffix}",
+        name=f"SID_SDTRIG_035_{suffix}",
+        description=f"match={match.directive_str}: {blurb}",
+        env=TestEnvCfg(priv_modes=_SDTRIG_MATCH_PRIV_MODES, deleg_excp_to=[PrivilegeMode.M]),
+        steps=[comment, cfg, assert_bp],
+    )
+
+
+def _sdtrig_035_negative_match_scenario(match: TriggerMatch, suffix: str, prefix: str, blurb: str):
+    """SID_SDTRIG_035_<suffix> for a match type whose firing semantics make
+    a "fires at this exact label" assertion impossible to pin (LT, NE,
+    NOT_NAPOT, NOT_MASK_LOW, NOT_MASK_HIGH).
+
+    Strategy mirrors the icount scenarios in ``sdtrig_icount`` (see
+    ``test_plan_generator._add_assert_exception_step``): place ``cfg`` as a
+    setup step inside ``AssertException.code`` so OS_SETUP_CHECK_EXCP runs
+    *before* the trigger arms. Trigger ``priv_mode`` defaults to ``("env",)``
+    so it follows the test's running priv (S/U); the M-mode syscall
+    trampoline cannot fire it. After the last cfg ecall mrets back to the
+    test priv, the synthesized bad_label nop is the first instruction in
+    that priv — BP fires there because the inequality / negation predicate
+    holds.
+
+    ``_lbl_guard`` is emitted *after* the assert (so its address sits above
+    the bad_label nop) — needed by LT, where tdata2 must be greater than
+    the firing PC.
+    """
+    _lbl_guard = Label(prefix=f"{prefix}guard_")
+    comment = Comment(comment=f"match={match.directive_str}: {blurb}")
+    cfg = ConfigureExecuteTrigger(
+        index=0,
+        addr=_lbl_guard.name,
+        action=TriggerAction.BREAKPOINT,
+        match=match,
+    )
+    assert_bp = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        code=[cfg, Directive(directive="nop")],
+    )
+    return TestScenario.from_steps(
+        id=f"35_{suffix}",
+        name=f"SID_SDTRIG_035_{suffix}",
+        description=f"match={match.directive_str}: {blurb}",
+        env=TestEnvCfg(priv_modes=_SDTRIG_MATCH_PRIV_MODES, deleg_excp_to=[PrivilegeMode.M]),
+        steps=[comment, assert_bp, _lbl_guard, Directive(directive="nop")],
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_equal():
+    """match=EQUAL fires only when PC exactly equals tdata2."""
+    return _sdtrig_035_positive_match_scenario(
+        TriggerMatch.EQUAL,
+        "equal",
+        "match_eq_",
+        "BP fires when PC == configured tdata2 (exact match)",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_napot():
+    """match=NAPOT fires when PC is within the NAPOT region encoded by tdata2."""
+    return _sdtrig_035_positive_match_scenario(
+        TriggerMatch.NAPOT,
+        "napot",
+        "match_napot_",
+        "BP fires when PC lies within the NAPOT region encoded by tdata2",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_ge():
+    """match=GE fires when PC >= tdata2."""
+    return _sdtrig_035_positive_match_scenario(
+        TriggerMatch.GE,
+        "ge",
+        "match_ge_",
+        "BP fires when PC >= configured tdata2",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_lt():
+    """match=LT fires when PC < tdata2 (boundary)."""
+    return _sdtrig_035_negative_match_scenario(
+        TriggerMatch.LT,
+        "lt",
+        "match_lt_",
+        "BP fires when PC < configured tdata2 (boundary)",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_mask_low():
+    """match=MASK_LOW fires when PC[31:0] matches tdata2[31:0] under the encoded mask."""
+    return _sdtrig_035_positive_match_scenario(
+        TriggerMatch.MASK_LOW,
+        "mask_low",
+        "match_mask_low_",
+        "BP fires when PC[31:0] matches tdata2[31:0] under the encoded mask",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_mask_high():
+    """match=MASK_HIGH fires when PC[63:32] matches tdata2[63:32] under the encoded mask."""
+    return _sdtrig_035_positive_match_scenario(
+        TriggerMatch.MASK_HIGH,
+        "mask_high",
+        "match_mask_high_",
+        "BP fires when PC[63:32] matches tdata2[63:32] under the encoded mask",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_ne():
+    """match=NE fires for any PC != tdata2."""
+    return _sdtrig_035_negative_match_scenario(
+        TriggerMatch.NE,
+        "ne",
+        "match_ne_",
+        "BP fires when PC != configured tdata2",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_not_napot():
+    """match=NOT_NAPOT fires when PC is outside the NAPOT region."""
+    return _sdtrig_035_negative_match_scenario(
+        TriggerMatch.NOT_NAPOT,
+        "not_napot",
+        "match_not_napot_",
+        "BP fires when PC lies outside the NAPOT region encoded by tdata2",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_not_mask_low():
+    """match=NOT_MASK_LOW."""
+    return _sdtrig_035_negative_match_scenario(
+        TriggerMatch.NOT_MASK_LOW,
+        "not_mask_low",
+        "match_not_mask_low_",
+        "BP fires when PC[31:0] does NOT match tdata2[31:0] under the encoded mask",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_035_not_mask_high():
+    """match=NOT_MASK_HIGH."""
+    return _sdtrig_035_negative_match_scenario(
+        TriggerMatch.NOT_MASK_HIGH,
+        "not_mask_high",
+        "match_not_mask_high_",
+        "BP fires when PC[63:32] does NOT match tdata2[63:32] under the encoded mask",
     )
 
 
@@ -1981,24 +2127,29 @@ def SID_SDTRIG_042():
 
 _SID044_DATA_VA = 0x800B_0000
 
+# Distinct tdata2 values for negation / inequality match types — each chosen so
+# the load/store address (= _SID044_DATA_VA) makes the predicate fire.
+_SID044_LT_BOUND_VA = 0x900B_0000  # LT:           DATA_VA < tdata2
+_SID044_NE_GUARD_VA = 0xA000_0000  # NE/NOT_NAPOT: DATA_VA != tdata2 / outside region
+_SID044_NOT_MASK_LOW_GUARD_VA = 0x800B_8000  # NOT_MASK_LOW:  DATA_VA[31:0] != tdata2[31:0]
+_SID044_NOT_MASK_HIGH_GUARD_VA = 0x1_800B_0000  # NOT_MASK_HIGH: DATA_VA[63:32] != tdata2[63:32]
 
-@sdtrig_scenario
-def SID_SDTRIG_044():
+
+def _sdtrig_044_match_scenario(match: TriggerMatch, suffix: str, tdata2_va: int, blurb: str):
+    """SID_SDTRIG_044_<suffix> for one match type.
+
+    Mirrors the cfg-inside-AssertException pattern used by the icount
+    scenarios. Trigger ``priv_mode`` defaults to ``("env",)`` so it follows
+    the test's running priv (S/U via ``_SDTRIG_MATCH_PRIV_MODES``); the
+    M-mode syscall trampoline (and any M-mode page-walks / trap-handler
+    accesses) cannot fire it — only the U/S Load/Store/AMO/LR access at
+    ``_SID044_DATA_VA`` does.
+
+    A separate cfg_ls is placed inside each AssertException because the BP
+    handler clears the trigger via re-execute, so it must be re-armed for
+    each subsequent access.
     """
-    Addresses/events at point of trigger for load/store:
-    - successful load/store/amo with exact match
-    - LR/SC
-
-    Note: cbo / vector / prefetch sub-tests are omitted because they require
-    explicit register setup (a0) that the available coretp Step types don't
-    expose.
-
-    Implementation: the mcontrol6 load/store trigger's tdata2 holds the data
-    access address (not a code PC), so we pin Memory to a fixed VA via
-    ``base_va`` and configure the trigger with the same hex address. The
-    Load / Store / AMO / LR ops then access that exact VA and fire the trigger.
-    """
-    comment = Comment(comment="Load/store trigger covers Load, Store, AMO, and LR/SC at the data address")
+    comment = Comment(comment=f"match={match.directive_str}: {blurb}")
 
     mem = Memory(
         size=0x1000,
@@ -2006,40 +2157,163 @@ def SID_SDTRIG_044():
         base_va=_SID044_DATA_VA,
     )
 
-    cfg_ls = ConfigureLoadStoreTrigger(
-        index=0,
-        addr=hex(_SID044_DATA_VA),
-        action=TriggerAction.BREAKPOINT,
-        match=TriggerMatch.EQUAL,
-        priv_mode=("m",),
-    )
+    def _cfg():
+        return ConfigureLoadStoreTrigger(
+            index=0,
+            addr=hex(tdata2_va),
+            action=TriggerAction.BREAKPOINT,
+            match=match,
+        )
 
     load = Load(memory=mem)
-    assert_load = AssertException(cause=ExceptionCause.BREAKPOINT, code=[load])
+    assert_load = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        code=[_cfg(), load],
+    )
 
     store = Store(memory=mem, value=0xCAFE)
-    assert_store = AssertException(cause=ExceptionCause.BREAKPOINT, code=[store])
+    assert_store = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        code=[_cfg(), store],
+    )
 
-    amo_val = LoadImmediateStep(imm=1)
-    amo = MemAccess(memory=mem, op="amoadd.w", src2=amo_val)
-    assert_amo = AssertException(cause=ExceptionCause.BREAKPOINT, code=[amo])
+    amo = MemAccess(memory=mem, op="amoadd.w")
+    assert_amo = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        code=[_cfg(), amo],
+    )
 
     lr = MemAccess(memory=mem, op="lr.w")
-    assert_lr = AssertException(cause=ExceptionCause.BREAKPOINT, code=[lr])
+    assert_lr = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        code=[_cfg(), lr],
+    )
 
     return TestScenario.from_steps(
-        id="44",
-        name="SID_SDTRIG_044",
-        description="Load/store trigger fires on Load/Store/AMO/LR at the configured data address",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.M], deleg_excp_to=[PrivilegeMode.M]),
+        id=f"44_{suffix}",
+        name=f"SID_SDTRIG_044_{suffix}",
+        description=f"Load/Store trigger (match={match.directive_str}): Load/Store/AMO/LR fire BP — {blurb}",
+        env=TestEnvCfg(priv_modes=_SDTRIG_MATCH_PRIV_MODES, deleg_excp_to=[PrivilegeMode.M]),
         steps=[
             comment,
             mem,
-            cfg_ls,
             assert_load,
             assert_store,
-            amo_val,
             assert_amo,
             assert_lr,
         ],
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_equal():
+    """match=EQUAL: BP fires when data access addr == tdata2."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.EQUAL,
+        "equal",
+        _SID044_DATA_VA,
+        "BP fires when access addr == tdata2 (exact match)",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_napot():
+    """match=NAPOT: BP fires when data access addr is in the NAPOT region encoded by tdata2."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.NAPOT,
+        "napot",
+        _SID044_DATA_VA,
+        "BP fires when access addr lies within the NAPOT region encoded by tdata2",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_ge():
+    """match=GE: BP fires when data access addr >= tdata2."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.GE,
+        "ge",
+        _SID044_DATA_VA,
+        "BP fires when access addr >= tdata2",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_lt():
+    """match=LT: BP fires when data access addr < tdata2 (boundary)."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.LT,
+        "lt",
+        _SID044_LT_BOUND_VA,
+        "BP fires when access addr < tdata2 (data VA is below the boundary)",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_mask_low():
+    """match=MASK_LOW: BP fires when data access addr[31:0] matches tdata2[31:0] under mask."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.MASK_LOW,
+        "mask_low",
+        _SID044_DATA_VA,
+        "BP fires when access addr[31:0] matches tdata2[31:0] under the encoded mask",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_mask_high():
+    """match=MASK_HIGH: BP fires when data access addr[63:32] matches tdata2[63:32] under mask."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.MASK_HIGH,
+        "mask_high",
+        _SID044_DATA_VA,
+        "BP fires when access addr[63:32] matches tdata2[63:32] under the encoded mask",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_ne():
+    """match=NE: BP fires when data access addr != tdata2."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.NE,
+        "ne",
+        _SID044_NE_GUARD_VA,
+        "BP fires when access addr != tdata2 (guard VA)",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_not_napot():
+    """match=NOT_NAPOT: BP fires when data access addr is outside the NAPOT region."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.NOT_NAPOT,
+        "not_napot",
+        _SID044_NE_GUARD_VA,
+        "BP fires when access addr lies outside the NAPOT region encoded by tdata2",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_not_mask_low():
+    """match=NOT_MASK_LOW."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.NOT_MASK_LOW,
+        "not_mask_low",
+        _SID044_NOT_MASK_LOW_GUARD_VA,
+        "BP fires when access addr[31:0] does NOT match tdata2[31:0] under the encoded mask",
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_044_not_mask_high():
+    """match=NOT_MASK_HIGH."""
+    return _sdtrig_044_match_scenario(
+        TriggerMatch.NOT_MASK_HIGH,
+        "not_mask_high",
+        _SID044_NOT_MASK_HIGH_GUARD_VA,
+        "BP fires when access addr[63:32] does NOT match tdata2[63:32] under the encoded mask",
     )

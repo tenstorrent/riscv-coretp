@@ -846,8 +846,7 @@ def SID_ZAWRS_22_WRS_VTW_VIRTUAL_EXCEPTION():
     wrs_nto = System(instruction="wrs.nto")
     assert_nto_exception = AssertException(cause=ExceptionCause.VIRTUAL_INSTRUCTION, code=[wrs_nto])
 
-    wrs_sto = System(instruction="wrs.sto")
-    assert_sto_exception = AssertException(cause=ExceptionCause.VIRTUAL_INSTRUCTION, code=[wrs_sto])
+    # wrs.sto does not take an exception in this case
 
     return TestScenario.from_steps(
         id="22",
@@ -861,7 +860,6 @@ def SID_ZAWRS_22_WRS_VTW_VIRTUAL_EXCEPTION():
             hstatus_set_vtw,
             lr_instr,
             assert_nto_exception,
-            assert_sto_exception,
         ],
     )
 
@@ -884,8 +882,7 @@ def SID_ZAWRS_23_WRS_TW_VTW_ILLEGAL_EXCEPTION_1():
     wrs_nto = System(instruction="wrs.nto")
     assert_nto_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[wrs_nto])
 
-    wrs_sto = System(instruction="wrs.sto")
-    assert_sto_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[wrs_sto])
+    # wrs.sto does not take an exception in this case.
 
     return TestScenario.from_steps(
         id="23",
@@ -899,7 +896,6 @@ def SID_ZAWRS_23_WRS_TW_VTW_ILLEGAL_EXCEPTION_1():
             hstatus_set_vtw,
             lr_instr,
             assert_nto_exception,
-            assert_sto_exception,
         ],
     )
 
@@ -922,8 +918,7 @@ def SID_ZAWRS_24_WRS_TW_VTW_ILLEGAL_EXCEPTION_2():
     wrs_nto = System(instruction="wrs.nto")
     assert_nto_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[wrs_nto])
 
-    wrs_sto = System(instruction="wrs.sto")
-    assert_sto_exception = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[wrs_sto])
+    # wrs.sto does not take an exception in this case.
 
     return TestScenario.from_steps(
         id="24",
@@ -937,7 +932,6 @@ def SID_ZAWRS_24_WRS_TW_VTW_ILLEGAL_EXCEPTION_2():
             hstatus_clear_vtw,
             lr_instr,
             assert_nto_exception,
-            assert_sto_exception,
         ],
     )
 

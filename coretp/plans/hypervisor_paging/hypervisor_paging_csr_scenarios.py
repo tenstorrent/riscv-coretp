@@ -290,8 +290,7 @@ def SID_HPBVMS_032():
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            nonleaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
            nonleaf_gleaf_exclude_flags=WRITE)
-    LoadImmediateStep(imm=0x1)
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)],
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem_amo, extension=Extension.A)],
                     gva_check=True)
 
     # --- I-side Fetch: G-stage R=1,W=0,X=1 on VS PT page blocks A bit update ---
@@ -365,10 +364,9 @@ def SID_HPBVMS_032():
         nonleaf_gleaf_exclude_flags=PageFlags.WRITE,
     )
     comment_amo = Comment(comment="D-side AMO: G-stage R=1,W=0,X=1 on VS PT page blocks A bit update — expect STORE_AMO_GUEST_PAGE_FAULT")
-    amo_val = LoadImmediateStep(imm=0x1)
     assert_amo = AssertException(
         cause=ExceptionCause.STORE_AMO_GUEST_PAGE_FAULT,
-        code=[MemAccess(memory=mem_amo, src2=amo_val, extension=Extension.A)],
+        code=[MemAccess(memory=mem_amo, extension=Extension.A)],
         gva_check=True,
     )
 
@@ -413,7 +411,6 @@ def SID_HPBVMS_032():
             assert_st,
             mem_amo,
             comment_amo,
-            amo_val,
             assert_amo,
             nop_val,
             nop,
@@ -579,13 +576,15 @@ def SID_HPBVMS_034():
     We use MODE=2 (0x2 << 60) as a representative reserved encoding.
 
     Pseudocode:
+    # --- shared immediates ---
+    LoadImmediateStep(imm=0xF << 60)  # mode_mask: MODE field mask (bits 63:60)
+    LoadImmediateStep(imm=~(0xF << 60) & ((1<<64)-1))  # inv_mode_mask: inverted mode mask
+    LoadImmediateStep(imm=0x2 << 60)  # reserved_mode: reserved mode encoding
+
     # --- vsatp WARL test ---
-    Comment("Read vsatp, write reserved mode, verify WARL")
+    Comment("vsatp WARL: write reserved mode encoding, verify mode unchanged")
     CsrRead(csr_name="vsatp")
-    LoadImmediateStep(imm=0xF << 60)  # MODE field mask (bits 63:60)
     Arithmetic(op="and", src1=vsatp_orig, src2=mode_mask)  # extract original mode
-    LoadImmediateStep(imm=0x2 << 60)  # reserved mode encoding
-    LoadImmediateStep(imm=~(0xF << 60) & ((1<<64)-1))  # inverted mode mask
     Arithmetic(op="and", src1=vsatp_orig, src2=inv_mode_mask)  # clear mode field
     Arithmetic(op="or", src1=vsatp_cleared, src2=reserved_mode)  # set reserved mode
     CsrWrite(csr_name="vsatp", value=vsatp_reserved)
@@ -594,7 +593,7 @@ def SID_HPBVMS_034():
     AssertEqual(src1=vsatp_readback_mode, src2=vsatp_orig_mode)  # WARL: mode unchanged
 
     # --- hgatp WARL test ---
-    Comment("Read hgatp, write reserved mode, verify WARL")
+    Comment("hgatp WARL: write reserved mode encoding, verify mode unchanged")
     CsrRead(csr_name="hgatp")
     Arithmetic(op="and", src1=hgatp_orig, src2=mode_mask)  # extract original mode
     Arithmetic(op="and", src1=hgatp_orig, src2=inv_mode_mask)  # clear mode field
@@ -692,13 +691,14 @@ def SID_HPBVMS_036_vs_mode():
     Pseudocode:
     # VS-mode: satp read (accesses vsatp due to V=1)
     Comment("VS-mode: read satp (maps to vsatp when V=1)")
-    CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)  # read satp
-    CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read)  # write satp (restore value)
+    CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)  # read satp
+    Comment("VS-mode: write satp back (maps to vsatp when V=1)")
+    CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read, target_is_x0=True)  # write satp (restore value)
     """
     comment_vs_read = Comment(comment="VS-mode: read satp (maps to vsatp when V=1)")
-    satp_read = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)
+    satp_read = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)
     comment_vs_write = Comment(comment="VS-mode: write satp back (maps to vsatp when V=1)")
-    satp_write = CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read)
+    satp_write = CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read, target_is_x0=True)
 
     return TestScenario.from_steps(
         id="27",
@@ -785,28 +785,28 @@ def SID_HPBVMS_036_mmode_mprv_mpv():
     # --- Config: MPRV=1, MPV=1, MPP=0 (VU-like loads/stores) ---
     Comment("Set MPRV=1, MPV=1, MPP=0 in mstatus")
     MachineCode(code=[
-        CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=(1<<17)|(1<<39))  # set MPRV, MPV
-        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(3<<11))  # clear MPP
-        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=True)  # vsatp read
-        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_val)  # vsatp write
-        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)  # satp read
-        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_val)  # satp write
-        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)  # hgatp read
-        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_val)  # hgatp write
-        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(1<<17)|(1<<39))  # cleanup
+        CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=(1<<17)|(1<<39), target_is_x0=True)  # set MPRV, MPV
+        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(3<<11), target_is_x0=True)  # clear MPP
+        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0)  # vsatp read
+        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read, target_is_x0=True)  # vsatp write
+        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)  # satp read
+        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read, target_is_x0=True)  # satp write
+        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0)  # hgatp read
+        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read, target_is_x0=True)  # hgatp write
+        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(1<<17)|(1<<39), target_is_x0=True)  # cleanup
     ])
     # --- Config: MPRV=1, MPV=1, MPP=1 (VS-like loads/stores) ---
     Comment("Set MPRV=1, MPV=1, MPP=1 in mstatus")
     MachineCode(code=[
-        CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=(1<<17)|(1<<39)|(1<<11))  # MPRV,MPV,MPP[0]
-        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(1<<12))  # clear MPP[1]
-        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=True)  # vsatp read
-        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_val)  # vsatp write
-        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)  # satp read
-        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_val)  # satp write
-        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)  # hgatp read
-        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_val)  # hgatp write
-        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(1<<17)|(1<<39))  # cleanup
+        CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=(1<<17)|(1<<39)|(1<<11), target_is_x0=True)  # MPRV,MPV,MPP[0]
+        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(1<<12), target_is_x0=True)  # clear MPP[1]
+        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0)  # vsatp read
+        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read, target_is_x0=True)  # vsatp write
+        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)  # satp read
+        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read, target_is_x0=True)  # satp write
+        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0)  # hgatp read
+        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read, target_is_x0=True)  # hgatp write
+        CsrDirectAccess(op="csrrc", csr_name="mstatus", src1=(1<<17)|(1<<39), target_is_x0=True)  # cleanup
     ])
     """
     MPRV_BIT = 1 << 17
@@ -830,14 +830,14 @@ def SID_HPBVMS_036_mmode_mprv_mpv():
         target_is_x0=True,
     )
     # vsatp r/w
-    vsatp_read_0 = CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=True)
-    vsatp_write_0 = CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read_0)
+    vsatp_read_0 = CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0)
+    vsatp_write_0 = CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read_0, target_is_x0=True)
     # satp r/w
-    satp_read_0 = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)
-    satp_write_0 = CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read_0)
+    satp_read_0 = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)
+    satp_write_0 = CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read_0, target_is_x0=True)
     # hgatp r/w
-    hgatp_read_0 = CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)
-    hgatp_write_0 = CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read_0)
+    hgatp_read_0 = CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0)
+    hgatp_write_0 = CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read_0, target_is_x0=True)
     # cleanup
     clear_mprv_mpv_0 = CsrDirectAccess(
         op="csrrc",
@@ -874,14 +874,14 @@ def SID_HPBVMS_036_mmode_mprv_mpv():
         target_is_x0=True,
     )
     # vsatp r/w
-    vsatp_read_1 = CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=True)
-    vsatp_write_1 = CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read_1)
+    vsatp_read_1 = CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0)
+    vsatp_write_1 = CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read_1, target_is_x0=True)
     # satp r/w
-    satp_read_1 = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)
-    satp_write_1 = CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read_1)
+    satp_read_1 = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)
+    satp_write_1 = CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read_1, target_is_x0=True)
     # hgatp r/w
-    hgatp_read_1 = CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)
-    hgatp_write_1 = CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read_1)
+    hgatp_read_1 = CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0)
+    hgatp_write_1 = CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read_1, target_is_x0=True)
     # cleanup
     clear_mprv_mpv_1 = CsrDirectAccess(
         op="csrrc",
@@ -933,27 +933,27 @@ def SID_HPBVMS_036_hsmode_spv():
     # --- Config: SPV=1, SPVP=0 ---
     Comment("HS-mode: SPV=1, SPVP=0 -- CSR access to vsatp/satp/hgatp")
     SupervisorCode(code=[
-        CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=(1<<7))  # set SPV
-        CsrDirectAccess(op="csrrc", csr_name="hstatus", src1=(1<<8))  # clear SPVP
-        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=True)  # vsatp read
-        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_val)  # vsatp write
-        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)  # satp read
-        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_val)  # satp write
-        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)  # hgatp read
-        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_val)  # hgatp write
-        CsrDirectAccess(op="csrrc", csr_name="hstatus", src1=(1<<7))  # cleanup SPV
+        CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=(1<<7), target_is_x0=True)  # set SPV
+        CsrDirectAccess(op="csrrc", csr_name="hstatus", src1=(1<<8), target_is_x0=True)  # clear SPVP
+        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=False)  # vsatp read
+        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read, target_is_x0=False)  # vsatp write
+        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=False)  # satp read
+        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read, target_is_x0=False)  # satp write
+        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=False)  # hgatp read
+        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read, target_is_x0=False)  # hgatp write
+        CsrDirectAccess(op="csrrc", csr_name="hstatus", src1=(1<<7), target_is_x0=True)  # cleanup SPV
     ])
     # --- Config: SPV=1, SPVP=1 ---
     Comment("HS-mode: SPV=1, SPVP=1 -- CSR access to vsatp/satp/hgatp")
     SupervisorCode(code=[
-        CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=(1<<7)|(1<<8))  # set SPV, SPVP
-        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=True)  # vsatp read
-        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_val)  # vsatp write
-        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)  # satp read
-        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_val)  # satp write
-        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)  # hgatp read
-        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_val)  # hgatp write
-        CsrDirectAccess(op="csrrc", csr_name="hstatus", src1=(1<<7)|(1<<8))  # cleanup
+        CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=(1<<7)|(1<<8), target_is_x0=True)  # set SPV, SPVP
+        CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=False)  # vsatp read
+        CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=vsatp_read, target_is_x0=False)  # vsatp write
+        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=False)  # satp read
+        CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read, target_is_x0=False)  # satp write
+        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=False)  # hgatp read
+        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=hgatp_read, target_is_x0=False)  # hgatp write
+        CsrDirectAccess(op="csrrc", csr_name="hstatus", src1=(1<<7)|(1<<8), target_is_x0=True)  # cleanup
     ])
     """
     SPV_BIT = 1 << 7
@@ -1069,7 +1069,7 @@ def SID_HPBVMS_037():
     # Write ASID=0xffff with MODE=0, PPN=0 -> value = 0xffff << 44
     LoadImmediateStep(imm=0xffff << 44)
     CsrDirectAccess(op="csrrw", csr_name="vsatp", src1=asid_val)  # write vsatp
-    CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0, target_is_x0=True)  # read back
+    CsrDirectAccess(op="csrrs", csr_name="vsatp", src1=0)  # read back
     # Extract ASID: shift right by 44, mask to 16 bits
     LoadImmediateStep(imm=44)
     Arithmetic(op="srl", src1=vsatp_readback, src2=shift_amt)
@@ -1136,7 +1136,7 @@ def SID_HPBVMS_038():
     # Write VMID=0x3fff with MODE=0, PPN=0 -> value = 0x3fff << 44
     LoadImmediateStep(imm=0x3fff << 44)
     CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=vmid_val)  # write hgatp
-    CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)  # read back
+    CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0)  # read back
     # Extract VMID: shift right by 44, mask to 14 bits
     LoadImmediateStep(imm=44)
     Arithmetic(op="srl", src1=hgatp_readback, src2=shift_amt)
@@ -1201,13 +1201,16 @@ def SID_HPBVMS_040():
     Pseudocode:
     # --- TVM=1: hgatp access should trap ---
     CsrWrite(csr_name="mstatus", set_mask=1<<20)  # Set TVM=1
-    Comment("HS-mode: read hgatp with TVM=1 -> ILLEGAL_INSTRUCTION")
     SupervisorCode(code=[
-        CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)
-        AssertException(cause=ILLEGAL_INSTRUCTION, code=[...])
+        Comment("HS-mode: read hgatp with TVM=1 -> expect ILLEGAL_INSTRUCTION")
+        AssertException(cause=ILLEGAL_INSTRUCTION, code=[
+            CsrDirectAccess(op="csrrs", csr_name="hgatp", src1=0, target_is_x0=True)
+        ])
+        Comment("HS-mode: write hgatp with TVM=1 -> expect ILLEGAL_INSTRUCTION")
         LoadImmediateStep(imm=0)
-        CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=write_val)
-        AssertException(cause=ILLEGAL_INSTRUCTION, code=[...])
+        AssertException(cause=ILLEGAL_INSTRUCTION, code=[
+            CsrDirectAccess(op="csrrw", csr_name="hgatp", src1=write_val)
+        ])
     ])
     # --- TVM=0: hgatp access should succeed ---
     CsrWrite(csr_name="mstatus", clear_mask=1<<20)  # Clear TVM
@@ -1318,9 +1321,9 @@ def SID_HPBVMS_041():
     # --- VTVM=0: satp access should succeed ---
     CsrWrite(csr_name="hstatus", clear_mask=1<<20)  # clear VTVM
     Comment("VTVM=0: satp read in VS-mode should succeed")
-    CsrDirectAccess(op="csrrs", csr_name="satp", src1=0, target_is_x0=True)  # read satp
+    CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)  # read satp
     Comment("VTVM=0: satp write in VS-mode should succeed")
-    CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read_ok)  # write satp
+    CsrDirectAccess(op="csrrw", csr_name="satp", src1=satp_read_ok, target_is_x0=True)  # write satp
 
     # --- VTVM=1: satp access should trap ---
     CsrWrite(csr_name="hstatus", set_mask=1<<20)  # set VTVM
@@ -1344,7 +1347,6 @@ def SID_HPBVMS_041():
         op="csrrs",
         csr_name="satp",
         src1=0,
-        target_is_x0=True,
     )
 
     comment_write_ok = Comment(comment="VTVM=0: satp write in VS-mode should succeed")
@@ -1352,6 +1354,7 @@ def SID_HPBVMS_041():
         op="csrrw",
         csr_name="satp",
         src1=satp_read_ok,
+        target_is_x0=True,
     )
 
     # === VTVM=1: satp access should trap with VIRTUAL_INSTRUCTION ===

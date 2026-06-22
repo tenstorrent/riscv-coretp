@@ -981,11 +981,12 @@ def SID_HEXCEP_10():
     This should cause a virtual instruction exception.
 
     Pseudocode:
-    CsrWrite(csr_name="hstatus", set_mask=1<<20)  # Set VTVM bit (bit 20)
-    SupervisorCode(code=[
-        CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)  # Read satp in VS-mode
-    ])
-    AssertException(cause=ExceptionCause.VIRTUAL_INSTRUCTION)
+    Comment("Set hstatus.VTVM=1 (bit 20) to trap satp accesses in VS-mode")
+    CsrWrite(csr_name="hstatus", set_mask=1<<20)
+    Comment("Access satp CSR in VS-mode - should cause virtual instruction exception")
+    zero = LoadImmediateStep(imm=0)
+    access_satp = CsrDirectAccess(op="csrrs", csr_name="satp", src1=zero)  # Read satp in VS-mode
+    AssertException(cause=ExceptionCause.VIRTUAL_INSTRUCTION, code=[access_satp])
     """
     comment_1 = Comment(comment="Set hstatus.VTVM=1 (bit 20) to trap satp accesses in VS-mode")
     set_vtvm = CsrWrite(csr_name="hstatus", set_mask=1 << 20)
@@ -1295,6 +1296,7 @@ def SID_HEXCEP_14_hs_mode_tvm1():
     CsrWrite(csr_name="mstatus", set_mask=1<<20)  # Set TVM
     Memory(...)
     AssertException(cause=ILLEGAL_INSTRUCTION, code=[MemAccess(op="hfence.gvma", ...)])
+    AssertException(cause=ILLEGAL_INSTRUCTION, code=[MemAccess(op="sinval.vma", ...)])
     AssertException(cause=ILLEGAL_INSTRUCTION, code=[Directive(directive="hinval.gvma x0, x0")])
     """
     steps = []
@@ -1583,8 +1585,8 @@ def SID_HEXCEP_17_vs0_both():
     Delegation: medeleg[2], hedeleg[2] = {0, 1}
 
     Pseudocode:
-    # In HS-mode (before entering VS-mode):
-    SupervisorCode(code=[CsrDirectAccess(op="csrrc", csr_name="sstatus", ...)])  # Clear HS-level sstatus.VS
+    # Clear HS-level sstatus.VS (issued in machine mode):
+    CsrWrite(csr_name="sstatus", clear_mask=0x600, force_machine_mode=True)  # Clear HS-level sstatus.VS
     # In VS-mode:
     CsrWrite(csr_name="vsstatus", clear_mask=0x600)  # Clear vsstatus.VS
     Directive(directive="vsetivli x0, 1, e32, m1")  # Vector instruction
@@ -1592,17 +1594,10 @@ def SID_HEXCEP_17_vs0_both():
     """
     steps = []
 
-    # Clear HS-level sstatus.VS using SupervisorCode (runs in HS-mode before VS-mode)
-    comment_sstatus = Comment(comment="Clear HS-level sstatus.VS=0 (must be done in HS-mode)")
-    vs_mask = LoadImmediateStep(imm=0x600)  # VS bits 10:9
-    clear_hs_sstatus_vs = SupervisorCode(
-        code=[
-            CsrDirectAccess(op="csrrc", csr_name="sstatus", src1=vs_mask),
-        ]
-    )
-    steps.extend([comment_sstatus, vs_mask, clear_hs_sstatus_vs])
+    comment_sstatus = Comment(comment="Clear HS-level sstatus.VS=0")
+    clear_hs_sstatus_vs = CsrWrite(csr_name="sstatus", clear_mask=0x600, force_machine_mode=True)
+    steps.extend([comment_sstatus, clear_hs_sstatus_vs])
 
-    # Clear vsstatus.VS (bits 10:9) - this CsrWrite runs in VS-mode
     comment_vsstatus = Comment(comment="Clear vsstatus.VS=0 (VS-level)")
     clear_vsstatus_vs = CsrWrite(csr_name="vsstatus", clear_mask=0x600)
     steps.extend([comment_vsstatus, clear_vsstatus_vs])
@@ -1635,8 +1630,8 @@ def SID_HEXCEP_17_vsstatus_vs0():
     This causes ILLEGAL_INSTRUCTION (VS-level disables vector).
 
     Pseudocode:
-    # In HS-mode (before entering VS-mode):
-    SupervisorCode(code=[CsrDirectAccess(op="csrrs", csr_name="sstatus", ...)])  # Set HS-level sstatus.VS
+    # Set HS-level sstatus.VS (issued in machine mode):
+    CsrWrite(csr_name="sstatus", set_mask=0x200, force_machine_mode=True)  # Set HS-level sstatus.VS
     # In VS-mode:
     CsrWrite(csr_name="vsstatus", clear_mask=0x600)  # Clear vsstatus.VS
     Directive(directive="vsetivli x0, 1, e32, m1")
@@ -1644,15 +1639,9 @@ def SID_HEXCEP_17_vsstatus_vs0():
     """
     steps = []
 
-    # Set HS-level sstatus.VS=1 using SupervisorCode (runs in HS-mode before VS-mode)
-    comment_sstatus = Comment(comment="Set HS-level sstatus.VS=1 (must be done in HS-mode)")
-    vs_mask = LoadImmediateStep(imm=0x200)  # VS=01 (Initial)
-    set_hs_sstatus_vs = SupervisorCode(
-        code=[
-            CsrDirectAccess(op="csrrs", csr_name="sstatus", src1=vs_mask),
-        ]
-    )
-    steps.extend([comment_sstatus, vs_mask, set_hs_sstatus_vs])
+    comment_sstatus = Comment(comment="Set HS-level sstatus.VS=1")
+    set_hs_sstatus_vs = CsrWrite(csr_name="sstatus", set_mask=0x200, force_machine_mode=True)
+    steps.extend([comment_sstatus, set_hs_sstatus_vs])
 
     # Clear vsstatus.VS=0 (disable at VS-level) - this CsrWrite runs in VS-mode
     comment_vsstatus = Comment(comment="Clear vsstatus.VS=0 (VS-level disabled)")
@@ -1687,8 +1676,8 @@ def SID_HEXCEP_17_sstatus_vs0():
     This causes ILLEGAL_INSTRUCTION (HS-level disables vector).
 
     Pseudocode:
-    # In HS-mode (before entering VS-mode):
-    SupervisorCode(code=[CsrDirectAccess(op="csrrc", csr_name="sstatus", ...)])  # Clear HS-level sstatus.VS
+    # Clear HS-level sstatus.VS (issued in machine mode):
+    CsrWrite(csr_name="sstatus", clear_mask=0x600, force_machine_mode=True)  # Clear HS-level sstatus.VS
     # In VS-mode:
     CsrWrite(csr_name="vsstatus", set_mask=0x200)  # Set vsstatus.VS=1
     Directive(directive="vsetivli x0, 1, e32, m1")
@@ -1696,15 +1685,9 @@ def SID_HEXCEP_17_sstatus_vs0():
     """
     steps = []
 
-    # Clear HS-level sstatus.VS=0 using SupervisorCode (runs in HS-mode before VS-mode)
-    comment_sstatus = Comment(comment="Clear HS-level sstatus.VS=0 (must be done in HS-mode)")
-    vs_mask = LoadImmediateStep(imm=0x600)  # VS bits 10:9
-    clear_hs_sstatus_vs = SupervisorCode(
-        code=[
-            CsrDirectAccess(op="csrrc", csr_name="sstatus", src1=vs_mask),
-        ]
-    )
-    steps.extend([comment_sstatus, vs_mask, clear_hs_sstatus_vs])
+    comment_sstatus = Comment(comment="Clear HS-level sstatus.VS=0")
+    clear_hs_sstatus_vs = CsrWrite(csr_name="sstatus", clear_mask=0x600, force_machine_mode=True)
+    steps.extend([comment_sstatus, clear_hs_sstatus_vs])
 
     # Set vsstatus.VS=1 (enable at VS-level) - this CsrWrite runs in VS-mode
     comment_vsstatus = Comment(comment="Set vsstatus.VS=1 (VS-level enabled)")

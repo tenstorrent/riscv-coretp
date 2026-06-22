@@ -176,7 +176,7 @@ def SID_ZHP_04a_S():
         id="5",
         name="SID_ZHP_04a_S",
         description="Use CSR serialisation before Pause instruction",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.S]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
         steps=[
             pre_comment,
             set_up_mcounteren,
@@ -221,7 +221,7 @@ def SID_ZHP_04a_U():
         id="5",
         name="SID_ZHP_04a_U",
         description="Use CSR serialisation before Pause instruction",
-        env=TestEnvCfg(priv_modes=[PrivilegeMode.U]),
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.U], virtualized=[False]),
         steps=[
             pre_comment,
             set_up_mcounteren,

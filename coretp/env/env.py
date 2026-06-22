@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass, field
 from typing import Union
-from coretp.rv_enums import PagingMode, PageSize, PrivilegeMode
+from coretp.rv_enums import PagingMode, PageSize, PrivilegeMode, InterruptMode
 
 
 @dataclass(frozen=True)
@@ -21,6 +21,8 @@ class TestEnv:
     hart_count: int = 1
     virtualized: bool = False  #: Whether the test environment is virtualized or in bare metal (hypervisor) mode
     deleg_excp_to: PrivilegeMode = PrivilegeMode.M
+    deleg_intr_to: PrivilegeMode = PrivilegeMode.M  #: Target privilege mode for interrupt delegation via mideleg
+    interrupt_mode: InterruptMode = InterruptMode.VECTORED  #: Interrupt vector mode (direct vs vectored)
     max_test_runs: int = 1000000  # Arbitrary large number to ensure test runs indefinitely
 
     def get_max_va_bits(self) -> int:

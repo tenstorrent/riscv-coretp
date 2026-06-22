@@ -1256,14 +1256,14 @@ def SID_ZICBO_50_ZIC64B_01():
     )
 
     comment_3 = Comment(comment="1. Store to VA non-zero value")
-    store_va = Store(memory=mem, value=0xDEADBEEF, offset=0)
-    store_va_2 = Store(memory=mem, value=0xDEADBEEF, offset=32)
-    store_va_3 = Store(memory=mem, value=0xDEADBEEF, offset=56)
+    store_va = Store(op="sd", memory=mem, value=0xDEADBEEF, offset=0)
+    store_va_2 = Store(op="sd", memory=mem, value=0xDEADBEEF, offset=32)
+    store_va_3 = Store(op="sd", memory=mem, value=0xDEADBEEF, offset=56)
 
     comment_4 = Comment(comment="2. Store to VA+64 non-zero value")
-    store_va_plus_64 = Store(memory=mem, value=0xCAFEBABE, offset=64)
-    store_va_plus_64_2 = Store(memory=mem, value=0xCAFEBABE, offset=96)
-    store_va_plus_64_3 = Store(memory=mem, value=0xCAFEBABE, offset=120)
+    store_va_plus_64 = Store(op="sd", memory=mem, value=0xCAFEBABE, offset=64)
+    store_va_plus_64_2 = Store(op="sd", memory=mem, value=0xCAFEBABE, offset=96)
+    store_va_plus_64_3 = Store(op="sd", memory=mem, value=0xCAFEBABE, offset=120)
 
     comment_5 = Comment(comment="3. CBO.ZERO to VA")
     cbo_zero = MemAccess(op="cbo.zero", memory=mem, offset=0)

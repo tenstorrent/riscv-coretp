@@ -103,10 +103,9 @@ def _invalid_pte_steps(
         gva_check=True,
     )
     comment_amo = Comment(comment=f"AMO on invalid PTE - expect {store_cause.name}")
-    amo_val = LoadImmediateStep(imm=0x1)
     assert_amo = AssertException(
         cause=store_cause,
-        code=[MemAccess(memory=mem_rw, src2=amo_val, extension=Extension.A)],
+        code=[MemAccess(memory=mem_rw, extension=Extension.A)],
         tval=mem_rw,
         htval=mem_rw if is_guest_fault else None,
         gva_check=True,
@@ -142,7 +141,6 @@ def _invalid_pte_steps(
         st_val,
         assert_st,
         comment_amo,
-        amo_val,
         assert_amo,
         nop_val,
         nop,
@@ -195,22 +193,17 @@ def SID_HPBVMS_017_gpf_u0_ad_u0():
     Paging modes = pick_all{{1st level - SV39, SV48, SV57}; {2nd level - SV39x4, SV48x4, SV57x4}}
 
     Pseudocode:
-    # --- D-side: Load in VU-mode with G-stage U=0 ---
-    Memory(size=0x1000, page_size=SIZE_4K,
+    # --- D-side: Load and Store in VU-mode with G-stage U=0 (shared Memory) ---
+    mem_rw = Memory(size=0x1000, page_size=SIZE_4K,
            flags=VALID|READ|WRITE|USER|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_exclude_flags=USER)
+           leaf_gleaf_exclude_flags=USER, modify_leaf=True)
     Comment("D-side load in VU-mode with G-stage leaf U=0 - expect LOAD_GUEST_PAGE_FAULT")
-    AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem_ld)])
+    AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem_rw)])
 
-    # --- D-side: Store in VU-mode with G-stage U=0 ---
-    Memory(size=0x1000, page_size=SIZE_4K,
-           flags=VALID|READ|WRITE|USER|ACCESSED|DIRTY,
-           leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_exclude_flags=USER)
     Comment("D-side store in VU-mode with G-stage leaf U=0 - expect STORE_AMO_GUEST_PAGE_FAULT")
     LoadImmediateStep(imm=0xAB)
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem_st, value=st_val)])
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem_rw, value=st_val)])
 
     # --- I-side: Fetch in VU-mode with G-stage U=0 ---
     LoadImmediateStep(imm=0)
@@ -218,7 +211,7 @@ def SID_HPBVMS_017_gpf_u0_ad_u0():
     CodePage(size=0x1000, page_size=SIZE_4K,
              flags=VALID|READ|EXECUTE|USER|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             leaf_gleaf_exclude_flags=USER,
+             leaf_gleaf_exclude_flags=USER, modify_leaf=True,
              code=[nop])
     Comment("I-side fetch in VU-mode with G-stage leaf U=0 - expect INSTRUCTION_GUEST_PAGE_FAULT")
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
@@ -311,29 +304,26 @@ def SID_HPBVMS_017_gpf_u0_ad_vstage_ad():
     Paging modes = pick_all{{1st level - SV39, SV48, SV57}; {2nd level - SV39x4, SV48x4, SV57x4}}
 
     Pseudocode:
-    # --- D-side: Load with G-stage W=0 blocking VS-stage A/D update ---
+    CsrWrite(csr_name="menvcfg", set_mask=1<<61)   # enable menvcfg.ADUE
+    CsrWrite(csr_name="henvcfg", set_mask=1<<61)   # enable henvcfg.ADUE
+
+    # --- D-side: Load and Store with G-stage W=0 blocking VS-stage A/D update (shared Memory) ---
     # VS-stage leaf PTE: VALID|READ|WRITE (A=0, D=0 so hardware must set them)
     # G-stage leaf PTE for data page: VALID|READ|WRITE|ACCESSED|DIRTY (normal)
     # G-stage leaf PTE for VS-stage page table (nonleaf_gleaf): VALID|READ|ACCESSED|DIRTY (W=0)
     # Hardware tries to set A bit on VS-stage PTE -> writes to guest memory ->
     # G-stage blocks write -> LOAD_GUEST_PAGE_FAULT
-    Memory(size=0x1000, page_size=SIZE_4K,
+    mem_rw = Memory(size=0x1000, page_size=SIZE_4K,
            flags=VALID|READ|WRITE, exclude_flags=ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            nonleaf_gleaf_flags=VALID|READ|ACCESSED|DIRTY,
-           nonleaf_gleaf_exclude_flags=WRITE)
-    Comment("D-side load: G-stage W=0 blocks VS-stage A/D update - expect LOAD_GUEST_PAGE_FAULT")
-    AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem_ld)])
+           nonleaf_gleaf_exclude_flags=WRITE, modify_nonleaf=True)
+    Comment("D-side load: G-stage W=0 on VS PT page blocks A/D update - expect LOAD_GUEST_PAGE_FAULT")
+    AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem_rw)])
 
-    # --- D-side: Store with G-stage W=0 blocking VS-stage A/D update ---
-    Memory(size=0x1000, page_size=SIZE_4K,
-           flags=VALID|READ|WRITE, exclude_flags=ACCESSED|DIRTY,
-           leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           nonleaf_gleaf_flags=VALID|READ|ACCESSED|DIRTY,
-           nonleaf_gleaf_exclude_flags=WRITE)
-    Comment("D-side store: G-stage W=0 blocks VS-stage A/D update - expect STORE_AMO_GUEST_PAGE_FAULT")
+    Comment("D-side store: G-stage W=0 on VS PT page blocks A/D update - expect STORE_AMO_GUEST_PAGE_FAULT")
     LoadImmediateStep(imm=0xCD)
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem_st, value=st_val)])
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem_rw, value=st_val)])
 
     # --- I-side: Fetch with G-stage W=0 blocking VS-stage A/D update ---
     LoadImmediateStep(imm=0)
@@ -342,9 +332,9 @@ def SID_HPBVMS_017_gpf_u0_ad_vstage_ad():
              flags=VALID|READ|EXECUTE, exclude_flags=ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              nonleaf_gleaf_flags=VALID|READ|ACCESSED|DIRTY,
-             nonleaf_gleaf_exclude_flags=WRITE,
+             nonleaf_gleaf_exclude_flags=WRITE, modify_nonleaf=True,
              code=[nop])
-    Comment("I-side fetch: G-stage W=0 blocks VS-stage A/D update - expect INSTRUCTION_GUEST_PAGE_FAULT")
+    Comment("I-side fetch: G-stage W=0 on VS PT page blocks A/D update - expect INSTRUCTION_GUEST_PAGE_FAULT")
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
     """
     # Enable menvcfg.ADUE and henvcfg.ADUE (bit 61) for hardware A/D updates
@@ -464,7 +454,7 @@ def SID_HPBVMS_018_explicit_trap():
     Memory(size=0x1000, page_size=SIZE_4K,
            flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           nonleaf_gleaf_exclude_flags=VALID)
+           nonleaf_gleaf_exclude_flags=VALID, modify_nonleaf=True)
     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem_rw, offset=1)], tval=(mem_rw, 1), gva_check=True)
 
     # --- D-side: Store triggering PTW fault ---
@@ -475,8 +465,9 @@ def SID_HPBVMS_018_explicit_trap():
     CodePage(size=0x1000, page_size=SIZE_4K,
              flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             nonleaf_gleaf_exclude_flags=VALID, code=[nop])
-    AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp, tval=cp, gva_check=True)
+             nonleaf_gleaf_exclude_flags=VALID, modify_nonleaf=True, code=[nop])
+    offset_cp = Arithmetic(op="addi", src1=cp, src2=2)
+    AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=offset_cp, tval=(cp, 2), gva_check=True)
     """
     rw_flags = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED | PageFlags.DIRTY
     rx_flags = PageFlags.VALID | PageFlags.READ | PageFlags.EXECUTE | PageFlags.ACCESSED | PageFlags.DIRTY
@@ -577,13 +568,13 @@ def SID_HPBVMS_018_leaf_gleaf():
     CsrWrite(csr_name="mstatus", clear_mask=1<<38)  # clear mstatus.GVA
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_exclude_flags=VALID)
+           leaf_gleaf_exclude_flags=VALID, modify_leaf=True)
     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)], tval=mem, htval=mem, gva_check=True)
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)], tval=mem, htval=mem, gva_check=True)
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             leaf_gleaf_exclude_flags=VALID, code=[nop])
+             leaf_gleaf_exclude_flags=VALID, modify_leaf=True, code=[nop])
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp, tval=cp, htval=cp, gva_check=True)
     """
     return TestScenario.from_steps(
@@ -615,13 +606,13 @@ def SID_HPBVMS_018_leaf_gnonleaf():
     CsrWrite(csr_name="mstatus", clear_mask=1<<38)  # clear mstatus.GVA
     Memory(size=0x1000, flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gnonleaf_exclude_flags=VALID)
+           leaf_gnonleaf_exclude_flags=VALID, modify_leaf=True)
     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)], tval=mem, htval=mem, gva_check=True)
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)], tval=mem, htval=mem, gva_check=True)
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             leaf_gnonleaf_exclude_flags=VALID, code=[nop])
+             leaf_gnonleaf_exclude_flags=VALID, modify_leaf=True, code=[nop])
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp, tval=cp, htval=cp, gva_check=True)
     """
     return TestScenario.from_steps(
@@ -656,7 +647,7 @@ def SID_HPBVMS_018_leaf_gnonleaf():
 #            nonleaf_gnonleaf_exclude_flags=VALID)
 #     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)], tval=mem, htval=mem, gva_check=True)
 #     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)], tval=mem, htval=mem, gva_check=True)
-#     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
+#     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
 #     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
 #              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
 #              nonleaf_gnonleaf_exclude_flags=VALID, code=[nop])
@@ -697,14 +688,17 @@ def SID_HPBVMS_021_leaf_gleaf():
     Memory(num_pages=2, size=0x2000, page_size=SIZE_4K, page_cross_en=True,
            flags=VALID|READ|WRITE|ACCESSED|DIRTY,
            leaf_gleaf_flags=VALID|READ|WRITE|ACCESSED|DIRTY,
-           leaf_gleaf_exclude_flags=VALID)
+           leaf_gleaf_exclude_flags=VALID, modify_leaf=True)
     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem, offset=0xFFF)])
+    LoadImmediateStep(imm=0xAB)
     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val, offset=0xFFF)])
-    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)])
+    AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)])
+    LoadImmediateStep(imm=0)
+    Arithmetic(op="addi", src1=nop_val, src2=0)
     CodePage(num_pages=2, size=0x2000, page_size=SIZE_4K, page_cross_en=True,
              flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
-             leaf_gleaf_exclude_flags=VALID, code=[nop])
+             leaf_gleaf_exclude_flags=VALID, modify_leaf=True, code=[nop])
     AssertFetchException(cause=INSTRUCTION_GUEST_PAGE_FAULT, target=cp)
     """
     rw_flags = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED | PageFlags.DIRTY
@@ -736,10 +730,9 @@ def SID_HPBVMS_021_leaf_gleaf():
     )
 
     comment_amo = Comment(comment="Page-crossing AMO with invalid G-stage leaf PTE - expect STORE_AMO_GUEST_PAGE_FAULT")
-    amo_val = LoadImmediateStep(imm=0x1)
     assert_amo = AssertException(
         cause=ExceptionCause.STORE_AMO_GUEST_PAGE_FAULT,
-        code=[MemAccess(memory=mem_rw, src2=amo_val, extension=Extension.A)],
+        code=[MemAccess(memory=mem_rw, extension=Extension.A)],
     )
 
     # --- I-side: Page-crossing instruction fetch ---
@@ -775,7 +768,6 @@ def SID_HPBVMS_021_leaf_gleaf():
             st_val,
             assert_st,
             comment_amo,
-            amo_val,
             assert_amo,
             nop_val,
             nop,
@@ -804,7 +796,7 @@ def SID_HPBVMS_021_leaf_gleaf():
 #            nonleaf_gnonleaf_exclude_flags=VALID)
 #     AssertException(cause=LOAD_GUEST_PAGE_FAULT, code=[Load(memory=mem)], tval=mem, htval=mem, gva_check=True)
 #     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[Store(memory=mem, value=st_val)], tval=mem, htval=mem, gva_check=True)
-#     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, src2=amo_val, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
+#     AssertException(cause=STORE_AMO_GUEST_PAGE_FAULT, code=[MemAccess(memory=mem, extension=Extension.A)], tval=mem, htval=mem, gva_check=True)
 #     CodePage(size=0x1000, flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
 #              leaf_gleaf_flags=VALID|READ|EXECUTE|ACCESSED|DIRTY,
 #              nonleaf_gnonleaf_exclude_flags=VALID, code=[nop])
