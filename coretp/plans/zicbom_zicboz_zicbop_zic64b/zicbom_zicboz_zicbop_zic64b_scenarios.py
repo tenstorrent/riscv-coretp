@@ -744,15 +744,13 @@ def SID_ZICBO_019():
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        # Same physical address
-        base_pa=0x10000,
     )
     mem_va2 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        # Same physical address, different VA
-        base_pa=0x10000,
+        # Different VA, aliased to mem_va1's physical address
+        aliased_to=mem_va1,
     )
 
     comment_4 = Comment(comment="Store data to VA1")
@@ -801,19 +799,18 @@ def SID_ZICBO_020():
     senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
     henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
     comment_1 = Comment(comment="Set up memory regions for aliasing")
-    comment_2 = Comment(comment="Same physical address")
+    comment_2 = Comment(comment="Physical address owned by mem_va1")
     mem_va1 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        base_pa=0x10000,
     )
     comment_3 = Comment(comment="Same physical address, different VA")
     mem_va2 = Memory(
         size=0x1000,
         page_size=PageSize.SIZE_4K,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.EXECUTE,
-        base_pa=0x10000,
+        aliased_to=mem_va1,
     )
 
     comment_4 = Comment(comment="Store data to memory")

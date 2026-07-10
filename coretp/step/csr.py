@@ -89,6 +89,8 @@ class CsrDirectAccess(TestStep):
     :type unimpl: bool
     :param ro: If True, pick from the read-only unimplemented CSR address pool using the seeded RNG
     :type ro: bool
+    :param force_accessibility: If True, override privilege filter to pick CSRs with chosen accessibility
+    :type force_accessibility: str, optional
     """
 
     op: str = ""
@@ -97,3 +99,4 @@ class CsrDirectAccess(TestStep):
     target_is_x0: bool = False
     unimpl: bool = False
     ro: bool = False
+    force_accessibility: Optional[str] = None

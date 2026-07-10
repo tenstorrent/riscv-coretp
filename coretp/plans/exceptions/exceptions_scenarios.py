@@ -24,6 +24,10 @@ from coretp.step.csr import CsrDirectAccess
 
 from . import exceptions_scenario
 
+# Implemented read-only CSRs
+_RO_U_CSRS = list(range(0xC00, 0xC23))  # cycle/time/instret, hpmcounter3-31, vl/vtype/vlenb
+_RO_S_CSRS = [0xDB0]  # stopi
+_RO_M_CSRS = [0xF11, 0xF12, 0xF13, 0xF14, 0xF15]  # mvendorid, marchid, mimpid, mhartid, mconfigptr
 
 # =============================================================================
 # Category: Instruction Address Misaligned
@@ -235,11 +239,23 @@ def SID_EXCEP_04_M():
     """
     comment = Comment(comment="Access reserved/unpriv CSRs to trigger illegal instruction")
 
-    # Write to read-only CSR (mvendorid is MRO)
-    comment_ro = Comment(comment="Write to read-only CSR mvendorid")
-    ro_val = LoadImmediateStep(imm=0x1234)
-    write_ro = CsrWrite(csr_name="mvendorid", value=ro_val, direct_write=True)
-    assert_ro = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_ro])
+    # Write to read-only supervisor CSRs
+    comment_ro_s = [Comment(comment="Write to read-only supervisor CSRs")]
+    for csr in _RO_S_CSRS:
+        write_ro_s = CsrWrite(csr_name=f"0x{csr:03X}", value=0x1234, direct_write=True)
+        comment_ro_s.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_ro_s]))
+
+    # Write to read-only machine CSRs
+    comment_ro_m = [Comment(comment="Write to read-only machine CSRs")]
+    for csr in _RO_M_CSRS:
+        write_ro_m = CsrWrite(csr_name=f"0x{csr:03X}", value=0x1234, direct_write=True)
+        comment_ro_m.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_ro_m]))
+
+    # Write to read-only user CSRs
+    comment_ro_u = [Comment(comment="Write to read-only user CSRs")]
+    for csr in _RO_U_CSRS:
+        write_ro_u = CsrWrite(csr_name=f"0x{csr:03X}", value=0x1234, direct_write=True)
+        comment_ro_u.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_ro_u]))
 
     # Access unimplemented/reserved CSR address
     comment_reserved = Comment(comment="Access unimplemented CSR address")
@@ -261,9 +277,9 @@ def SID_EXCEP_04_M():
         ),
         steps=[
             comment,
-            comment_ro,
-            ro_val,
-            assert_ro,
+            *comment_ro_s,
+            *comment_ro_m,
+            *comment_ro_u,
             comment_reserved,
             assert_reserved,
             comment_sys,
@@ -285,10 +301,11 @@ def SID_EXCEP_04_SU():
     """
     comment = Comment(comment="Access reserved/unpriv CSRs to trigger illegal instruction")
 
-    # Access M-mode CSR from S/U mode (direct_read=True means access from current priv)
-    comment_mmode_csr = Comment(comment="Access M-mode CSR (mstatus) directly - faults in S/U mode")
-    read_mstatus = CsrRead(csr_name="mstatus", direct_read=True)
-    assert_mstatus = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_mstatus])
+    # Access a random implemented M-mode CSR from S/U mode
+    priv_sweep = [Comment(comment="Access 50 random implemented M-mode CSRs directly from S/U - each faults illegal")]
+    for _ in range(50):
+        read_mcsr = CsrDirectAccess(op="csrrs", csr_name=None, target_is_x0=True, force_accessibility="Machine")
+        priv_sweep.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_mcsr]))
 
     # Write to read-only CSR (mvendorid is MRO)
     comment_ro = Comment(comment="Write to read-only CSR mvendorid")
@@ -317,8 +334,7 @@ def SID_EXCEP_04_SU():
         ),
         steps=[
             comment,
-            comment_mmode_csr,
-            assert_mstatus,
+            *priv_sweep,
             comment_ro,
             ro_val,
             assert_ro,
@@ -328,6 +344,72 @@ def SID_EXCEP_04_SU():
             sys_val,
             assert_cycle,
         ],
+    )
+
+
+@exceptions_scenario
+def SID_EXCEP_04_U():
+    """
+    Access Unpriv in CSRs.
+    Caller Mode = From pick_all{U}
+    CSR Address space = pick_all{U,S}
+    Delegation = pick_all{enabled,disabled}
+    Writes to Read-Only CSRs.
+    """
+    comment = Comment(comment="Access reserved/unpriv CSRs to trigger illegal instruction")
+
+    # Access a random implemented S-mode CSR from U mode
+    priv_sweep = [Comment(comment="Access 50 random implemented S-mode CSRs directly from U")]
+    for _ in range(50):
+        read_mcsr = CsrDirectAccess(op="csrrs", csr_name=None, target_is_x0=True, force_accessibility="Supervisor")
+        priv_sweep.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[read_mcsr]))
+
+    # Write to read-only user CSRs
+    comment_ro_u = [Comment(comment="Write to read-only user CSRs")]
+    for csr in _RO_U_CSRS:
+        write_ro_u = CsrWrite(csr_name=f"0x{csr:03X}", value=0x1234, direct_write=True)
+        comment_ro_u.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_ro_u]))
+
+    return TestScenario.from_steps(
+        id="34",
+        name="SID_EXCEP_04_U",
+        description="Access unpriv CSRs triggers illegal instruction",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.U],
+            virtualized=[False],
+        ),
+        steps=[comment, *priv_sweep, *comment_ro_u],
+    )
+
+
+@exceptions_scenario
+def SID_EXCEP_04_S():
+    """
+    Access Unpriv in CSRs.
+    Caller Mode = From pick_all{S}
+    CSR Address space = pick_all{U,S}
+    Delegation = pick_all{enabled,disabled}
+    Writes to Read-Only CSRs.
+    """
+
+    # Write to read-only supervisor CSRs
+    comment_ro_s = [Comment(comment="Write to read-only supervisor CSRs")]
+    for csr in _RO_S_CSRS:
+        write_ro_s = CsrWrite(csr_name=f"0x{csr:03X}", value=0x1234, direct_write=True)
+        comment_ro_s.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_ro_s]))
+
+    # Write to read-only user CSRs
+    comment_ro_u = [Comment(comment="Write to read-only user CSRs")]
+    for csr in _RO_U_CSRS:
+        write_ro_u = CsrWrite(csr_name=f"0x{csr:03X}", value=0x1234, direct_write=True)
+        comment_ro_u.append(AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[write_ro_u]))
+
+    return TestScenario.from_steps(
+        id="35",
+        name="SID_EXCEP_04_S",
+        description="Access unpriv CSRs triggers illegal instruction",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False]),
+        steps=[*comment_ro_s, *comment_ro_u],
     )
 
 

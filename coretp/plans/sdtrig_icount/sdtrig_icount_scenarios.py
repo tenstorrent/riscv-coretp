@@ -440,9 +440,14 @@ def SID_SDTRIG_I007():
     # evidence is hit (bit 24). cfg moved into AssertException.code (A2) so
     # trigger arms after OS_SETUP_CHECK_EXCP writes expected_cause /
     # skip_pc_check.
+    # 3 nop fillers consume the count=3 countdown inside the block (mirrors
+    # SID_SDTRIG_I005's count=3 case), so the *auto-generated* exit jump is
+    # what takes the fault and re-executes -- not user code. rd_after then
+    # runs as its own step after assert_fire, once the fire has completed,
+    # so it observes the post-fire hit bit instead of a pre-fire snapshot.
     cfg_n = ConfigureIcountTrigger(index=8, count=3, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
+    assert_fire = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_n, Directive(directive="nop"), Directive(directive="nop"), Directive(directive="nop")])
     rd_after = ReadTriggerCsr(csr_name="tdata1", direct_read=True)
-    assert_fire = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_n, rd_after])
     hit_mask = LoadImmediateStep(imm=(1 << 24))
     masked_hit = Arithmetic(op="and", src1=rd_after, src2=hit_mask)
     zero = LoadImmediateStep(imm=0)
@@ -465,6 +470,7 @@ def SID_SDTRIG_I007():
             comment,
             sel,
             assert_fire,
+            rd_after,
             hit_mask,
             masked_hit,
             zero,
