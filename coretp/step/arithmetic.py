@@ -32,3 +32,25 @@ class LoadImmediateStep(Arithmetic):
 @dataclass(frozen=True)
 class LoadAddressStep(Arithmetic):
     addr: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class LoadPhysicalAddress(Arithmetic):
+    """
+    Load the physical address of a Memory step into a register.
+
+    This step is used to dynamically get the physical address allocated
+    for a Memory object, which can then be used to construct values (e.g.
+    ``pmpaddr`` / ``pmacfg`` CSR values) that depend on where memory landed.
+
+    Example:
+        mem = Memory(size=0x1000, ...)
+        pa = LoadPhysicalAddress(memory=mem)
+        napot = Arithmetic("or", pa, LoadImmediateStep(imm=0x1FF))
+        CsrWrite(csr_name="pmpaddr0", value=napot)
+
+    :param memory: The Memory step whose physical address should be loaded
+    :type memory: Memory
+    """
+
+    memory: Optional[Any] = None  # Will reference a Memory step

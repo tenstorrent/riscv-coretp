@@ -47,6 +47,7 @@ from .aia_filtering import aia_filtering_scenarios
 from .aia_imsic import aia_imsic_scenarios
 from .sdtrig import sdtrig_scenarios
 from .sdtrig_icount import sdtrig_icount_scenarios
+from .hypervisor_tlb_fence import hypervisor_tlb_fence_scenarios
 from .pmp import pmp_scenarios
 from .hypervisor_interrupts import hypervisor_interrupts_scenarios
 
