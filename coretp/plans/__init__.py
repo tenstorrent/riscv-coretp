@@ -47,7 +47,9 @@ from .aia_filtering import aia_filtering_scenarios
 from .aia_imsic import aia_imsic_scenarios
 from .sdtrig import sdtrig_scenarios
 from .sdtrig_icount import sdtrig_icount_scenarios
+from .hypervisor_tlb_fence import hypervisor_tlb_fence_scenarios
 from .pmp import pmp_scenarios
 from .hypervisor_interrupts import hypervisor_interrupts_scenarios
+from .h_aia import h_aia_scenarios
 
 __all__ = ["new_test_plan", "get_plan", "list_plans", "query_plans"]

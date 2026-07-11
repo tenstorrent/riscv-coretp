@@ -5,7 +5,7 @@ from .step import TestStep
 from .memory import Memory, CodePage, ModifyPte, ReadPTE, WritePTE, RequestPmpRegion
 from .conditional_block import ConditionalBlock
 from .call import Call
-from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep
+from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep, LoadPhysicalAddress
 from .retrieve_address import RetrieveAddress
 from .load_store import MemoryOp, Load, Store, MemAccess, HLoad, HXLoad, HStore
 from .csr import CsrWrite, CsrRead, CsrDirectAccess
@@ -73,6 +73,7 @@ __all__ = [
     "Arithmetic",
     "LoadImmediateStep",
     "LoadAddressStep",
+    "LoadPhysicalAddress",
     "RetrieveAddress",
     "CsrWrite",
     "CsrRead",

@@ -28,7 +28,6 @@ class AssertException(TestStep):
 
     cause: Optional[ExceptionCause] = None
     exception_type: Optional[str] = None
-    tval: Optional[int] = None
     code: list[TestStep] = field(default_factory=list)
     tval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected stval/mtval (0 or None = skip check)
     htval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected htval/mtval2 (0 or None = skip check)

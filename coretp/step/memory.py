@@ -33,6 +33,11 @@ class Memory(TestStep):
     :type base_pa: Optional[Union[int, TestStep]]
     :param base_va: Virtual address - used to request a specific VPN
     :type base_va: Optional[int]
+    :param aliased_to: References another :class:`Memory` step. When set, this region is
+        allocated its own distinct virtual address but is mapped to the **same physical
+        address** as the referenced step (VA->PA aliasing). Mutually exclusive with
+        ``base_pa`` and limited to single-page regions.
+    :type aliased_to: Optional[Memory]
     :param modify: Whether memory can be modified
     :type modify: bool
     :param modify_leaf: Whether G-stage leaf pagetable can be modified
@@ -54,6 +59,7 @@ class Memory(TestStep):
     alignment: Optional[int] = None
     base_pa: Optional[Union[int, TestStep]] = None
     base_va: Optional[int] = None
+    aliased_to: Optional["Memory"] = None
     num_pages: Optional[int] = 1
     or_mask: Optional[str] = None
     modify: bool = False
@@ -84,6 +90,16 @@ class Memory(TestStep):
     nonleaf_gnonleaf_flags: Optional[PageFlags] = None
     nonleaf_gnonleaf_exclude_flags: Optional[PageFlags] = None
 
+    def __post_init__(self):
+        # Validate VA->PA aliasing requests as early as possible (at scenario-definition time).
+        if self.aliased_to is not None:
+            if not isinstance(self.aliased_to, Memory):
+                raise TypeError(f"Memory.aliased_to must reference another Memory step, got {type(self.aliased_to).__name__}")
+            if self.base_pa is not None:
+                raise ValueError("Memory cannot set both aliased_to and base_pa: an alias takes its PA from the referenced step, not a literal/keyed PA.")
+            if self.num_pages not in (None, 1):
+                raise ValueError(f"Memory.aliased_to only supports single-page regions, got num_pages={self.num_pages}.")
+
 
 @dataclass(frozen=True)
 class CodePage(Memory):
@@ -104,6 +120,7 @@ class CodePage(Memory):
     code: list[TestStep] = field(default_factory=list)
 
     def __post_init__(self):
+        super().__post_init__()
         if any(isinstance(step, CodePage) for step in self.code):
             raise ValueError("CodePage cannot contain another CodePage")
 
@@ -132,12 +149,15 @@ class ReadPTE(TestStep):
     :param memory: Memory to read PTE from
     :param level: level of PTE to read (int or PteLevel.NONLEAF/PteLevel.LEAF/PteLevel.FINAL)
     :param g_level: g-stage level of PTE to read (int or PteLevel.NONLEAF/PteLevel.LEAF); only valid with level=PteLevel.FINAL
+    :param napot_offset: for an Svnapot (64KB) page, which of the 16 contiguous 4K sub-page PTEs to
+        read (0..15). Reads the PTE for VA = memory + napot_offset*0x1000. None for non-NAPOT pages.
 
     """
 
     memory: Optional[Memory] = None
     level: Optional[Union[int, PteLevel]] = None
     g_level: Optional[Union[int, PteLevel]] = None
+    napot_offset: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -148,6 +168,8 @@ class WritePTE(TestStep):
     :param memory: Memory to write PTE to
     :param level: level of PTE to write (int or PteLevel.NONLEAF/PteLevel.LEAF/PteLevel.FINAL)
     :param g_level: g-stage level of PTE to write (int or PteLevel.NONLEAF/PteLevel.LEAF); only valid with level=PteLevel.FINAL
+    :param napot_offset: for an Svnapot (64KB) page, which of the 16 contiguous 4K sub-page PTEs to
+        write (0..15). Writes the PTE for VA = memory + napot_offset*0x1000. None for non-NAPOT pages.
 
     """
 
@@ -155,6 +177,7 @@ class WritePTE(TestStep):
     level: Optional[Union[int, PteLevel]] = None
     g_level: Optional[Union[int, PteLevel]] = None
     src: Optional[Union[TestStep, int]] = None
+    napot_offset: Optional[int] = None
 
 
 @dataclass(frozen=True)
