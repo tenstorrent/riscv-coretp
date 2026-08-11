@@ -482,7 +482,9 @@ def SID_IF_011():
             priv_modes=[PrivilegeMode.S],
             virtualized=[False],
         ),
-        steps=[comment, enable_sei, deleg_to_m, trigger_sei, assert_seip, disable_sei],
+        # trigger_sei is the trigger inside assert_seip (code=[trigger_sei]); it must NOT also appear as a
+        # standalone step or the SEI fires once before OS_SETUP_CHECK_INTR arms -> unexpected interrupt (see SID_IF_015).
+        steps=[comment, enable_sei, deleg_to_m, assert_seip, disable_sei],
     )
 
 

@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from coretp import TestScenario, TestEnvCfg
-from coretp.rv_enums import PageFlags, PrivilegeMode, ExceptionCause
+from coretp.rv_enums import PageFlags, PrivilegeMode, ExceptionCause, PagingMode
 from coretp.step import (
     Label,
     Memory,
     MemAccess,
+    Load,
+    Store,
     Arithmetic,
     CsrRead,
     CsrWrite,
@@ -15,6 +17,7 @@ from coretp.step import (
     AssertNotEqual,
     Comment,
     Directive,
+    System,
     LoadImmediateStep,
     ConfigureLoadTrigger,
     ConfigureLoadStoreTrigger,
@@ -30,6 +33,12 @@ from coretp.step import (
 )
 
 from . import sdtrig_icount_scenario
+
+
+# Trigger slots are type-specialized; see the same constants in ..sdtrig.sdtrig_scenarios.
+# Programming a type onto a slot that does not implement it silently arms nothing.
+LS_SLOT = 4
+ICOUNT_SLOT = 8
 
 
 # =============================================================================
@@ -903,9 +912,16 @@ def SID_SDTRIG_I015():
     assert_fp = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_fp, fp])
 
     # Vector
+    # Establish a known LMUL=1 vtype BEFORE arming the trigger so v0/v1/v2 are legal
+    # register groups regardless of the vtype left behind by earlier random vector code.
+    # Under a leftover LMUL>1 (e.g. m4) `vadd.vv v0, v1, v2` is an illegal (misaligned
+    # register group) instruction, which raises ILLEGAL_INSTRUCTION instead of retiring,
+    # so the icount BREAKPOINT never fires. The vsetvli runs before cfg_v so it does not
+    # consume the count=1 countdown.
+    vsetvl_v = Directive(directive="vsetvli t0, x0, e8, m1, ta, ma")
     cfg_v = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
     vec = Directive(directive="vadd.vv v0, v1, v2")
-    assert_vec = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_v, vec])
+    assert_vec = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[vsetvl_v, cfg_v, vec])
 
     # fence
     cfg_fen = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
@@ -1110,7 +1126,7 @@ def SID_SDTRIG_I019():
     mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
     cfg_icount = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
-    cfg_load = ConfigureLoadTrigger(index=0, addr=_lbl_shared_target.name, action=TriggerAction.BREAKPOINT, size=4, priv_mode=("m",))
+    cfg_load = ConfigureLoadTrigger(index=LS_SLOT, addr=_lbl_shared_target.name, action=TriggerAction.BREAKPOINT, size=4, priv_mode=("m",))
 
     # cfg_icount moved into AssertException.code (A2). cfg_load stays as a top-level
     # step — it's a different trigger type and arms an LS trigger on a label, not
@@ -1170,7 +1186,7 @@ def SID_SDTRIG_I021():
     mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
     cfg_icount = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
-    cfg_ls = ConfigureLoadStoreTrigger(index=0, addr=_lbl_stress_target.name, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
+    cfg_ls = ConfigureLoadStoreTrigger(index=LS_SLOT, addr=_lbl_stress_target.name, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
 
     # Enable interrupts to race the fire
     mtip_mask = LoadImmediateStep(imm=(1 << 7))
@@ -1450,3 +1466,365 @@ def SID_SDTRIG_I027():
             assert_cbo,
         ],
     )
+
+
+# Max count (2^14-1) parks the trigger: the body below retires far fewer instructions than this, so
+# the countdown never reaches zero and no breakpoint fires. Keeps type=3/tselect=8 selected while a
+# broad instruction mix retires, which is what the icount coverpoints need in order to sample at all.
+_ICOUNT_PARK_COUNT = 0x3FFF
+
+
+def _icount_park_body():
+    """Return a broad instruction mix covering the categories the icount crosses bin against."""
+    return [
+        Directive(directive="addi x5, x0, 1"),  # arithmetic
+        Directive(directive="add x6, x5, x5"),
+        Directive(directive=".2byte 0x0001  # c.nop"),  # compressed
+        Directive(directive="beq x0, x0, 1f"),  # conditional branch
+        Directive(directive="1:"),
+        Directive(directive="jal x0, 2f"),  # unconditional branch
+        Directive(directive="2:"),
+        Directive(directive="csrr x5, mstatus"),  # csr
+        Directive(directive="fence rw, rw"),  # fence
+        Directive(directive="fence.i"),
+        Directive(directive="fadd.s f0, f1, f2"),  # fp
+        Directive(directive="vsetvli t0, x0, e8, m1, ta, ma"),
+        Directive(directive="vadd.vv v0, v1, v2"),  # vector
+        Directive(directive="nop"),
+        Directive(directive="nop"),
+    ]
+
+
+@sdtrig_icount_scenario
+def SID_SDTRIG_I028():
+    """
+    Park a non-firing icount trigger (type=3 at tselect=8, count=max) and retire a broad
+    instruction mix underneath it.
+
+    Every icount coverpoint is gated on ``tdata1.type==3 && tselect==8``, so none of them sample
+    unless an icount trigger is the selected trigger while instructions retire. This scenario
+    establishes exactly that state without firing, which fills the not-tripped half of the icount
+    crosses (instruction type, privilege mode, memory attribute, action) in one pass.
+    """
+    comment = Comment(comment="Park a max-count icount trigger at tselect=8; broad instruction mix retires without firing")
+
+    mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+
+    sel = SelectTrigger(index=ICOUNT_SLOT)
+    park = WriteTriggerCsr(
+        csr_name="tdata1",
+        value=build_tdata1_icount(count=_ICOUNT_PARK_COUNT, action=TriggerAction.BREAKPOINT, priv_mode=("m", "s", "u")),
+        direct_write=True,
+    )
+
+    # Data-side accesses so the dside memory-attribute coverpoints sample while icount is selected.
+    ld = MemAccess(memory=mem, op="lw")
+    st = MemAccess(memory=mem, op="sw")
+
+    # Read tdata1 back and prove the park held. The count field decrements as instructions retire,
+    # so it is NOT still max -- what matters is that hit[24] is clear (the trigger never fired) and
+    # type[63:60] is still 3 (an icount trigger stayed selected for the whole body).
+    rd = ReadTriggerCsr(csr_name="tdata1", direct_read=True)
+
+    hit_mask = LoadImmediateStep(imm=(1 << 24))
+    hit_bit = Arithmetic(op="and", src1=rd, src2=hit_mask)
+    zero = LoadImmediateStep(imm=0)
+    assert_never_fired = AssertEqual(src1=hit_bit, src2=zero)
+
+    ttype_shift = LoadImmediateStep(imm=60)
+    ttype = Arithmetic(op="srl", src1=rd, src2=ttype_shift)
+    ttype_expected = LoadImmediateStep(imm=3)
+    assert_still_icount = AssertEqual(src1=ttype, src2=ttype_expected)
+
+    disarm = WriteTriggerCsr(csr_name="tdata1", value=0, direct_write=True)
+
+    return TestScenario.from_steps(
+        id="31",
+        name="SID_SDTRIG_I028",
+        description="Parked max-count icount trigger keeps type=3/tselect=8 selected across a broad instruction mix",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[
+            comment,
+            mem,
+            sel,
+            park,
+            *_icount_park_body(),
+            ld,
+            st,
+            rd,
+            hit_mask,
+            hit_bit,
+            zero,
+            assert_never_fired,
+            ttype_shift,
+            ttype,
+            ttype_expected,
+            assert_still_icount,
+            disarm,
+        ],
+    )
+
+
+# =============================================================================
+# Category: icount WARL field writes (no fire required)
+# =============================================================================
+
+
+# count values chosen to land in a distinct WARL bin each: zero, one, the small range, and the
+# 14-bit maximum. These are sampled at the csrw itself, so no fire is needed.
+_ICOUNT_WARL_COUNTS = [0, 1, 17, 0x3FFF]
+
+
+@sdtrig_icount_scenario
+def SID_SDTRIG_I029():
+    """
+    Sweep the icount tdata1 WARL fields with plain CSR writes: count, hit, and the pending/count
+    arming combinations.
+
+    Nothing here has to fire -- these fields are sampled at the write, so the whole sweep is a
+    sequence of tdata1 writes with the trigger armed for a mode the test is not running in
+    (priv_mode=("vs","vu") while running in M) so the countdown cannot reach a fire mid-sweep.
+    """
+    comment = Comment(comment="icount WARL sweep: count 0/1/small/max, hit 0/1, pending+count arming combos")
+
+    sel = SelectTrigger(index=ICOUNT_SLOT)
+
+    steps: list = [comment, sel]
+
+    # count field, each value in its own WARL bin.
+    for count in _ICOUNT_WARL_COUNTS:
+        steps.append(
+            WriteTriggerCsr(
+                csr_name="tdata1",
+                value=build_tdata1_icount(count=count, action=TriggerAction.BREAKPOINT, priv_mode=("vs", "vu")),
+                direct_write=True,
+            )
+        )
+
+    # hit bit both ways. Software may preset it; hardware sets it on a fire.
+    for hit in (0, 1):
+        steps.append(
+            WriteTriggerCsr(
+                csr_name="tdata1",
+                value=build_tdata1_icount(count=0x3FFF, action=TriggerAction.BREAKPOINT, priv_mode=("vs", "vu"), hit=hit),
+                direct_write=True,
+            )
+        )
+
+    # Arming method: pending=1/count=1 (fire immediately on the next match) vs pending=0/count=1.
+    for pending in (1, 0):
+        steps.append(
+            WriteTriggerCsr(
+                csr_name="tdata1",
+                value=build_tdata1_icount(count=1, action=TriggerAction.BREAKPOINT, priv_mode=("vs", "vu"), pending=pending),
+                direct_write=True,
+            )
+        )
+
+    # type=15 at the icount slot: the WARL "other type" case, and the vs/vu-must-read-zero case.
+    steps.append(WriteTriggerCsr(csr_name="tdata1", value=build_tdata1_disabled(), direct_write=True))
+
+    return TestScenario.from_steps(
+        id="32",
+        name="SID_SDTRIG_I029",
+        description="icount tdata1 WARL sweep over count/hit/pending arming combinations",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+# =============================================================================
+# Category: icount trace actions
+# =============================================================================
+
+
+@sdtrig_icount_scenario
+def SID_SDTRIG_I030():
+    """
+    Fire an icount trigger with each trace action (trace_on / trace_off / trace_notify).
+
+    A trace-action fire starts, stops or emits trace and raises **no** exception, so unlike the
+    breakpoint action there is nothing to assert and nothing to service -- the scenario simply lets
+    the count run out in the mode it is running in. It also covers the hit=1/count=0 trace
+    combination that the trace-hit cross bins.
+    """
+    comment = Comment(comment="icount fires with trace actions: no exception raised, trace state changes instead")
+
+    steps: list = [comment, SelectTrigger(index=ICOUNT_SLOT)]
+
+    for action in (TriggerAction.TRACE_ON, TriggerAction.TRACE_OFF, TriggerAction.TRACE_NOTIFY):
+        # count=2 so the trigger fires a couple of instructions into the filler below.
+        steps.append(
+            WriteTriggerCsr(
+                csr_name="tdata1",
+                value=build_tdata1_icount(count=2, action=action, priv_mode=("m",)),
+                direct_write=True,
+            )
+        )
+        steps.append(Directive(directive="nop"))
+        steps.append(Directive(directive="nop"))
+        steps.append(Directive(directive="nop"))
+
+    # hit=1 with count=0 under a trace action -- the trace/hit/count combination.
+    steps.append(
+        WriteTriggerCsr(
+            csr_name="tdata1",
+            value=build_tdata1_icount(count=0, action=TriggerAction.TRACE_NOTIFY, priv_mode=("m",), hit=1),
+            direct_write=True,
+        )
+    )
+    steps.append(Directive(directive="nop"))
+
+    steps.append(WriteTriggerCsr(csr_name="tdata1", value=0, direct_write=True))
+
+    return TestScenario.from_steps(
+        id="33",
+        name="SID_SDTRIG_I030",
+        description="icount fires with each trace action (no exception) including hit=1/count=0",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+# =============================================================================
+# Category: icount action=debug_mode armed across core-side events
+# =============================================================================
+
+
+@sdtrig_icount_scenario
+def SID_SDTRIG_I031():
+    """
+    Arm icount with hit=1 and a count large enough never to fire, then take exceptions and run inside
+    the handlers underneath it.
+
+    This scenario *requests* action=debug_mode, but note what actually happens: whisper clamps
+    action=1 on the icount slot to 0, even though the tdata1 write mask (0xf800000007ffffc7) leaves
+    action bit 0 writable -- an attempted write of 0x3000000001fffe01 commits as 0x3000000001fffe00.
+    So the armed action is breakpoint, and the action=debug_mode collision bins are NOT reached from
+    software on this configuration; they need debug-module/Sdext support in the model.
+
+    What this scenario does establish is the hit=1 + max-count armed state sampled while exceptions
+    are taken and while executing inside a handler, across two different causes. Count is maxed so
+    the trigger cannot fire, which is what keeps it safe with no handler of its own.
+    """
+    comment = Comment(comment="icount armed hit=1 with max count; exceptions and handlers run underneath (action=1 is clamped to 0)")
+
+    sel = SelectTrigger(index=ICOUNT_SLOT)
+    arm = WriteTriggerCsr(
+        csr_name="tdata1",
+        value=build_tdata1_icount(count=0x3FFF, action=TriggerAction.DEBUG_MODE, priv_mode=("m",), hit=1),
+        direct_write=True,
+    )
+
+    # An exception taken while that trigger is armed -- the collision case.
+    illegal = Directive(directive=".word 0x00000000")
+    assert_illegal = AssertException(cause=ExceptionCause.ILLEGAL_INSTRUCTION, code=[illegal])
+
+    # An ecall too, so the handler-resident case is sampled from a second cause.
+    ecall = System(instruction="ecall")
+    assert_ecall = AssertException(cause=ExceptionCause.ENVIRONMENT_CALL_FROM_M_MODE, code=[ecall])
+
+    disarm = WriteTriggerCsr(csr_name="tdata1", value=0, direct_write=True)
+
+    return TestScenario.from_steps(
+        id="34",
+        name="SID_SDTRIG_I031",
+        description="icount armed with hit=1/max count while exceptions and handlers execute",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment, sel, arm, assert_illegal, assert_ecall, disarm],
+    )
+
+
+# =============================================================================
+# Category: icount x fault types
+# =============================================================================
+
+# NOT IMPLEMENTED -- attempted and reverted, so the next attempt does not repeat the dead ends.
+#
+# Goal: the fault-type coverpoint (13 causes) and its cross with the count field (26 bins) are gated
+# on ttype==3 && tselect==8 at the moment an exception is taken. So an icount trigger must be
+# *selected* (it need not fire) while a spread of causes is provoked.
+#
+# What was tried and why each failed:
+#   * priv_modes=[M]: unsatisfiable for the page-fault causes. M-mode accesses bypass translation, so
+#     no page fault can be raised there at all.
+#   * priv_modes=[S] / [U] with the trigger armed via WriteTriggerCsr(direct_write=False): fails
+#     check_excp (tohost=3) even with only ILLEGAL_INSTRUCTION and ecall asserted. tdata1 is M-only,
+#     so the write is routed through the M-mode helper, whose own ecall round-trip appears to disturb
+#     the OS_SETUP_CHECK_EXCP scratch state that the very next assert depends on. This is the same
+#     hazard SID_SDTRIG_I014 documents ("cfg moved INSIDE AssertException.code so the directive emits
+#     AFTER OS_SETUP_CHECK_EXCP finishes writing expected_cause").
+#   * Page faults via a reserved PTE encoding (VALID|WRITE, no READ) and via an access far outside the
+#     mapping (offset 0x8000000000000000): both failed check_excp.
+#
+# The likely shape of a working version: follow I014 and place the arming step inside the first
+# AssertException.code, one cause per scenario rather than a chain, so no assert follows a helper
+# round-trip. ILLEGAL_INSTRUCTION and the M-mode ecall are already covered from M by
+# SID_SDTRIG_I031, which arms with direct_write=True and passes -- that is the pattern to extend.
+
+
+# =============================================================================
+# Category: icount x WFI / WRS
+# =============================================================================
+
+
+# WFI and the two WRS flavours are binned separately and crossed with the non-debug actions. WRS
+# needs a reservation to wait on, so lr.w establishes one first (see routines.py, which does the same
+# for its wait loops) -- otherwise wrs.nto can stall.
+_ICOUNT_WFI_WRS_OPS = ["wfi", "wrs.sto", "wrs.nto"]
+
+
+def _icount_wfi_wrs_scenario(action: TriggerAction, suffix: str):
+    """SID_SDTRIG_I033_<suffix>: fire icount on WFI and both WRS flavours under one action.
+
+    Trace actions raise no exception, so nothing is asserted -- the value is in the fire itself,
+    which the wfi/wrs coverpoint samples. Breakpoint is excluded here because a fire on WFI with
+    action=breakpoint needs the handler to make forward progress out of the wait.
+    """
+    comment = Comment(comment=f"icount fires on wfi/wrs.sto/wrs.nto with action={action.name}")
+
+    mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+    steps: list = [comment, mem, SelectTrigger(index=ICOUNT_SLOT)]
+
+    for op in _ICOUNT_WFI_WRS_OPS:
+        # count=2 so the trigger fires within a couple of instructions of the wait op.
+        steps.append(
+            WriteTriggerCsr(
+                csr_name="tdata1",
+                value=build_tdata1_icount(count=2, action=action, priv_mode=("m",)),
+                direct_write=True,
+            )
+        )
+        if op.startswith("wrs"):
+            # Establish a reservation so the WRS has something to wait on.
+            steps.append(MemAccess(memory=mem, op="lr.w"))
+        steps.append(Directive(directive=op))
+        steps.append(Directive(directive="nop"))
+
+    steps.append(WriteTriggerCsr(csr_name="tdata1", value=0, direct_write=True))
+
+    return TestScenario.from_steps(
+        id=f"36_{suffix}",
+        name=f"SID_SDTRIG_I033_{suffix}",
+        description=f"icount fires on WFI and WRS with action={action.name}",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+@sdtrig_icount_scenario
+def SID_SDTRIG_I033_trace_on():
+    """WFI/WRS under action=trace_on."""
+    return _icount_wfi_wrs_scenario(TriggerAction.TRACE_ON, "trace_on")
+
+
+@sdtrig_icount_scenario
+def SID_SDTRIG_I033_trace_off():
+    """WFI/WRS under action=trace_off."""
+    return _icount_wfi_wrs_scenario(TriggerAction.TRACE_OFF, "trace_off")
+
+
+@sdtrig_icount_scenario
+def SID_SDTRIG_I033_trace_notify():
+    """WFI/WRS under action=trace_notify."""
+    return _icount_wfi_wrs_scenario(TriggerAction.TRACE_NOTIFY, "trace_notify")
