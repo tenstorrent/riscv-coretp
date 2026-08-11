@@ -9,6 +9,7 @@ from .arithmetic import Arithmetic, LoadImmediateStep, LoadAddressStep, LoadPhys
 from .retrieve_address import RetrieveAddress
 from .load_store import MemoryOp, Load, Store, MemAccess, HLoad, HXLoad, HStore
 from .csr import CsrWrite, CsrRead, CsrDirectAccess
+from .envcfg import EnableEnvCfg
 from .assertion import AssertEqual, AssertNotEqual, AssertException, AssertFetchException
 from .hart import Hart, HartExit
 from .miscellaneous import Directive, SetWaitTimeout
@@ -78,6 +79,7 @@ __all__ = [
     "CsrWrite",
     "CsrRead",
     "CsrDirectAccess",
+    "EnableEnvCfg",
     "AssertEqual",
     "AssertNotEqual",
     "AssertException",

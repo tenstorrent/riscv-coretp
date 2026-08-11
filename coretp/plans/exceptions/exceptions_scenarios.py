@@ -1212,6 +1212,7 @@ def SID_EXCEP_17_S():
         description="ECALL from each privilege level with and without delegation",
         env=TestEnvCfg(
             priv_modes=[PrivilegeMode.S],
+            virtualized=[False],
         ),
         steps=[
             comment,

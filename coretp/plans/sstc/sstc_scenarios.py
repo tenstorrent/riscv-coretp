@@ -7,6 +7,7 @@ from coretp.step import (
     TestStep,
     CsrWrite,
     CsrRead,
+    EnableEnvCfg,
     AssertException,
     AssertEqual,
     LoadImmediateStep,
@@ -143,8 +144,8 @@ def SID_SSTC_02_M_HS():
     Verify access to stimecmp in VS, and time csr in VU mode, expect virtual instruction exception.
     """
 
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
 
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
@@ -172,7 +173,7 @@ def SID_SSTC_02_M_HS():
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S], virtualized=[False]),
         steps=[
             comment_0,
-            menvcfg_set,
+            env_cfg_set,
             comment_1,
             mcounteren_set,
             comment_2,
@@ -253,11 +254,8 @@ def SID_SSTC_02_V():
     Access to stimecmp & time csr is blocked in modes below HS when mcounteren.tm=1 and hcounteren.tm = 0.
     Verify access to stimecmp in VS, and time csr in VU mode, expect virtual instruction exception.
     """
-    comment_0a = Comment(comment="Set menvcfg.STCE=1 so stimecmp is HS-qualified")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
-
-    comment_0b = Comment(comment="Set henvcfg.STCE=1 so vstimecmp is present for VS-mode")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
+    comment_0a = Comment(comment="Enable STCE in the envcfg CSRs required for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
 
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
@@ -291,9 +289,7 @@ def SID_SSTC_02_V():
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], virtualized=[True]),
         steps=[
             comment_0a,
-            menvcfg_set,
-            comment_0b,
-            henvcfg_set,
+            env_cfg_set,
             comment_1,
             mcounteren_set,
             comment_2,
@@ -959,8 +955,8 @@ def SID_SSTC_13():
     virtualized=[False, True] exercises stimecmp (HS).
     """
     comment = Comment(comment="SSTC supervisor timer interrupt: arm, fire, ISR clears via stimecmp=-1")
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     delegate = DelegateInterrupt(causes=(InterruptCause.STI,), handler_mode=ExceptionHandlerMode.HS)
@@ -981,7 +977,7 @@ def SID_SSTC_13():
             deleg_intr_to=[PrivilegeMode.S],
             interrupt_modes=[InterruptMode.DIRECT],
         ),
-        steps=[comment, comment_0, menvcfg_set, comment_1, mcounteren_set, delegate, configure, enable, assert_sti, disable],
+        steps=[comment, comment_0, env_cfg_set, comment_1, mcounteren_set, delegate, configure, enable, assert_sti, disable],
     )
 
 
@@ -996,14 +992,12 @@ def SID_SSTC_13_V():
     virtualized=[False, True] exercises vstimecmp (VS).
     """
     comment = Comment(comment="SSTC supervisor timer interrupt: arm, fire, ISR clears via stimecmp=-1")
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     delegate = DelegateInterrupt(causes=(InterruptCause.VSTI,), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     enable = EnableInterrupts(causes=(InterruptCause.VSTI,), handler_mode=ExceptionHandlerMode.HS, global_enable=True)
@@ -1022,7 +1016,7 @@ def SID_SSTC_13_V():
             deleg_intr_to=[PrivilegeMode.S],
             interrupt_modes=[InterruptMode.DIRECT],
         ),
-        steps=[comment, comment_0, menvcfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, comment_3, henvcfg_set, delegate, configure, enable, assert_sti, disable],
+        steps=[comment, comment_0, env_cfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, delegate, configure, enable, assert_sti, disable],
     )
 
 
@@ -1051,6 +1045,10 @@ def SID_SSTC_15():
     assert_sw = AssertInterrupt(cause=InterruptCause.STI, code=[sw_trigger], expected_handler_mode=ExceptionHandlerMode.MACHINE)
 
     comment_timer = Comment(comment="timer mode: menvcfg.STCE=1, generate STI via stimecmp comparator")
+    comment_arm = Comment(
+        comment="Push stimecmp deadline to max BEFORE setting STCE: stimecmp resets to 0, so enabling the comparator with STIE/MIE live would fire a spurious STI that csrc mip cannot clear"
+    )
+    stimecmp_max = CsrWrite(csr_name="stimecmp", value=0xFFFFFFFFFFFFFFFF, direct_write=True)
     menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
     timer_trigger = TriggerInterrupt(cause=InterruptCause.STI)
     assert_timer = AssertInterrupt(cause=InterruptCause.STI, code=[timer_trigger], expected_handler_mode=ExceptionHandlerMode.MACHINE)
@@ -1062,5 +1060,5 @@ def SID_SSTC_15():
         name="SID_SSTC_15",
         description="Generate supervisor timer interrupt in software mode (STIP) and timer mode (stimecmp)",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
-        steps=[comment, comment_1, mcounteren_set, configure, no_delegate, enable, comment_sw, menvcfg_clear, assert_sw, comment_timer, menvcfg_set, assert_timer, disable],
+        steps=[comment, comment_1, mcounteren_set, configure, no_delegate, enable, comment_sw, menvcfg_clear, assert_sw, comment_timer, comment_arm, stimecmp_max, menvcfg_set, assert_timer, disable],
     )

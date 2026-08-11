@@ -3,7 +3,26 @@
 
 from coretp import TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PrivilegeMode, PageSize, PageFlags, ExceptionCause
-from coretp.step import Memory, Load, Store, Arithmetic, CsrWrite, CsrRead, AssertNotEqual, AssertException, Comment, LoadImmediateStep, CodePage, Call, HLoad, HStore, SupervisorCode
+from coretp.step import (
+    Memory,
+    Load,
+    Store,
+    Arithmetic,
+    CsrWrite,
+    CsrRead,
+    AssertEqual,
+    AssertNotEqual,
+    AssertException,
+    Comment,
+    LoadImmediateStep,
+    LoadPhysicalAddress,
+    CodePage,
+    Call,
+    HLoad,
+    HStore,
+    SupervisorCode,
+    UserCode,
+)
 
 from . import zjpm_scenario
 
@@ -996,62 +1015,67 @@ def SID_15_pm_enabled_vu_mode_hlv_hsv():
     Test PM enabled for hlv.*, hsv.* when eff_mode=VU.
     hstatus.HUPMM[49:48] = 10 (PMLEN=7)
 
-    When PM is enabled, HLV/HSV with tagged addresses should work without faults.
-    HLV/HSV must be wrapped in SupervisorCode to execute from HS mode.
+    hstatus.HUPMM governs HLV/HSV/HLVX executed from U-mode (V=0, hstatus.HU=1)
+    with hstatus.SPVP=0 (effective mode VU). HLV/HSV raise a virtual-instruction
+    exception when V=1, so this scenario runs bare-metal with base privilege U.
+    With vsatp/hgatp Bare, the HLV/HSV effective address is the physical
+    address, so the accesses target the page's tagged *physical* address;
+    pointer masking must strip the tag for the access to succeed, and the hsv
+    store is verified through the page's normal virtual mapping.
 
-    This test verifies that PM CSRs (hstatus.HUPMM, senvcfg.PMM) are configured correctly.
-    Note: Tagged address testing requires ISS support for zjpm extension.
+    Note: requires hstatus.HUPMM to be writable in the ISS (whisper: hstatus
+    csr mask override in the whisper configs).
     """
-    comment_1 = Comment(comment="Test PM enabled for HLV/HSV when eff_mode=VU - verify CSR configuration")
+    comment_1 = Comment(comment="Test PM enabled for HLV/HSV when eff_mode=VU (U-mode, HU=1, SPVP=0)")
 
-    # Enable pointer masking via hstatus.HUPMM for VU mode (direct_write=False so it happens in HS mode setup)
+    # Enable pointer masking via hstatus.HUPMM (write happens via M-mode trampoline)
     comment_2 = Comment(comment="Set hstatus.HUPMM[49:48] = 10 for PMLEN=7")
     csr_write_hupmm = CsrWrite(csr_name="hstatus", set_mask=(2 << 48), direct_write=False)
 
-    # Also enable senvcfg.PMM for VU mode (direct_write=False so it happens in HS mode setup)
-    comment_3 = Comment(comment="Set senvcfg.PMM[33:32] = 10 for PMLEN=7")
-    csr_write_senvcfg = CsrWrite(csr_name="senvcfg", set_mask=(2 << 32), direct_write=False)
+    # Allow U-mode to execute HLV/HSV, with effective privilege VU
+    comment_3 = Comment(comment="Set hstatus.HU=1 and clear hstatus.SPVP so U-mode HLV/HSV run with eff_mode=VU")
+    csr_write_hu = CsrWrite(csr_name="hstatus", set_mask=(1 << 9), direct_write=False)
+    csr_clear_spvp = CsrWrite(csr_name="hstatus", clear_mask=(1 << 8), direct_write=False)
 
-    # Create memory region for HLV/HSV testing (USER flag needed for VU mode access via HLV/HSV)
+    # Memory region accessed by HLV/HSV through its physical address (vsatp/hgatp are Bare)
     comment_4 = Comment(comment="Create memory region for HLV/HSV testing")
-    mem = Memory(size=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.USER)
+    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.USER)
 
-    # Store a value via regular store first at canonical address
+    # Store a value via regular store first through the canonical virtual mapping
     comment_5 = Comment(comment="Store value at canonical address")
     store_val = LoadImmediateStep(imm=0x12345678)
     store_op = Store(memory=mem, value=store_val, op="sd")
 
-    # Create tagged address by XORing upper 7 bits (PMLEN=7)
-    comment_6 = Comment(comment="Create tagged address by XORing upper 7 bits (PMLEN=7)")
-    addr = LoadImmediateStep(imm=mem)
+    # Tag the *physical* address in the upper 7 bits (PMLEN=7)
+    comment_6 = Comment(comment="Create tagged physical address by XORing upper 7 bits (PMLEN=7)")
+    pa = LoadPhysicalAddress(memory=mem)
     tag_mask = LoadImmediateStep(imm=(0x7F << 57))  # Tag in upper 7 bits
-    tagged_addr = Arithmetic(op="xor", src1=addr, src2=tag_mask)
+    tagged_pa = Arithmetic(op="xor", src1=pa, src2=tag_mask)
 
-    # HLoad from tagged address - should succeed with PM enabled
-    comment_7 = Comment(comment="HLoad from tagged address - PM should mask upper bits")
-    hlv_op = SupervisorCode(code=[HLoad(memory=tagged_addr, access_size=4)])
+    # HLV/HSV with tagged address - masking must strip the tag
+    comment_7 = Comment(comment="HLoad/HStore at tagged physical address - PM should mask upper bits")
+    hlv_op = HLoad(memory=tagged_pa, op="hlv.w")
+    hsv_val = LoadImmediateStep(imm=0x600DCAFE)
+    hsv_op = HStore(memory=tagged_pa, value=hsv_val, op="hsv.w")
 
-    # HStore at tagged address - should succeed with PM enabled
-    comment_8 = Comment(comment="HStore at tagged address - PM should mask upper bits")
-    hsv_val = LoadImmediateStep(imm=0xABCDEF00)
-    hsv_op = SupervisorCode(code=[HStore(memory=tagged_addr, value=hsv_val)])
+    # Verify the hsv landed on the canonical physical address via the virtual mapping
+    comment_8 = Comment(comment="Load through the canonical virtual mapping to verify the hsv value")
+    load_back = Load(memory=mem, op="lw")
+    expected = LoadImmediateStep(imm=0x600DCAFE)
+    check = AssertEqual(src1=load_back, src2=expected)
 
-    # Verify by HLoad from canonical address - should see value stored via tagged address
-    comment_9 = Comment(comment="HLoad from canonical address to verify stored value")
-    hlv_verify = SupervisorCode(code=[HLoad(memory=mem, access_size=4)])
-
-    # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
-    comment_10 = Comment(comment="Disable PM before scenario ends")
-    csr_clear_senvcfg = CsrWrite(csr_name="senvcfg", clear_mask=(0x3 << 32), direct_write=False)
+    # Disable PM/HU before scenario ends to avoid issues with CSR save/restore infrastructure
+    comment_9 = Comment(comment="Disable PM and HU before scenario ends")
     csr_clear_hupmm = CsrWrite(csr_name="hstatus", clear_mask=(0x3 << 48), direct_write=False)
+    csr_clear_hu = CsrWrite(csr_name="hstatus", clear_mask=(1 << 9), direct_write=False)
 
     return TestScenario.from_steps(
         id="15",
         name="SID_15_pm_enabled_vu_mode_hlv_hsv",
-        description="Test PM enabled for HLV/HSV when eff_mode=VU - verify CSR configuration",
+        description="Test PM enabled for HLV/HSV when eff_mode=VU via U-mode with hstatus.HU and HUPMM",
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.S],
-            virtualized=[True],
+            priv_modes=[PrivilegeMode.U],
+            virtualized=[False],
             paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
         ),
         steps=[
@@ -1059,26 +1083,28 @@ def SID_15_pm_enabled_vu_mode_hlv_hsv():
             comment_2,
             csr_write_hupmm,
             comment_3,
-            csr_write_senvcfg,
+            csr_write_hu,
+            csr_clear_spvp,
             comment_4,
             mem,
             comment_5,
             store_val,
             store_op,
             comment_6,
-            addr,
+            pa,
             tag_mask,
-            tagged_addr,
+            tagged_pa,
             comment_7,
             hlv_op,
-            comment_8,
             hsv_val,
             hsv_op,
+            comment_8,
+            load_back,
+            expected,
+            check,
             comment_9,
-            hlv_verify,
-            comment_10,
-            csr_clear_senvcfg,
             csr_clear_hupmm,
+            csr_clear_hu,
         ],
     )
 
@@ -1936,7 +1962,7 @@ def SID_29_pm_xtvec_tagged_address():
     csr_write_tvec = CsrWrite(csr_name="stvec", value=tvec_val, direct_write=True)
 
     comment_4 = Comment(comment="Read back stvec")
-    tvec_read = CsrRead(csr_name="stvec")
+    tvec_read = CsrRead(csr_name="stvec", direct_read=True)
 
     # Disable PM before scenario ends to avoid issues with CSR save/restore infrastructure
     comment_5 = Comment(comment="Disable PM before scenario ends")

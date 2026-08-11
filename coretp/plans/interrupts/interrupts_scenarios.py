@@ -7,6 +7,7 @@ from coretp.step import (
     Comment,
     Directive,
     CsrWrite,
+    EnableEnvCfg,
     LoadImmediateStep,
     EnableInterrupts,
     DisableInterrupts,
@@ -109,17 +110,14 @@ def SID_INTR_03():
     """
     comment = Comment(comment="S-mode direct stvec handling for all S-interrupts")
     # need stce
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     # need mcounteren.tm
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     # need hcounteren.tm
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    # need henvcfg.STCE=1
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     delegate = DelegateInterrupt(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
@@ -144,7 +142,7 @@ def SID_INTR_03():
             deleg_intr_to=[PrivilegeMode.S],
             interrupt_modes=[InterruptMode.DIRECT],
         ),
-        steps=[comment, comment_0, menvcfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, comment_3, henvcfg_set, delegate, configure, enable, assert_ssi, assert_sti, assert_sei, disable],
+        steps=[comment, comment_0, env_cfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, delegate, configure, enable, assert_ssi, assert_sti, assert_sei, disable],
     )
 
 
@@ -164,17 +162,14 @@ def SID_INTR_04():
     set_mtvec = CsrWrite(csr_name="mtvec", value=0x80001001)
     set_stvec = CsrWrite(csr_name="stvec", value=0x80002001)
     # need stce
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     # need mcounteren.tm
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     # need hcounteren.tm
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    # need henvcfg.STCE=1
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     delegate = DelegateInterrupt(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.VECTORED, handler_mode=ExceptionHandlerMode.HS)
     enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
@@ -200,13 +195,11 @@ def SID_INTR_04():
         steps=[
             comment,
             comment_0,
-            menvcfg_set,
+            env_cfg_set,
             comment_1,
             mcounteren_set,
             comment_2,
             hcounteren_set,
-            comment_3,
-            henvcfg_set,
             set_mtvec,
             set_stvec,
             delegate,
@@ -233,17 +226,14 @@ def SID_INTR_05():
     """
     comment = Comment(comment="S-mode vectored stvec (mtvec == stvec)")
     # need stce
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     # need mcounteren.tm
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     # need hcounteren.tm
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    # need henvcfg.STCE=1
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     delegate = DelegateInterrupt(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.VECTORED, handler_mode=ExceptionHandlerMode.HS)
     enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
@@ -268,7 +258,7 @@ def SID_INTR_05():
             deleg_intr_to=[PrivilegeMode.S],
             interrupt_modes=[InterruptMode.VECTORED],
         ),
-        steps=[comment, comment_0, menvcfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, comment_3, henvcfg_set, delegate, configure, enable, assert_ssi, assert_sti, assert_sei, disable],
+        steps=[comment, comment_0, env_cfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, delegate, configure, enable, assert_ssi, assert_sti, assert_sei, disable],
     )
 
 
@@ -607,17 +597,14 @@ def SID_INTR_13():
     """
     comment = Comment(comment="S-interrupt (S/U)->M serviced: mie[intr]=1, no deleg")
     # need stce
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     # need mcounteren.tm
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     # need hcounteren.tm
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    # need henvcfg.STCE=1
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     no_delegate = DelegateInterrupt(causes=(InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.MACHINE)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.MACHINE)
     enable = EnableInterrupts(causes=(InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.MACHINE, global_enable=True)
@@ -636,7 +623,7 @@ def SID_INTR_13():
             paging_modes=[PagingMode.DISABLED, PagingMode.SV39],
             virtualized=[False],
         ),
-        steps=[comment, comment_0, menvcfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, comment_3, henvcfg_set, no_delegate, configure, enable, assert_sti, assert_sei, disable],
+        steps=[comment, comment_0, env_cfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, no_delegate, configure, enable, assert_sti, assert_sei, disable],
     )
 
 
@@ -653,17 +640,14 @@ def SID_INTR_14():
     """
     comment = Comment(comment="S-interrupt (S/U)->M pending: mie[intr]=0, no deleg")
     # need stce
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     # need mcounteren.tm
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     # need hcounteren.tm
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    # need henvcfg.STCE=1
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     no_delegate = DelegateInterrupt(causes=(), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.MACHINE)
     disable_local = DisableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.MACHINE, global_disable=False)
@@ -683,13 +667,11 @@ def SID_INTR_14():
         steps=[
             comment,
             comment_0,
-            menvcfg_set,
+            env_cfg_set,
             comment_1,
             mcounteren_set,
             comment_2,
             hcounteren_set,
-            comment_3,
-            henvcfg_set,
             no_delegate,
             configure,
             disable_local,
@@ -788,17 +770,14 @@ def SID_INTR_16():
     """
     comment = Comment(comment="Delegated S-interrupt (S/U)->S serviced")
     # need stce
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     # need mcounteren.tm
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     # need hcounteren.tm
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    # need henvcfg.STCE=1
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     delegate = DelegateInterrupt(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS, global_enable=True)
@@ -820,7 +799,7 @@ def SID_INTR_16():
             virtualized=[False],
             deleg_intr_to=[PrivilegeMode.S],
         ),
-        steps=[comment, comment_0, menvcfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, comment_3, henvcfg_set, delegate, configure, enable, assert_ssi, assert_sti, assert_sei, disable],
+        steps=[comment, comment_0, env_cfg_set, comment_1, mcounteren_set, comment_2, hcounteren_set, delegate, configure, enable, assert_ssi, assert_sti, assert_sei, disable],
     )
 
 
@@ -836,17 +815,14 @@ def SID_INTR_17():
     Interrupt remains pending due to local disable in S-mode.
     """
     # write menvcfg stce, henvcfg stce, mcountertm, hcountertm
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
 
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
 
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
 
     comment = Comment(comment="Delegated S-interrupt pending: sie[intr]=0")
     delegate = DelegateInterrupt(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
@@ -871,13 +847,11 @@ def SID_INTR_17():
         ),
         steps=[
             comment_0,
-            menvcfg_set,
+            env_cfg_set,
             comment_1,
             mcounteren_set,
             comment_2,
             hcounteren_set,
-            comment_3,
-            henvcfg_set,
             comment,
             delegate,
             configure,
@@ -905,17 +879,14 @@ def SID_INTR_18():
     """
     comment = Comment(comment="Delegated S-interrupt pending: sstatus.sie=0")
     # need stce
-    comment_0 = Comment(comment="Set menvcfg.STCE=1")
-    menvcfg_set = CsrWrite(csr_name="menvcfg", set_mask=(1 << 63))
+    comment_0 = Comment(comment="Enable STCE for the current privilege mode")
+    env_cfg_set = EnableEnvCfg(mask=(1 << 63))
     # need mcounteren.tm
     comment_1 = Comment(comment="Set mcounteren.tm=1")
     mcounteren_set = CsrWrite(csr_name="mcounteren", set_mask=0x2)
     # need hcounteren.tm
     comment_2 = Comment(comment="Set hcounteren.tm=1")
     hcounteren_set = CsrWrite(csr_name="hcounteren", set_mask=0x2)
-    # need henvcfg.STCE=1
-    comment_3 = Comment(comment="set henvcfg.STCE=1")
-    henvcfg_set = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     delegate = DelegateInterrupt(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     enable_local = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.HS, global_enable=False)
@@ -938,13 +909,11 @@ def SID_INTR_18():
         steps=[
             comment,
             comment_0,
-            menvcfg_set,
+            env_cfg_set,
             comment_1,
             mcounteren_set,
             comment_2,
             hcounteren_set,
-            comment_3,
-            henvcfg_set,
             delegate,
             configure,
             enable_local,

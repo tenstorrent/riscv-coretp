@@ -17,6 +17,7 @@ from coretp.step import (
     LoadImmediateStep,
     LoadPhysicalAddress,
     System,
+    Directive,
 )
 from coretp.step.load_store.hxload import HXLoad
 
@@ -2791,4 +2792,1095 @@ def SID_PMP_31():
         description="PMP checks on final-1 GS-stage x VS-stage walk leaf PTE PAs",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[True]),
         steps=steps,
+    )
+
+
+# =============================================================================
+# PMP CSR Bit-Toggle Coverage Scenarios
+# =============================================================================
+# These scenarios provide comprehensive bit-toggle coverage for PMP CSRs.
+#
+# pmpaddr CSRs: Store PA >> 2, bits [53:0] valid for 56-bit PA
+# pmpcfg CSRs: Each 8-bit entry has L[7] | res[6:5] | A[4:3] | X[2] | W[1] | R[0]
+#
+# IMPORTANT: Lock bit (L) is sticky and cannot be cleared by software.
+# These patterns avoid setting the L bit to prevent test failures.
+# =============================================================================
+
+
+def _generate_pmpaddr_bit_toggle_patterns(csr_addr: str) -> list:
+    """
+    Generate comprehensive bit-toggle patterns for a pmpaddr CSR.
+
+    Returns a list of Directive steps that toggle all relevant bits.
+    pmpaddr stores PA >> 2, so bits [53:0] are valid for 56-bit physical address.
+
+    Args:
+        csr_addr: CSR address string (e.g., "0x3B0" for pmpaddr0)
+    """
+    patterns = []
+
+    # Pattern 1: All zeros
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 1: All zeros - atomic write-restore
+    csrr t0, {csr_addr}      # Read current value
+    csrci mstatus, 0x8       # Disable interrupts
+    li t1, 0x0               # All zeros
+    csrw {csr_addr}, t1      # Write (triggers coverage)
+    csrw {csr_addr}, t0      # Immediately restore
+    csrsi mstatus, 0x8       # Re-enable interrupts
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 2: All ones in valid bits (bits 53:0)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 2: All valid bits set - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, -1                   # All 1s
+    srli t1, t2, 10             # Get 54 bits of 1s (bits 53:0)
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 3: Alternating bits (0xAA pattern)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 3: Alternating bits (0xAA...) - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x2AAAAAAAAAAAAA   # Alternating pattern in bits 53:0
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 4: Inverse alternating (0x55 pattern)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 4: Inverse alternating (0x55...) - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x15555555555555   # Inverse alternating in bits 53:0
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 5: Lower bits set (bits 26:0)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 5: Lower half bits set - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x7FFFFFF          # Bits 26:0 set
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 6: Upper bits set (bits 53:27)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 6: Upper half bits set - atomic write-restore using shifts
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, -1                   # All 1s
+    srli t2, t2, 37             # Get 27 bits of 1s
+    slli t1, t2, 27             # Shift to bits 53:27
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 7: Walking ones in lower byte
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 7: Walking ones (bits 0-7) - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x01
+    csrw {csr_addr}, t1
+    li t1, 0x02
+    csrw {csr_addr}, t1
+    li t1, 0x04
+    csrw {csr_addr}, t1
+    li t1, 0x08
+    csrw {csr_addr}, t1
+    li t1, 0x10
+    csrw {csr_addr}, t1
+    li t1, 0x20
+    csrw {csr_addr}, t1
+    li t1, 0x40
+    csrw {csr_addr}, t1
+    li t1, 0x80
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 8: Walking ones in bits 8-15
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 8: Walking ones (bits 8-15) - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x100
+    csrw {csr_addr}, t1
+    li t1, 0x200
+    csrw {csr_addr}, t1
+    li t1, 0x400
+    csrw {csr_addr}, t1
+    li t1, 0x800
+    csrw {csr_addr}, t1
+    li t1, 0x1000
+    csrw {csr_addr}, t1
+    li t1, 0x2000
+    csrw {csr_addr}, t1
+    li t1, 0x4000
+    csrw {csr_addr}, t1
+    li t1, 0x8000
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 9: Walking ones in bits 16-23
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 9: Walking ones (bits 16-23) - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x10000
+    csrw {csr_addr}, t1
+    li t1, 0x20000
+    csrw {csr_addr}, t1
+    li t1, 0x40000
+    csrw {csr_addr}, t1
+    li t1, 0x80000
+    csrw {csr_addr}, t1
+    li t1, 0x100000
+    csrw {csr_addr}, t1
+    li t1, 0x200000
+    csrw {csr_addr}, t1
+    li t1, 0x400000
+    csrw {csr_addr}, t1
+    li t1, 0x800000
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 10: Walking ones in bits 24-31
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 10: Walking ones (bits 24-31) - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1000000
+    csrw {csr_addr}, t1
+    li t1, 0x2000000
+    csrw {csr_addr}, t1
+    li t1, 0x4000000
+    csrw {csr_addr}, t1
+    li t1, 0x8000000
+    csrw {csr_addr}, t1
+    li t1, 0x10000000
+    csrw {csr_addr}, t1
+    li t1, 0x20000000
+    csrw {csr_addr}, t1
+    li t1, 0x40000000
+    csrw {csr_addr}, t1
+    li t1, 0x80000000
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 11: Walking ones in bits 32-39
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 11: Walking ones (bits 32-39) - atomic write-restore using shifts
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, 1
+    slli t1, t2, 32
+    csrw {csr_addr}, t1
+    slli t1, t2, 33
+    csrw {csr_addr}, t1
+    slli t1, t2, 34
+    csrw {csr_addr}, t1
+    slli t1, t2, 35
+    csrw {csr_addr}, t1
+    slli t1, t2, 36
+    csrw {csr_addr}, t1
+    slli t1, t2, 37
+    csrw {csr_addr}, t1
+    slli t1, t2, 38
+    csrw {csr_addr}, t1
+    slli t1, t2, 39
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 12: Walking ones in bits 40-47
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 12: Walking ones (bits 40-47) - atomic write-restore using shifts
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, 1
+    slli t1, t2, 40
+    csrw {csr_addr}, t1
+    slli t1, t2, 41
+    csrw {csr_addr}, t1
+    slli t1, t2, 42
+    csrw {csr_addr}, t1
+    slli t1, t2, 43
+    csrw {csr_addr}, t1
+    slli t1, t2, 44
+    csrw {csr_addr}, t1
+    slli t1, t2, 45
+    csrw {csr_addr}, t1
+    slli t1, t2, 46
+    csrw {csr_addr}, t1
+    slli t1, t2, 47
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 13: Walking ones in bits 48-53
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 13: Walking ones (bits 48-53) - atomic write-restore using shifts
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, 1
+    slli t1, t2, 48
+    csrw {csr_addr}, t1
+    slli t1, t2, 49
+    csrw {csr_addr}, t1
+    slli t1, t2, 50
+    csrw {csr_addr}, t1
+    slli t1, t2, 51
+    csrw {csr_addr}, t1
+    slli t1, t2, 52
+    csrw {csr_addr}, t1
+    slli t1, t2, 53
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    return patterns
+
+
+def _generate_pmpcfg_bit_toggle_patterns(csr_addr: str) -> list:
+    """
+    Generate comprehensive bit-toggle patterns for a pmpcfg CSR.
+
+    Returns a list of Directive steps that toggle all relevant bits.
+    Each pmpcfg CSR contains 8 entries of 8 bits each on RV64.
+
+    Each 8-bit entry format: L[7] | reserved[6:5] | A[4:3] | X[2] | W[1] | R[0]
+
+    IMPORTANT: The L (lock) bit is STICKY and cannot be cleared by software.
+    These patterns avoid setting L bits to prevent test failures.
+
+    A field values: 00=OFF, 01=TOR, 10=NA4, 11=NAPOT
+
+    Args:
+        csr_addr: CSR address string (e.g., "0x3A0" for pmpcfg0)
+    """
+    patterns = []
+
+    # Pattern 1: All entries OFF (A=00), all permissions zero
+    # This clears all bits except L (which we don't set)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 1: All entries OFF (A=00, RWX=000) - atomic write-restore
+    csrr t0, {csr_addr}      # Read current value
+    csrci mstatus, 0x8       # Disable interrupts
+    li t1, 0x0               # All zeros (A=OFF for all entries)
+    csrw {csr_addr}, t1      # Write (triggers coverage)
+    csrw {csr_addr}, t0      # Immediately restore
+    csrsi mstatus, 0x8       # Re-enable interrupts
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 2: All entries NAPOT (A=11), RWX=111
+    # Value per entry: 0x1F (00011111) - no L bit
+    # 8 entries: 0x1F1F1F1F1F1F1F1F
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 2: All entries NAPOT with RWX - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1F1F1F1F1F1F1F1F  # A=NAPOT, RWX=111 for all 8 entries
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 3: All entries TOR (A=01), RWX=111
+    # Value per entry: 0x0F (00001111)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 3: All entries TOR with RWX - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x0F0F0F0F0F0F0F0F  # A=TOR, RWX=111 for all 8 entries
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 4: Alternating A field values (NAPOT/OFF pattern)
+    # Entry 0,2,4,6: NAPOT (0x1F), Entry 1,3,5,7: OFF (0x00)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 4: Alternating NAPOT/OFF - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x001F001F001F001F  # Alternating NAPOT(0x1F) and OFF(0x00)
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 5: Inverse alternating (OFF/NAPOT pattern)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 5: Alternating OFF/NAPOT - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1F001F001F001F00  # Alternating OFF(0x00) and NAPOT(0x1F)
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 6: R-only permissions (NAPOT, R=1, W=0, X=0)
+    # Value per entry: 0x19 (00011001)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 6: R-only permissions - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1919191919191919  # A=NAPOT, R=1, W=0, X=0
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 7: W-only permissions (NAPOT, R=0, W=1, X=0)
+    # Note: W without R is reserved but we can write it for coverage
+    # Value per entry: 0x1A (00011010)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 7: W-only permissions - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1A1A1A1A1A1A1A1A  # A=NAPOT, R=0, W=1, X=0
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 8: X-only permissions (NAPOT, R=0, W=0, X=1)
+    # Value per entry: 0x1C (00011100)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 8: X-only permissions - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1C1C1C1C1C1C1C1C  # A=NAPOT, R=0, W=0, X=1
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 9: RW permissions (NAPOT, R=1, W=1, X=0)
+    # Value per entry: 0x1B (00011011)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 9: RW permissions - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1B1B1B1B1B1B1B1B  # A=NAPOT, R=1, W=1, X=0
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 10: RX permissions (NAPOT, R=1, W=0, X=1)
+    # Value per entry: 0x1D (00011101)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 10: RX permissions - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1D1D1D1D1D1D1D1D  # A=NAPOT, R=1, W=0, X=1
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 11: Mixed A field values (OFF, TOR, NA4, NAPOT in entries 0-3)
+    # Repeat pattern for entries 4-7
+    # Entry 0,4: OFF (0x00), Entry 1,5: TOR (0x0F), Entry 2,6: NA4 (0x17), Entry 3,7: NAPOT (0x1F)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 11: Mixed A values (OFF/TOR/NA4/NAPOT) - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1F170F001F170F00  # OFF, TOR, NA4, NAPOT pattern (entries 0-3, repeated 4-7)
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 12: Bit position toggles in entry 0
+    # Toggle individual bits in entry 0 position (bits 0-7)
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 12: Walking bits in entry 0 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x01               # Bit 0 (R)
+    csrw {csr_addr}, t1
+    li t1, 0x02               # Bit 1 (W)
+    csrw {csr_addr}, t1
+    li t1, 0x04               # Bit 2 (X)
+    csrw {csr_addr}, t1
+    li t1, 0x08               # Bit 3 (A[0])
+    csrw {csr_addr}, t1
+    li t1, 0x10               # Bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 13: Bit position toggles in entry 1
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 13: Walking bits in entry 1 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x100              # Entry 1, bit 0 (R)
+    csrw {csr_addr}, t1
+    li t1, 0x200              # Entry 1, bit 1 (W)
+    csrw {csr_addr}, t1
+    li t1, 0x400              # Entry 1, bit 2 (X)
+    csrw {csr_addr}, t1
+    li t1, 0x800              # Entry 1, bit 3 (A[0])
+    csrw {csr_addr}, t1
+    li t1, 0x1000             # Entry 1, bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 14: Bit position toggles in entry 2
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 14: Walking bits in entry 2 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x10000            # Entry 2, bit 0 (R)
+    csrw {csr_addr}, t1
+    li t1, 0x20000            # Entry 2, bit 1 (W)
+    csrw {csr_addr}, t1
+    li t1, 0x40000            # Entry 2, bit 2 (X)
+    csrw {csr_addr}, t1
+    li t1, 0x80000            # Entry 2, bit 3 (A[0])
+    csrw {csr_addr}, t1
+    li t1, 0x100000           # Entry 2, bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 15: Bit position toggles in entry 3
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 15: Walking bits in entry 3 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t1, 0x1000000          # Entry 3, bit 0 (R)
+    csrw {csr_addr}, t1
+    li t1, 0x2000000          # Entry 3, bit 1 (W)
+    csrw {csr_addr}, t1
+    li t1, 0x4000000          # Entry 3, bit 2 (X)
+    csrw {csr_addr}, t1
+    li t1, 0x8000000          # Entry 3, bit 3 (A[0])
+    csrw {csr_addr}, t1
+    li t1, 0x10000000         # Entry 3, bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 16: Bit position toggles in entry 4
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 16: Walking bits in entry 4 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, 1
+    slli t1, t2, 32           # Entry 4, bit 0 (R)
+    csrw {csr_addr}, t1
+    slli t1, t2, 33           # Entry 4, bit 1 (W)
+    csrw {csr_addr}, t1
+    slli t1, t2, 34           # Entry 4, bit 2 (X)
+    csrw {csr_addr}, t1
+    slli t1, t2, 35           # Entry 4, bit 3 (A[0])
+    csrw {csr_addr}, t1
+    slli t1, t2, 36           # Entry 4, bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 17: Bit position toggles in entry 5
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 17: Walking bits in entry 5 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, 1
+    slli t1, t2, 40           # Entry 5, bit 0 (R)
+    csrw {csr_addr}, t1
+    slli t1, t2, 41           # Entry 5, bit 1 (W)
+    csrw {csr_addr}, t1
+    slli t1, t2, 42           # Entry 5, bit 2 (X)
+    csrw {csr_addr}, t1
+    slli t1, t2, 43           # Entry 5, bit 3 (A[0])
+    csrw {csr_addr}, t1
+    slli t1, t2, 44           # Entry 5, bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 18: Bit position toggles in entry 6
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 18: Walking bits in entry 6 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, 1
+    slli t1, t2, 48           # Entry 6, bit 0 (R)
+    csrw {csr_addr}, t1
+    slli t1, t2, 49           # Entry 6, bit 1 (W)
+    csrw {csr_addr}, t1
+    slli t1, t2, 50           # Entry 6, bit 2 (X)
+    csrw {csr_addr}, t1
+    slli t1, t2, 51           # Entry 6, bit 3 (A[0])
+    csrw {csr_addr}, t1
+    slli t1, t2, 52           # Entry 6, bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    # Pattern 19: Bit position toggles in entry 7
+    patterns.append(
+        Directive(
+            directive=f"""
+    # Pattern 19: Walking bits in entry 7 position - atomic write-restore
+    csrr t0, {csr_addr}
+    csrci mstatus, 0x8
+    li t2, 1
+    slli t1, t2, 56           # Entry 7, bit 0 (R)
+    csrw {csr_addr}, t1
+    slli t1, t2, 57           # Entry 7, bit 1 (W)
+    csrw {csr_addr}, t1
+    slli t1, t2, 58           # Entry 7, bit 2 (X)
+    csrw {csr_addr}, t1
+    slli t1, t2, 59           # Entry 7, bit 3 (A[0])
+    csrw {csr_addr}, t1
+    slli t1, t2, 60           # Entry 7, bit 4 (A[1])
+    csrw {csr_addr}, t1
+    csrw {csr_addr}, t0
+    csrsi mstatus, 0x8
+    sfence.vma
+    """
+        )
+    )
+
+    return patterns
+
+
+# -----------------------------------------------------------------------------
+# pmpaddr bit-toggle coverage scenarios
+# pmpaddr CSR addresses: pmpaddr0=0x3B0, pmpaddr1=0x3B1, ..., pmpaddr15=0x3BF
+# -----------------------------------------------------------------------------
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr0_bit_toggle_coverage():
+    """
+    Comprehensive bit-toggle coverage for pmpaddr0 using atomic patterns.
+
+    pmpaddr0 (0x3B0) stores PA >> 2 for PMP entry 0.
+    This scenario writes multiple values to toggle all bit positions.
+
+    privilege mode = M-mode
+    access = csr_w, csr_r
+    """
+    comment_1 = Comment(comment="Comprehensive pmpaddr0 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B0")
+    comment_2 = Comment(comment="Verify pmpaddr0 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr0", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="32",
+        name="SID_PMP_pmpaddr0_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr0 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr1_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr1."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr1 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B1")
+    comment_2 = Comment(comment="Verify pmpaddr1 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr1", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="33",
+        name="SID_PMP_pmpaddr1_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr1 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr2_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr2."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr2 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B2")
+    comment_2 = Comment(comment="Verify pmpaddr2 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr2", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="34",
+        name="SID_PMP_pmpaddr2_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr2 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr3_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr3."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr3 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B3")
+    comment_2 = Comment(comment="Verify pmpaddr3 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr3", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="35",
+        name="SID_PMP_pmpaddr3_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr3 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr4_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr4."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr4 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B4")
+    comment_2 = Comment(comment="Verify pmpaddr4 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr4", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="36",
+        name="SID_PMP_pmpaddr4_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr4 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr5_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr5."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr5 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B5")
+    comment_2 = Comment(comment="Verify pmpaddr5 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr5", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="37",
+        name="SID_PMP_pmpaddr5_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr5 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr6_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr6."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr6 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B6")
+    comment_2 = Comment(comment="Verify pmpaddr6 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr6", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="38",
+        name="SID_PMP_pmpaddr6_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr6 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr7_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr7."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr7 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B7")
+    comment_2 = Comment(comment="Verify pmpaddr7 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr7", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="39",
+        name="SID_PMP_pmpaddr7_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr7 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr8_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr8."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr8 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B8")
+    comment_2 = Comment(comment="Verify pmpaddr8 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr8", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="40",
+        name="SID_PMP_pmpaddr8_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr8 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr9_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr9."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr9 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3B9")
+    comment_2 = Comment(comment="Verify pmpaddr9 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr9", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="41",
+        name="SID_PMP_pmpaddr9_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr9 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr10_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr10."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr10 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3BA")
+    comment_2 = Comment(comment="Verify pmpaddr10 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr10", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="42",
+        name="SID_PMP_pmpaddr10_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr10 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr11_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr11."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr11 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3BB")
+    comment_2 = Comment(comment="Verify pmpaddr11 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr11", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="43",
+        name="SID_PMP_pmpaddr11_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr11 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr12_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr12."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr12 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3BC")
+    comment_2 = Comment(comment="Verify pmpaddr12 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr12", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="44",
+        name="SID_PMP_pmpaddr12_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr12 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr13_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr13."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr13 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3BD")
+    comment_2 = Comment(comment="Verify pmpaddr13 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr13", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="45",
+        name="SID_PMP_pmpaddr13_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr13 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr14_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr14."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr14 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3BE")
+    comment_2 = Comment(comment="Verify pmpaddr14 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr14", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="46",
+        name="SID_PMP_pmpaddr14_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr14 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpaddr15_bit_toggle_coverage():
+    """Comprehensive bit-toggle coverage for pmpaddr15."""
+    comment_1 = Comment(comment="Comprehensive pmpaddr15 bit-toggle coverage - atomic patterns")
+    patterns = _generate_pmpaddr_bit_toggle_patterns("0x3BF")
+    comment_2 = Comment(comment="Verify pmpaddr15 is still accessible")
+    final_read = CsrRead(csr_name="pmpaddr15", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="47",
+        name="SID_PMP_pmpaddr15_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpaddr15 CSR",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+# -----------------------------------------------------------------------------
+# pmpcfg bit-toggle coverage scenarios
+# pmpcfg0 (0x3A0) holds entries 0-7, pmpcfg2 (0x3A2) holds entries 8-15 on RV64
+# Note: pmpcfg1 and pmpcfg3 don't exist on RV64
+# -----------------------------------------------------------------------------
+
+
+@pmp_scenario
+def SID_PMP_pmpcfg0_bit_toggle_coverage():
+    """
+    Comprehensive bit-toggle coverage for pmpcfg0 using atomic patterns.
+
+    pmpcfg0 (0x3A0) contains PMP entries 0-7 on RV64.
+    Each entry is 8 bits: L[7] | res[6:5] | A[4:3] | X[2] | W[1] | R[0]
+
+    IMPORTANT: Lock bit (L) is NOT toggled as it's sticky.
+
+    privilege mode = M-mode
+    access = csr_w, csr_r
+    """
+    comment_1 = Comment(comment="Comprehensive pmpcfg0 bit-toggle coverage - atomic patterns (no L bits)")
+    patterns = _generate_pmpcfg_bit_toggle_patterns("0x3A0")
+    comment_2 = Comment(comment="Verify pmpcfg0 is still accessible")
+    final_read = CsrRead(csr_name="pmpcfg0", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="48",
+        name="SID_PMP_pmpcfg0_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpcfg0 CSR (no lock bits)",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
+    )
+
+
+@pmp_scenario
+def SID_PMP_pmpcfg2_bit_toggle_coverage():
+    """
+    Comprehensive bit-toggle coverage for pmpcfg2 using atomic patterns.
+
+    pmpcfg2 (0x3A2) contains PMP entries 8-15 on RV64.
+    Each entry is 8 bits: L[7] | res[6:5] | A[4:3] | X[2] | W[1] | R[0]
+
+    IMPORTANT: Lock bit (L) is NOT toggled as it's sticky.
+
+    privilege mode = M-mode
+    access = csr_w, csr_r
+    """
+    comment_1 = Comment(comment="Comprehensive pmpcfg2 bit-toggle coverage - atomic patterns (no L bits)")
+    patterns = _generate_pmpcfg_bit_toggle_patterns("0x3A2")
+    comment_2 = Comment(comment="Verify pmpcfg2 is still accessible")
+    final_read = CsrRead(csr_name="pmpcfg2", direct_read=True)
+
+    return TestScenario.from_steps(
+        id="49",
+        name="SID_PMP_pmpcfg2_bit_toggle_coverage",
+        description="Comprehensive bit-toggle coverage for pmpcfg2 CSR (no lock bits)",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M]),
+        steps=[comment_1] + patterns + [comment_2, final_read],
     )

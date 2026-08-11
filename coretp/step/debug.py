@@ -378,8 +378,9 @@ def _modes_to_priv_bits(priv_mode: Sequence[str]) -> dict:
 
 
 def _size_to_encoding(size: int) -> int:
-    """Map access size (1,2,4,8) to tdata1 size field encoding."""
-    return {1: 0, 2: 1, 4: 2, 8: 3}.get(size, 2)
+    """Map access size in bytes to the mcontrol6 size field; must match riescue's size_to_encoding()."""
+    # Debug Spec mcontrol6 size: 0=any, 1=1B, 2=2B, 3=4B, 4=6B, 5=8B. 0 (any) is the safe default.
+    return {0: 0, 1: 1, 2: 2, 4: 3, 8: 5}.get(size, 0)
 
 
 def build_tdata1_mcontrol6(
@@ -393,29 +394,37 @@ def build_tdata1_mcontrol6(
     hit0: int = 0,
     hit1: int = 0,
     timing: int = 0,
+    uncertain: int = 0,
+    select: int = 0,
+    uncertainen: int = 0,
 ) -> int:
     """Build a 64-bit tdata1 value for an mcontrol6 trigger (type=6).
 
-    Exposes fields (``hit0``, ``hit1``, ``dmode``, ``timing``, ``chain``) that
-    are intentionally omitted from the high-level Voyager2 ``;#trigger_config``
-    directive so WARL / illegal-value scenarios can program them explicitly.
+    Exposes fields (``hit0``, ``hit1``, ``uncertain``, ``select``,
+    ``uncertainen``, ``dmode``, ``timing``, ``chain``) that are intentionally
+    omitted from the high-level Voyager2 ``;#trigger_config`` directive so WARL /
+    illegal-value scenarios can program them explicitly.
 
-    Layout (per RISC-V Debug Spec mcontrol6):
-      type[63:60]=6, dmode[59], vs[24], vu[23], size[18:16], action[15:12],
-      chain[11], match[10:7], m[6], s[4], u[3], execute[2], store[1], load[0],
-      hit1[26], hit0[25] (note: hit field placement is implementation-dependent;
-      this helper uses the commonly documented positions).
+    Layout (RISC-V Debug Spec 1.0 mcontrol6):
+      type[63:60]=6, dmode[59], uncertain[26], hit1[25], vs[24], vu[23], hit0[22],
+      select[21], size[18:16], action[15:12], chain[11], match[10:7], m[6],
+      uncertainen[5], s[4], u[3], execute[2], store[1], load[0].
     """
     bits = _modes_to_priv_bits(priv_mode)
     val = 6 << 60
     val |= (dmode & 1) << 59
+    val |= (uncertain & 1) << 26
+    val |= (hit1 & 1) << 25
     val |= bits["vs"] << 24
     val |= bits["vu"] << 23
+    val |= (hit0 & 1) << 22
+    val |= (select & 1) << 21
     val |= (_size_to_encoding(size) & 7) << 16
     val |= (action.value & 0xF) << 12
     val |= (chain & 1) << 11
     val |= (match.value & 0xF) << 7
     val |= bits["m"] << 6
+    val |= (uncertainen & 1) << 5
     val |= bits["s"] << 4
     val |= bits["u"] << 3
     if trigger_type == TriggerType.EXECUTE:
@@ -428,9 +437,7 @@ def build_tdata1_mcontrol6(
         val |= (1 << 0) | (1 << 1)
     elif trigger_type == TriggerType.MCONTROL:
         val = (2 << 60) | (val & ((1 << 60) - 1))
-    val |= (hit0 & 1) << 25
-    val |= (hit1 & 1) << 26
-    val |= (timing & 1) << 51  # legacy timing bit (mcontrol)
+    val |= (timing & 1) << 51  # legacy mcontrol timing bit; RO-0 on mcontrol6 cores
     return val & 0xFFFFFFFFFFFFFFFF
 
 

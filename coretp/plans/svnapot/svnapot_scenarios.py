@@ -32,6 +32,20 @@ _N1_PPN0000 = 1 << 63  # N=1, ppn[3:0]=0000 (reserved => fault)
 _N1_PPN1000 = (1 << 63) | (0b1000 << 10)  # N=1, ppn[3:0]=1000 (valid 64K NAPOT)
 
 
+def _napot_test_region() -> Memory:
+    """
+    64KB-aligned, 64KB (16 x 4K pages) region for the scenarios whose access is
+    expected to *succeed* after rewriting ppn[3:0] of the base page's leaf PTE.
+
+    Rewriting the PPN nibble (or the NAPOT vpn[3:0] substitution) redirects the
+    access to a sibling frame in the base page's 64KB-aligned block. Owning and
+    mapping the whole block keeps the redirected access inside VS-stage and
+    G-stage (virtualized) translation coverage, and keeps stores inside memory
+    owned by this scenario, instead of landing on an unmapped or foreign frame.
+    """
+    return Memory(size=0x10000, num_pages=16, alignment=0x10000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+
+
 # =============================================================================
 # SID_SVNAPOT_00: Non-napot page (leaf_pte.N=0, ppn[3:0]=4'b1000 => normal 4K page)
 # =============================================================================
@@ -43,7 +57,7 @@ def SID_SVNAPOT_00_LOAD():
     leaf_pte.N=0 and leaf_pte.ppn[3:0]=4'b1000 - treated as normal 4K page.
     Load access should succeed.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
@@ -96,7 +110,7 @@ def SID_SVNAPOT_00_STORE():
     leaf_pte.N=0 and leaf_pte.ppn[3:0]=4'b1000 - treated as normal 4K page.
     Store access should succeed.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
@@ -202,7 +216,7 @@ def SID_SVNAPOT_00_AMO():
     leaf_pte.N=0 and leaf_pte.ppn[3:0]=4'b1000 - treated as normal 4K page.
     AMO access should succeed.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
@@ -255,7 +269,7 @@ def SID_SVNAPOT_00_LRSC():
     leaf_pte.N=0 and leaf_pte.ppn[3:0]=4'b1000 - treated as normal 4K page.
     LR/SC access should succeed.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
@@ -593,7 +607,7 @@ def SID_SVNAPOT_02_LOAD():
     PTE.N=1, pte.ppn[i]=x xxxx 1000 for 4k page => 64K contiguous NAPOT page.
     Load access should succeed across the 64K region.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
@@ -646,7 +660,7 @@ def SID_SVNAPOT_02_STORE():
     PTE.N=1, pte.ppn[i]=x xxxx 1000 for 4k page => 64K contiguous NAPOT page.
     Store access should succeed across the 64K region.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
@@ -752,7 +766,7 @@ def SID_SVNAPOT_02_AMO():
     PTE.N=1, pte.ppn[i]=x xxxx 1000 for 4k page => 64K contiguous NAPOT page.
     AMO access should succeed across the 64K region.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)
@@ -805,7 +819,7 @@ def SID_SVNAPOT_02_LRSC():
     PTE.N=1, pte.ppn[i]=x xxxx 1000 for 4k page => 64K contiguous NAPOT page.
     LR/SC access should succeed across the 64K region.
     """
-    mem = Memory(size=0x1000, page_size=PageSize.SIZE_4K, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE, modify=True)
+    mem = _napot_test_region()
 
     comment_read = Comment(comment="Read and save original leaf PTE")
     read_pte = ReadPTE(memory=mem, level=PteLevel.LEAF)

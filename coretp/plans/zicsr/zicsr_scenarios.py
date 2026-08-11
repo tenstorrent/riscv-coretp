@@ -516,16 +516,26 @@ def SID_ZICSR_19():
     Test CSRRW/CSRRS/CSRRC/CSRRWI/CSRRSI/CSRRCI instructions on sscratch.
     Write -1 (all bits set) and clear, with AssertEqual checks between each step.
     Limited to S-mode only.
+    Note: sscratch read-restore takes place within generator instead of naturally
+    as we want to have sscratch properly restored to hart values before ecall jump to save-restore areas
     """
     steps = []
 
-    steps.append(Comment(comment="ZICSR test: sscratch write/set/clear with assertions (S-mode)"))
+    steps.append(Comment(comment="ZICSR test: sscratch write/set/clear with assertions (S-mode)."))
+    steps.append(Comment(comment="Note: sscratch read-restore takes place within generator instead of naturally"))
 
     # Constants
     all_ones = LoadImmediateStep(imm=-1)
     zero = LoadImmediateStep(imm=0)
     max_imm = LoadImmediateStep(imm=0x1F)
     steps.extend([all_ones, zero, max_imm])
+
+    # Read-restore sscratch
+    steps.append(Comment(comment="Read-restore sscratch"))
+    sscratch_read_restore = CsrRead(csr_name="sscratch", direct_read=True)
+    mv_to_hosted_s = Arithmetic(op="mv", src1=sscratch_read_restore)  # Restore sscratch to hosted value
+    steps.append(sscratch_read_restore)
+    steps.append(mv_to_hosted_s)
 
     # ===== CSRRW: Write -1 =====
     steps.append(Comment(comment="CSRRW: Write all ones to sscratch"))
@@ -598,6 +608,11 @@ def SID_ZICSR_19():
     steps.append(read_after_csrrci)
     assert_csrrci = AssertEqual(src1=read_after_csrrci, src2=zero)
     steps.append(assert_csrrci)
+
+    # Store restore sscratch
+    steps.append(Comment(comment="Store restore sscratch"))
+    store_restore_sscratch = CsrWrite(csr_name="sscratch", value=mv_to_hosted_s)
+    steps.append(store_restore_sscratch)
 
     return TestScenario.from_steps(
         id="19",

@@ -9,10 +9,13 @@ from coretp.step import (
     Memory,
     Load,
     Store,
+    HLoad,
+    HStore,
     CodePage,
     Arithmetic,
     CsrWrite,
     CsrRead,
+    EnableEnvCfg,
     AssertException,
     AssertEqual,
     AssertNotEqual,
@@ -46,6 +49,19 @@ from coretp.step import (
 )
 
 from . import sdtrig_scenario
+
+
+# Trigger slots are type-specialized: each slot's tdata1 write mask only exposes the access-type
+# bits it implements, so programming a type onto the wrong slot silently arms nothing.
+#   slots 0-3  mcontrol6 execute-only  (execute[2] writable; load[0]/store[1] read-only 0)
+#   slots 4-7  mcontrol6 load/store    (load[0]/store[1] writable; execute[2] read-only 0)
+#   slot  8    icount                  (only slot with the 14-bit count field at [23:10])
+# Keep these in sync with the "triggers" array in riescue/dtest_framework/lib/whisper_config.json.
+EXEC_SLOT = 0
+EXEC_SLOT_ALT = 1
+LS_SLOT = 4
+LS_SLOT_ALT = 5
+ICOUNT_SLOT = 8
 
 
 # =============================================================================
@@ -185,25 +201,28 @@ def SID_SDTRIG_002():
 @sdtrig_scenario
 def SID_SDTRIG_003():
     """
-    Writing to tdata1.hit1/hit0 should result in legal values read back —
+    Writing to tdata1.hit1/uncertain should result in legal values read back —
     these are read-only fields.
+
+    hit0 (bit 22) is writable on this core, so it is not asserted here; hit1
+    (bit 25) and uncertain (bit 26) are the RO pair per the mcontrol6 layout.
     """
-    comment = Comment(comment="Attempt to set hit1/hit0 via tdata1 write; bits should read back as 0")
+    comment = Comment(comment="Attempt to set hit1/uncertain via tdata1 write; bits should read back as 0")
     select = SelectTrigger(index=0)
 
-    # Build tdata1 with hit0=1, hit1=1 (illegal writes to RO fields)
+    # Build tdata1 with hit1=1, uncertain=1 (illegal writes to RO fields)
     illegal_tdata1 = build_tdata1_mcontrol6(
         trigger_type=TriggerType.EXECUTE,
         action=TriggerAction.BREAKPOINT,
         match=TriggerMatch.EQUAL,
         priv_mode=("m", "s", "u"),
-        hit0=1,
         hit1=1,
+        uncertain=1,
     )
     wr_tdata1 = WriteTriggerCsr(csr_name="tdata1", value=illegal_tdata1, direct_write=True)
     rd_tdata1 = ReadTriggerCsr(csr_name="tdata1", direct_read=True)
 
-    # Hit bits should read back as 0
+    # hit1[25] / uncertain[26] should read back as 0
     hit_mask = LoadImmediateStep(imm=(1 << 25) | (1 << 26))
     masked = Arithmetic(op="and", src1=rd_tdata1, src2=hit_mask)
     zero = LoadImmediateStep(imm=0)
@@ -212,7 +231,7 @@ def SID_SDTRIG_003():
     return TestScenario.from_steps(
         id="3",
         name="SID_SDTRIG_003",
-        description="tdata1.hit0/hit1 are read-only; writes do not take effect",
+        description="tdata1.hit1/uncertain are read-only; writes do not take effect",
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M], deleg_excp_to=[PrivilegeMode.M]),
         steps=[
             comment,
@@ -430,8 +449,8 @@ def SID_SDTRIG_008():
     wr_legal = WriteTriggerCsr(csr_name="tdata1", value=legal, direct_write=True)
     rd_legal = ReadTriggerCsr(csr_name="tdata1", direct_read=True)
 
-    # Illegal: set select=1 along with execute=1 (bit 19 select, bit 2 execute)
-    illegal = legal | (1 << 19) | (1 << 2)
+    # Illegal: set select=1 along with execute=1 (bit 21 select, bit 2 execute)
+    illegal = legal | (1 << 21) | (1 << 2)
     wr_illegal = WriteTriggerCsr(csr_name="tdata1", value=illegal, direct_write=True)
     rd_after = ReadTriggerCsr(csr_name="tdata1", direct_read=True)
     illegal_val = LoadImmediateStep(imm=illegal)
@@ -773,13 +792,13 @@ def SID_SDTRIG_015():
 #     mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 #
 #     cfg_ld_a = ConfigureLoadTrigger(
-#         index=0,
+#         index=LS_SLOT,
 #         addr=_lbl_vec_addr_a.name,
 #         action=TriggerAction.BREAKPOINT,
 #         size=4,
 #     )
 #     cfg_ld_b = ConfigureLoadTrigger(
-#         index=1,
+#         index=LS_SLOT_ALT,
 #         addr=_lbl_vec_addr_b.name,
 #         action=TriggerAction.BREAKPOINT,
 #         size=4,
@@ -819,14 +838,12 @@ def SID_SDTRIG_017():
     comment = Comment(comment="CBO instructions trigger load/store watchpoints")
 
     # set up cbo permissions
-    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
-    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
-    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
+    env_cfg_write = EnableEnvCfg(mask=0xF0)
 
     mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
     cfg_ls = ConfigureLoadStoreTrigger(
-        index=0,
+        index=LS_SLOT,
         addr=_lbl_cbo_target.name,
         action=TriggerAction.BREAKPOINT,
     )
@@ -847,9 +864,7 @@ def SID_SDTRIG_017():
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U], deleg_excp_to=[PrivilegeMode.M]),
         steps=[
             comment,
-            menvcfg_write,
-            senvcfg_write,
-            henvcfg_write,
+            env_cfg_write,
             mem,
             cfg_ls,
             assert_inval,
@@ -871,14 +886,12 @@ def SID_SDTRIG_018():
 
     comment = Comment(comment="cbo.zero triggers a store-type trigger")
     # setup cbo zero permissions
-    menvcfg_write = CsrWrite(csr_name="menvcfg", set_mask=0xF0)
-    senvcfg_write = CsrWrite(csr_name="senvcfg", set_mask=0xF0)
-    henvcfg_write = CsrWrite(csr_name="henvcfg", set_mask=0xF0)
+    env_cfg_write = EnableEnvCfg(mask=0xF0)
 
     mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
     cfg_store = ConfigureStoreTrigger(
-        index=0,
+        index=LS_SLOT,
         addr=_lbl_cbo_zero_target.name,
         action=TriggerAction.BREAKPOINT,
     )
@@ -893,9 +906,7 @@ def SID_SDTRIG_018():
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U], deleg_excp_to=[PrivilegeMode.M]),
         steps=[
             comment,
-            menvcfg_write,
-            senvcfg_write,
-            henvcfg_write,
+            env_cfg_write,
             mem,
             cfg_store,
             assert_fire,
@@ -918,7 +929,7 @@ def SID_SDTRIG_019():
     mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ)
 
     cfg_ld = ConfigureLoadTrigger(
-        index=0,
+        index=LS_SLOT,
         addr=_lbl_prefetch_target.name,
         action=TriggerAction.BREAKPOINT,
         size=4,
@@ -1054,13 +1065,13 @@ def SID_SDTRIG_022():
 #         priv_mode=("m",),
 #     )
 #     cfg_load = ConfigureLoadTrigger(
-#         index=1,
+#         index=LS_SLOT_ALT,
 #         addr=_lbl_priority_target.name,
 #         action=TriggerAction.BREAKPOINT,
 #         priv_mode=("m",),
 #     )
 #     cfg_icount = ConfigureIcountTrigger(
-#         index=2,
+#         index=ICOUNT_SLOT,
 #         count=1,
 #         action=TriggerAction.BREAKPOINT,
 #         priv_mode=("m",),
@@ -1446,7 +1457,7 @@ def SID_SDTRIG_032():
 
     # Configure as store-only
     cfg_store = ConfigureStoreTrigger(
-        index=0,
+        index=LS_SLOT,
         addr=_lbl_access_type_target.name,
         action=TriggerAction.BREAKPOINT,
         size=4,
@@ -1843,7 +1854,7 @@ def SID_SDTRIG_036():
 #
 #     # count=1 fires after next instr
 #     cfg_icount_1 = ConfigureIcountTrigger(
-#         index=0,
+#         index=ICOUNT_SLOT,
 #         count=1,
 #         action=TriggerAction.BREAKPOINT,
 #     )
@@ -1852,7 +1863,7 @@ def SID_SDTRIG_036():
 #
 #     # count=0 does not fire
 #     cfg_icount_0 = ConfigureIcountTrigger(
-#         index=0,
+#         index=ICOUNT_SLOT,
 #         count=0,
 #         action=TriggerAction.BREAKPOINT,
 #     )
@@ -1887,7 +1898,7 @@ def SID_SDTRIG_036():
 #     comment = Comment(comment="icount does not decrement in non-enabled priv modes")
 #
 #     cfg_icount = ConfigureIcountTrigger(
-#         index=0,
+#         index=ICOUNT_SLOT,
 #         count=3,
 #         action=TriggerAction.BREAKPOINT,
 #     )
@@ -1930,7 +1941,7 @@ def SID_SDTRIG_036():
 #     comment = Comment(comment="xRET participates in icount matching")
 #
 #     cfg_icount = ConfigureIcountTrigger(
-#         index=0,
+#         index=ICOUNT_SLOT,
 #         count=1,
 #         action=TriggerAction.BREAKPOINT,
 #     )
@@ -1959,7 +1970,7 @@ def SID_SDTRIG_040():
     comment = Comment(comment="Traps/interrupts count toward icount matching")
 
     cfg_icount = ConfigureIcountTrigger(
-        index=0,
+        index=ICOUNT_SLOT,
         count=1,
         action=TriggerAction.BREAKPOINT,
     )
@@ -1991,7 +2002,7 @@ def SID_SDTRIG_040():
 #     comment = Comment(comment="icount.pending semantics: transitions through count=1 set pending and fire on next match")
 #
 #     cfg_icount = ConfigureIcountTrigger(
-#         index=0,
+#         index=ICOUNT_SLOT,
 #         count=2,
 #         action=TriggerAction.BREAKPOINT,
 #         pending=0,
@@ -2159,7 +2170,7 @@ def _sdtrig_044_match_scenario(match: TriggerMatch, suffix: str, tdata2_va: int,
 
     def _cfg():
         return ConfigureLoadStoreTrigger(
-            index=0,
+            index=LS_SLOT,
             addr=hex(tdata2_va),
             action=TriggerAction.BREAKPOINT,
             match=match,
@@ -2317,3 +2328,300 @@ def SID_SDTRIG_044_not_mask_high():
         _SID044_NOT_MASK_HIGH_GUARD_VA,
         "BP fires when access addr[63:32] does NOT match tdata2[63:32] under the encoded mask",
     )
+
+
+# =============================================================================
+# Category: tdata1-mcontrol6 (read-only / unimplemented field write attempts)
+# =============================================================================
+
+
+# action[15:12] is partially writable: bits 14:12 stick, bit 15 is read-only 0. Using bit 15 alone
+# makes the *written* action field non-zero while the field still reads back 0, which is what the
+# read-only-field crosses need -- they gate on the written rs1 value but bin the read-back field.
+_TDATA1_ACTION_RO_BIT = 0x8 << 12
+
+
+@sdtrig_scenario
+def SID_SDTRIG_045():
+    """
+    Attempt to write every read-only / unimplemented mcontrol6 tdata1 field in one csrw, then
+    confirm each one reads back as 0 (WARL masks them) while type still reads back 6.
+
+    Covers the read-only-field write-attempt crosses in one instruction: those coverpoints gate on
+    the *written* rs1 value having the bit set, but bin the *read-back* field, so a single write with
+    dmode / uncertain / hit1 / select / size / action / chain / uncertainen all set satisfies them.
+    """
+    comment = Comment(comment="Write every RO/unimplemented mcontrol6 tdata1 field; all must read back 0, type stays 6")
+    select = SelectTrigger(index=EXEC_SLOT)
+
+    # Every RO / unimplemented field set at once. size=8 encodes a non-zero size[18:16]; the action
+    # field is forced to the read-only bit so action[15:12] is written non-zero but reads back 0.
+    # vs/vu are included so the written value has those bits set too: their read-only-field crosses
+    # additionally require misa.H==0 at the write, which a cpuconfig with h disabled now produces
+    # (the loader clears misa.H). Under misa.H=0 the bits read back as 0, which is a legal bin.
+    ro_fields = build_tdata1_mcontrol6(
+        trigger_type=TriggerType.EXECUTE,
+        priv_mode=("m", "vs", "vu"),
+        dmode=1,
+        uncertain=1,
+        hit1=1,
+        select=1,
+        size=8,
+        chain=1,
+        uncertainen=1,
+    )
+    ro_fields = (ro_fields & ~(0xF << 12)) | _TDATA1_ACTION_RO_BIT
+    wr_ro = WriteTriggerCsr(csr_name="tdata1", value=ro_fields, direct_write=True)
+    rd_ro = ReadTriggerCsr(csr_name="tdata1", direct_read=True)
+
+    # uncertain[26], hit1[25], select[21], size[18:16], action[15:12], chain[11], uncertainen[5].
+    # dmode[59] is excluded: it is writable-but-ignored outside debug mode rather than hardwired 0.
+    ro_mask = LoadImmediateStep(imm=(1 << 26) | (1 << 25) | (1 << 21) | (0x7 << 16) | (0xF << 12) | (1 << 11) | (1 << 5))
+    masked = Arithmetic(op="and", src1=rd_ro, src2=ro_mask)
+    zero = LoadImmediateStep(imm=0)
+    assert_ro_cleared = AssertEqual(src1=masked, src2=zero)
+
+    # type[63:60] must still read back 6 -- the RO write must not disturb the trigger type.
+    ttype_shift = LoadImmediateStep(imm=60)
+    ttype = Arithmetic(op="srl", src1=rd_ro, src2=ttype_shift)
+    ttype_expected = LoadImmediateStep(imm=6)
+    assert_type_preserved = AssertEqual(src1=ttype, src2=ttype_expected)
+
+    # tdata2 = 0 is its own bin; write it after the RO probe so nothing stays armed on a live address.
+    wr_tdata2_zero = WriteTriggerCsr(csr_name="tdata2", value=0, direct_write=True)
+    disarm = WriteTriggerCsr(csr_name="tdata1", value=build_tdata1_disabled(), direct_write=True)
+
+    return TestScenario.from_steps(
+        id="45",
+        name="SID_SDTRIG_045",
+        description="mcontrol6 read-only/unimplemented tdata1 fields read back 0 after a write attempt",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.M], deleg_excp_to=[PrivilegeMode.M]),
+        steps=[
+            comment,
+            select,
+            wr_ro,
+            rd_ro,
+            ro_mask,
+            masked,
+            zero,
+            assert_ro_cleared,
+            ttype_shift,
+            ttype,
+            ttype_expected,
+            assert_type_preserved,
+            wr_tdata2_zero,
+            disarm,
+        ],
+    )
+
+
+# =============================================================================
+# Category: mcontrol6-load/store access widths
+# =============================================================================
+
+
+# Fixed VA so tdata2 and the access base register hold the same value. The width coverpoints compare
+# tdata2 against the *base register* value (not the effective address), so the access must use offset 0
+# against a base register holding exactly the watched address.
+_SID046_BASE_VA = 0x800C_0000
+
+# Every load/store opcode the width coverpoints bin, including the unsigned loads (same width, and
+# a distinct opcode from the signed form).
+_SID046_LOAD_OPS = ["ld", "lw", "lwu", "lh", "lhu", "lb", "lbu"]
+_SID046_STORE_OPS = ["sd", "sw", "sh", "sb"]
+
+
+@sdtrig_scenario
+def SID_SDTRIG_046():
+    """
+    Exercise a match=EQUAL load/store watchpoint with every access width, 8B down to 1B.
+
+    size=0 (match any width) throughout, because the mcontrol6 size field is read-only 0 on this
+    core -- requesting a specific width would read back as "any" regardless.
+    """
+    comment = Comment(comment="Load/store watchpoint fires across 8B/4B/2B/1B access widths at the watched base address")
+
+    mem = Memory(
+        size=0x1000,
+        flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
+        base_va=_SID046_BASE_VA,
+    )
+
+    def _cfg():
+        # Re-armed per access: the BP handler disables the firing trigger on the way out.
+        return ConfigureLoadStoreTrigger(
+            index=LS_SLOT,
+            addr=hex(_SID046_BASE_VA),
+            action=TriggerAction.BREAKPOINT,
+            match=TriggerMatch.EQUAL,
+        )
+
+    steps: list = [comment, mem]
+    for op in _SID046_LOAD_OPS:
+        steps.append(
+            AssertException(
+                cause=ExceptionCause.BREAKPOINT,
+                skip_pc_check=True,
+                code=[_cfg(), Load(memory=mem, offset=0, op=op)],
+            )
+        )
+    for op in _SID046_STORE_OPS:
+        steps.append(
+            AssertException(
+                cause=ExceptionCause.BREAKPOINT,
+                skip_pc_check=True,
+                code=[_cfg(), Store(memory=mem, offset=0, op=op, value=0xA5)],
+            )
+        )
+
+    return TestScenario.from_steps(
+        id="46",
+        name="SID_SDTRIG_046",
+        description="Load/store watchpoint fires for every access width (8B/4B/2B/1B, signed and unsigned loads)",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S, PrivilegeMode.U], deleg_excp_to=[PrivilegeMode.M]),
+        steps=steps,
+    )
+
+
+# =============================================================================
+# Category: tdata1-mcontrol6 (privilege-mode gating, negative direction)
+# =============================================================================
+
+
+def _sdtrig_047_priv_gate_scenario(run_priv: PrivilegeMode, armed_modes: tuple, suffix: str):
+    """SID_SDTRIG_047_<suffix>: arm a trigger with the *running* mode's enable bit clear.
+
+    The privilege crosses need the enable-bit-clear state sampled while executing in that very mode
+    -- the "trigger is programmed but gated off here" case. Existing scenarios always arm the mode
+    they run in (or all modes), so that half of each cross never samples. The trigger must not fire,
+    which is the property being checked.
+    """
+    _lbl_gated = Label(prefix=f"priv_gated_{suffix}_")
+    comment = Comment(comment=f"Trigger armed for {armed_modes} while running in {run_priv.name}: must not fire")
+
+    cfg = ConfigureExecuteTrigger(
+        index=EXEC_SLOT,
+        addr=_lbl_gated.name,
+        action=TriggerAction.BREAKPOINT,
+        priv_mode=armed_modes,
+    )
+
+    return TestScenario.from_steps(
+        id=f"47_{suffix}",
+        name=f"SID_SDTRIG_047_{suffix}",
+        description=f"Execute trigger with the {run_priv.name}-mode enable bit clear does not fire in {run_priv.name}",
+        env=TestEnvCfg(priv_modes=[run_priv], deleg_excp_to=[PrivilegeMode.M]),
+        steps=[
+            comment,
+            cfg,
+            _lbl_gated,
+            Directive(directive="nop"),
+            Directive(directive="nop"),
+        ],
+    )
+
+
+@sdtrig_scenario
+def SID_SDTRIG_047_m_gated():
+    """M-mode enable bit clear while running in M: trigger must stay silent."""
+    return _sdtrig_047_priv_gate_scenario(PrivilegeMode.M, ("s", "u"), "m_gated")
+
+
+@sdtrig_scenario
+def SID_SDTRIG_047_s_gated():
+    """S-mode enable bit clear while running in S."""
+    return _sdtrig_047_priv_gate_scenario(PrivilegeMode.S, ("m", "u"), "s_gated")
+
+
+@sdtrig_scenario
+def SID_SDTRIG_047_u_gated():
+    """U-mode enable bit clear while running in U."""
+    return _sdtrig_047_priv_gate_scenario(PrivilegeMode.U, ("m", "s"), "u_gated")
+
+
+# =============================================================================
+# Category: Triggers x hypervisor instructions
+# =============================================================================
+
+
+@sdtrig_scenario
+def SID_SDTRIG_048():
+    """
+    Fire a load/store watchpoint from hypervisor load/store instructions (hlv/hsv).
+
+    The instruction-category coverage model bins hypervisor instructions separately and the category
+    is unreached by the rest of the plan, so this both adds the category and pairs it with a trigger
+    fire. hlv/hsv access guest memory from HS-mode, which is also the case that sets mstatus.GVA on
+    the resulting trap.
+    """
+    comment = Comment(comment="hlv/hsv guest accesses fire a load/store watchpoint from HS-mode")
+
+    mem = Memory(size=0x1000, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+
+    cfg_hlv = ConfigureLoadStoreTrigger(index=LS_SLOT, addr=hex(_SID046_BASE_VA), action=TriggerAction.BREAKPOINT)
+    hlv = HLoad(memory=mem, op="hlv.d")
+    assert_hlv = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_hlv, hlv])
+
+    cfg_hsv = ConfigureLoadStoreTrigger(index=LS_SLOT, addr=hex(_SID046_BASE_VA), action=TriggerAction.BREAKPOINT)
+    hsv = HStore(memory=mem, op="hsv.d", value=0x5A)
+    assert_hsv = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_hsv, hsv])
+
+    return TestScenario.from_steps(
+        id="48",
+        name="SID_SDTRIG_048",
+        description="Load/store watchpoint fires on hypervisor hlv/hsv guest accesses",
+        env=TestEnvCfg(priv_modes=[PrivilegeMode.S], virtualized=[False], deleg_excp_to=[PrivilegeMode.M]),
+        steps=[
+            comment,
+            mem,
+            assert_hlv,
+            assert_hsv,
+        ],
+    )
+
+
+# =============================================================================
+# Category: Triggers x instruction-fetch page size
+# =============================================================================
+
+
+# Disabled: the iside page-size bins need an execute trigger armed on a fetch inside a superpage code
+# page, and neither way of naming that target works today.
+#
+#   * A Label inside the CodePage forces an auipc-based PC-relative reference. A superpage-sized
+#     allocation can land beyond auipc's +/-2GB reach, so the link fails with
+#     "relocation truncated to fit: R_RISCV_PCREL_HI20" -- and whether it does depends on where the
+#     allocator put the page, so it fails for some privilege/paging combinations and not others.
+#   * A numeric addr (Memory.base_va) links fine but does not match: base_va is not honoured for
+#     CodePage. The page is allocated wherever the allocator chooses (e.g. code_mem17) while the
+#     trigger still watches the requested VA, so it never fires -- and because AssertException falls
+#     through when no exception arrives, the scenario passes vacuously. That is worse than no
+#     scenario at all, which is why this is disabled rather than left in.
+#
+# The enabling change is small and lives in the framework, not here: the generated Call already
+# materializes the page address absolutely (``li <reg>, code_memN``), so a CodePage's allocated
+# address is available as an equate. Exposing it to ConfigureExecuteTrigger -- the way
+# RetrieveAddress / LoadPhysicalAddress already expose a Memory's address -- would let a trigger be
+# armed on a superpage fetch with no relocation and no guessed VA.
+#
+# def _sdtrig_049_iside_pagesize_scenario(page_size, suffix, paging_modes): ...
+# @sdtrig_scenario
+# def SID_SDTRIG_049_2m(): ...
+# @sdtrig_scenario
+# def SID_SDTRIG_049_1g(): ...
+
+
+# =============================================================================
+# Category: Re-entrancy x delegation (hedeleg)
+# =============================================================================
+
+# The hedeleg[3] / VS-mode re-entrancy bins need BREAKPOINT delegated through medeleg[3] AND
+# hedeleg[3] so the handler runs in VS. That cannot live in this plan: SDTRIG_EXCP_HANDLER_POST
+# (see ..sdtrig.__init__) walks tselect/tdata1 to disarm sticky triggers, and those are M-mode-only
+# CSRs -- issuing csrw tselect from a VS handler raises ILLEGAL_INSTRUCTION. Every scenario here
+# therefore requires --deleg_excp_to=machine.
+#
+# Closing those bins needs one of:
+#   * a separate plan whose excp_handler_post does not touch M-mode CSRs (so it can run in VS), or
+#   * making SDTRIG_EXCP_HANDLER_POST delegation-aware -- skip the disarm walk when it is running
+#     below M, which only works for trigger types that are not sticky.
