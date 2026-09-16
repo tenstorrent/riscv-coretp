@@ -20,6 +20,7 @@ from coretp.step import (
     AssertInterrupt,
     ClearInterrupt,
     TriggerInterrupt,
+    CsrDirectAccess,
 )
 
 from . import hypervisor_interrupts_scenario
@@ -137,9 +138,8 @@ def SID_HINTR_002():
     hcounteren_tm = CsrWrite(csr_name="hcounteren", set_mask=0x2)
     henvcfg_stce = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     comment = Comment(comment="VS-interrupts from M-mode, delegated past M to HS, hideleg=0 -> pending")
-    set_mideleg = CsrWrite(csr_name="mideleg", set_mask=VS_MASK | SGEIP)
     no_hideleg = DelegateInterrupt(causes=(), handler_mode=ExceptionHandlerMode.VS)
-    arm_guest_imsic = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.HS, global_enable=False)
+    arm_guest_interrupts = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.HS, global_enable=False)
     trigger_vsei = TriggerInterrupt(cause=InterruptCause.VSEI)
     trigger_vssi = TriggerInterrupt(cause=InterruptCause.VSSI)
     trigger_vsti = TriggerInterrupt(cause=InterruptCause.VSTI)
@@ -163,9 +163,8 @@ def SID_HINTR_002():
             hcounteren_tm,
             henvcfg_stce,
             comment,
-            set_mideleg,
             no_hideleg,
-            arm_guest_imsic,
+            arm_guest_interrupts,
             trigger_vsei,
             trigger_vssi,
             trigger_vsti,
@@ -196,9 +195,10 @@ def SID_HINTR_003():
     henvcfg_stce = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     comment = Comment(comment="VS-interrupts/SGEI serviced in HS: sstatus.sie=1 & hie[*]=1 & hideleg=0")
     no_hideleg = DelegateInterrupt(causes=(), handler_mode=ExceptionHandlerMode.VS)
+    delegate_sgei = DelegateInterrupt(causes=(InterruptCause.SGEI,), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     enable_hie = CsrWrite(csr_name="hie", set_mask=VS_MASK | SGEIP)
-    enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI, InterruptCause.VSEI), handler_mode=ExceptionHandlerMode.HS, global_enable=True)
+    enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI, InterruptCause.VSEI, InterruptCause.SGEI), handler_mode=ExceptionHandlerMode.HS, global_enable=True)
     trigger_vsei = TriggerInterrupt(cause=InterruptCause.VSEI)
     assert_vsei = AssertInterrupt(cause=InterruptCause.VSEI, code=[trigger_vsei], expected_handler_mode=ExceptionHandlerMode.HS)
     trigger_vssi = TriggerInterrupt(cause=InterruptCause.VSSI)
@@ -228,6 +228,7 @@ def SID_HINTR_003():
             henvcfg_stce,
             comment,
             no_hideleg,
+            delegate_sgei,
             configure,
             enable_hie,
             enable,
@@ -261,6 +262,7 @@ def SID_HINTR_004():
     henvcfg_stce = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     comment = Comment(comment="VS-interrupts pending in HS: sstatus.sie=1 but hie[*]=0, hideleg=0")
     no_hideleg = DelegateInterrupt(causes=(), handler_mode=ExceptionHandlerMode.VS)
+    delegate_sgei = DelegateInterrupt(causes=(InterruptCause.SGEI,), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     disable_hie = CsrWrite(csr_name="hie", clear_mask=VS_MASK | SGEIP)
     # enable_global brings up the guest IMSIC (for VSEI and SGEI guest files) and sets
@@ -293,6 +295,7 @@ def SID_HINTR_004():
             henvcfg_stce,
             comment,
             no_hideleg,
+            delegate_sgei,
             configure,
             enable_global,
             disable_hie,
@@ -328,14 +331,12 @@ def SID_HINTR_005():
     henvcfg_stce = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     comment = Comment(comment="VS-interrupts pending in HS: sstatus.sie=0, hideleg=0")
     no_hideleg = DelegateInterrupt(causes=(), handler_mode=ExceptionHandlerMode.VS)
+    delegate_sgei = DelegateInterrupt(causes=(InterruptCause.SGEI,), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     enable_hie = CsrWrite(csr_name="hie", set_mask=VS_MASK | SGEIP)
-    # VSEI is delivered via the IMSIC guest interrupt file; list it in an
-    # EnableInterrupts so the generator brings up the guest file + hstatus.VGEIN.
+    # VSEI/SGEI listed so the generator arms their guest interrupt sources.
     # global_enable stays False — this scenario tests the global-disable path.
-    # VSEI/SGEI listed so the generator brings up the guest IMSIC files.
-    # global_enable stays False — this scenario tests the global-disable path.
-    arm_guest_imsic = EnableInterrupts(causes=(InterruptCause.VSEI, InterruptCause.SGEI), handler_mode=ExceptionHandlerMode.HS, global_enable=False)
+    arm_guest_interrupts = EnableInterrupts(causes=(InterruptCause.VSEI, InterruptCause.SGEI), handler_mode=ExceptionHandlerMode.HS, global_enable=False)
     disable_global = DisableInterrupts(causes=(), handler_mode=ExceptionHandlerMode.HS, global_disable=True)
     trigger_vsei = TriggerInterrupt(cause=InterruptCause.VSEI)
     trigger_vssi = TriggerInterrupt(cause=InterruptCause.VSSI)
@@ -364,9 +365,10 @@ def SID_HINTR_005():
             henvcfg_stce,
             comment,
             no_hideleg,
+            delegate_sgei,
             configure,
             enable_hie,
-            arm_guest_imsic,
+            arm_guest_interrupts,
             disable_global,
             trigger_vsei,
             trigger_vssi,
@@ -400,9 +402,10 @@ def SID_HINTR_006():
     henvcfg_stce = CsrWrite(csr_name="henvcfg", set_mask=(1 << 63))
     comment = Comment(comment="VS-interrupts from VS/VU/HU serviced in HS: hie[*]=1, hideleg=0, sstatus.sie=X")
     no_hideleg = DelegateInterrupt(causes=(), handler_mode=ExceptionHandlerMode.VS)
+    delegate_sgei = DelegateInterrupt(causes=(InterruptCause.SGEI,), handler_mode=ExceptionHandlerMode.HS)
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     enable_hie = CsrWrite(csr_name="hie", set_mask=VS_MASK | SGEIP)
-    enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI, InterruptCause.VSEI), handler_mode=ExceptionHandlerMode.HS, global_enable=False)
+    enable = EnableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI, InterruptCause.VSEI, InterruptCause.SGEI), handler_mode=ExceptionHandlerMode.HS, global_enable=False)
     trigger_vsei = TriggerInterrupt(cause=InterruptCause.VSEI)
     assert_vsei = AssertInterrupt(cause=InterruptCause.VSEI, code=[trigger_vsei], expected_handler_mode=ExceptionHandlerMode.HS)
     trigger_vssi = TriggerInterrupt(cause=InterruptCause.VSSI)
@@ -432,6 +435,7 @@ def SID_HINTR_006():
             henvcfg_stce,
             comment,
             no_hideleg,
+            delegate_sgei,
             configure,
             enable_hie,
             enable,
@@ -470,7 +474,7 @@ def SID_HINTR_007():
     comment = Comment(comment="VS-interrupts pending from VS/VU: hie[*]=0, hideleg=0")
     no_hideleg = DelegateInterrupt(causes=(), handler_mode=ExceptionHandlerMode.VS)
     disable_hie = CsrWrite(csr_name="hie", clear_mask=VS_MASK | SGEIP)
-    arm_guest_imsic = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.HS, global_enable=True)
+    arm_guest_interrupts = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.HS, global_enable=True)
     trigger_vsei = TriggerInterrupt(cause=InterruptCause.VSEI)
     trigger_vssi = TriggerInterrupt(cause=InterruptCause.VSSI)
     trigger_vsti = TriggerInterrupt(cause=InterruptCause.VSTI)
@@ -495,7 +499,7 @@ def SID_HINTR_007():
             henvcfg_stce,
             comment,
             no_hideleg,
-            arm_guest_imsic,
+            arm_guest_interrupts,
             disable_hie,
             trigger_vsei,
             trigger_vssi,
@@ -634,7 +638,7 @@ def SID_HINTR_010():
     # EnableInterrupts so the generator brings up the guest file + hstatus.VGEIN.
     # causes=(VSEI,) only touches vsie[10] (a no-op WARL bit), so vsie[*] stays
     # cleared by disable_local — this scenario tests the local-disable path.
-    arm_guest_imsic = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.VS, global_enable=False)
+    arm_guest_interrupts = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.VS, global_enable=False)
     disable_local = DisableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.VS, global_disable=False)
     trigger_vsei = TriggerInterrupt(cause=InterruptCause.VSEI)
     trigger_vssi = TriggerInterrupt(cause=InterruptCause.VSSI)
@@ -662,7 +666,7 @@ def SID_HINTR_010():
             comment,
             delegate,
             configure,
-            arm_guest_imsic,
+            arm_guest_interrupts,
             disable_local,
             trigger_vsei,
             trigger_vssi,
@@ -879,7 +883,7 @@ def SID_HINTR_014():
     configure = ConfigureInterruptMode(mode=InterruptMode.DIRECT, handler_mode=ExceptionHandlerMode.HS)
     # Bring up the guest IMSIC (VSEI -> mode=v directive) but keep vsie[*] cleared
     # so the VS interrupts stay pending (local disable in VS).
-    arm_guest_imsic = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.VS, global_enable=False)
+    arm_guest_interrupts = EnableInterrupts(causes=(InterruptCause.VSEI,), handler_mode=ExceptionHandlerMode.VS, global_enable=False)
     disable_local = DisableInterrupts(causes=(InterruptCause.SSI, InterruptCause.STI, InterruptCause.SEI), handler_mode=ExceptionHandlerMode.VS, global_disable=False)
     trigger_vsei = TriggerInterrupt(cause=InterruptCause.VSEI)
     trigger_vssi = TriggerInterrupt(cause=InterruptCause.VSSI)
@@ -907,7 +911,7 @@ def SID_HINTR_014():
             comment,
             delegate,
             configure,
-            arm_guest_imsic,
+            arm_guest_interrupts,
             disable_local,
             trigger_vsei,
             trigger_vssi,
@@ -1195,5 +1199,160 @@ def SID_HINTR_024():
             clear_vssi,
             clear_htimedelta,
             disable,
+        ],
+    )
+
+
+# =============================================================================
+# SID_HINTR_025 - vstimecmp is a 64-bit register with 64-bit precision
+# =============================================================================
+
+
+@hypervisor_interrupts_scenario
+def SID_HINTR_025():
+    """
+    The vstimecmp CSR is a 64-bit register and has 64-bit precision on all RV32
+    and RV64 systems.
+
+    Written and read back from M-mode under its own name (a VS-mode access would
+    go through stimecmp), with values whose upper and lower halves differ so a
+    32-bit-wide or sign-extending implementation cannot pass. Every value is far
+    beyond any time this test can reach, so no VS timer interrupt fires while the
+    comparator is under test.
+
+    HS stimecmp is read either side of the sequence and must not move: the
+    comparators are independent registers.
+
+    Per norm:hip_vstip_op, VSTIP becomes pending once (time + htimedelta) reaches
+    vstimecmp; none of the values here is reachable, so no VS timer interrupt
+    fires mid-scenario. vstimecmp is not restored -- RiescueD snapshots and
+    restores every CSR a discrete test touches.
+
+    Pseudocode:
+    CsrWrite(csr_name="menvcfg", set_mask=1<<63)   # STCE
+    CsrWrite(csr_name="henvcfg", set_mask=1<<63)
+    st_before = CsrDirectAccess(op="csrrs", csr_name="stimecmp", src1=0)
+    for val in (0x0123456789ABCDEF, 0xFEDCBA9876543210, 0xFFFFFFFFFFFFFFFF):
+        v = LoadImmediateStep(imm=val)
+        CsrDirectAccess(op="csrrw", csr_name="vstimecmp", src1=v, target_is_x0=True)
+        rb = CsrDirectAccess(op="csrrs", csr_name="vstimecmp", src1=0)
+        AssertEqual(src1=rb, src2=v)
+    st_after = CsrDirectAccess(op="csrrs", csr_name="stimecmp", src1=0)
+    AssertEqual(src1=st_after, src2=st_before)
+    """
+    STCE_BIT = 1 << 63
+
+    # Upper and lower 32-bit halves differ in every value, and none is representable
+    # as a sign-extended 32-bit immediate, so a narrow comparator cannot read back clean.
+    TEST_VALUES = (0x0123456789ABCDEF, 0xFEDCBA9876543210, 0xFFFFFFFFFFFFFFFF)
+
+    comment_stce = Comment(comment="Enable Sstc (menvcfg.STCE, henvcfg.STCE) so vstimecmp is live")
+    menvcfg_stce = CsrWrite(csr_name="menvcfg", set_mask=STCE_BIT)
+    henvcfg_stce = CsrWrite(csr_name="henvcfg", set_mask=STCE_BIT)
+
+    comment_st_before = Comment(comment="Snapshot HS stimecmp - writing vstimecmp must not disturb it")
+    st_before = CsrDirectAccess(op="csrrs", csr_name="stimecmp", src1=0)
+
+    steps: list = [comment_stce, menvcfg_stce, henvcfg_stce, comment_st_before, st_before]
+
+    for val in TEST_VALUES:
+        comment = Comment(comment=f"vstimecmp: write {val:#018x}, read back the full 64 bits")
+        v = LoadImmediateStep(imm=val)
+        write = CsrDirectAccess(op="csrrw", csr_name="vstimecmp", src1=v, target_is_x0=True)
+        readback = CsrDirectAccess(op="csrrs", csr_name="vstimecmp", src1=0)
+        assert_val = AssertEqual(src1=readback, src2=v)
+        steps.extend([comment, v, write, readback, assert_val])
+
+    comment_st_after = Comment(comment="HS stimecmp must be unchanged - vstimecmp is a separate register")
+    st_after = CsrDirectAccess(op="csrrs", csr_name="stimecmp", src1=0)
+    assert_st = AssertEqual(src1=st_after, src2=st_before)
+    steps.extend([comment_st_after, st_after, assert_st])
+
+    return TestScenario.from_steps(
+        id="25",
+        name="SID_HINTR_025",
+        description="vstimecmp is a 64-bit register with 64-bit precision, independent of HS stimecmp",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.M],
+        ),
+        steps=steps,
+    )
+
+
+# =============================================================================
+# SID_HINTR_026 - vstimecmph does not exist on RV64
+# =============================================================================
+
+
+@hypervisor_interrupts_scenario
+def SID_HINTR_026():
+    """
+    norm:vstimecmp_acc -- "In RV32 only, accesses to the vstimecmp CSR access the
+    low 32 bits, while accesses to the vstimecmph CSR access the high 32 bits of
+    vstimecmp."
+
+    On RV64 vstimecmp is a single 64-bit CSR (norm:vstimecmp_sz) and the high
+    half vstimecmph does not exist, so any access to it raises an illegal
+    instruction exception. Both a csrrs and a csrrw access are attempted.
+
+    Sstc is enabled and vstimecmp is read first as a positive control, so a trap
+    on vstimecmph cannot be explained away by the extension being off or the
+    timer CSRs being unreachable -- the 64-bit register is right there, only its
+    RV32 high half is not.
+
+    Pseudocode:
+    CsrWrite(csr_name="menvcfg", set_mask=1<<63)   # STCE
+    CsrWrite(csr_name="henvcfg", set_mask=1<<63)
+    # positive control: the 64-bit vstimecmp is reachable
+    CsrDirectAccess(op="csrrs", csr_name="vstimecmp", src1=0)
+    # the RV32 high half does not exist on RV64
+    AssertException(cause=ILLEGAL_INSTRUCTION, code=[
+        CsrDirectAccess(op="csrrs", csr_name="vstimecmph", src1=0, target_is_x0=True)
+    ])
+    zero = LoadImmediateStep(imm=0)
+    AssertException(cause=ILLEGAL_INSTRUCTION, code=[
+        CsrDirectAccess(op="csrrw", csr_name="vstimecmph", src1=zero)
+    ])
+    """
+    STCE_BIT = 1 << 63
+
+    comment_stce = Comment(comment="Enable Sstc (menvcfg.STCE, henvcfg.STCE) so vstimecmp is live")
+    menvcfg_stce = CsrWrite(csr_name="menvcfg", set_mask=STCE_BIT)
+    henvcfg_stce = CsrWrite(csr_name="henvcfg", set_mask=STCE_BIT)
+
+    comment_control = Comment(comment="Positive control: the 64-bit vstimecmp is reachable and must not trap")
+    read_vstimecmp = CsrDirectAccess(op="csrrs", csr_name="vstimecmp", src1=0)
+
+    comment_read = Comment(comment="RV64: vstimecmph does not exist - csrrs access must raise ILLEGAL_INSTRUCTION")
+    assert_read = AssertException(
+        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        code=[CsrDirectAccess(op="csrrs", csr_name="vstimecmph", src1=0, target_is_x0=True)],
+    )
+
+    comment_write = Comment(comment="RV64: vstimecmph does not exist - csrrw access must raise ILLEGAL_INSTRUCTION")
+    zero = LoadImmediateStep(imm=0)
+    assert_write = AssertException(
+        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        code=[CsrDirectAccess(op="csrrw", csr_name="vstimecmph", src1=zero)],
+    )
+
+    return TestScenario.from_steps(
+        id="26",
+        name="SID_HINTR_026",
+        description="On RV64 the RV32 high half vstimecmph does not exist: accessing it raises ILLEGAL_INSTRUCTION",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.M],
+        ),
+        steps=[
+            comment_stce,
+            menvcfg_stce,
+            henvcfg_stce,
+            comment_control,
+            read_vstimecmp,
+            comment_read,
+            assert_read,
+            comment_write,
+            zero,
+            assert_write,
         ],
     )

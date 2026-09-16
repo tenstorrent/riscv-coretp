@@ -3,6 +3,12 @@
 
 # SDTRIG test plan
 
+from functools import wraps
+from typing import Callable
+
+from coretp import TestScenario
+from coretp.step import CsrWrite
+
 from ..test_plan_registry import new_test_plan
 
 
@@ -25,9 +31,38 @@ from ..test_plan_registry import new_test_plan
 # implemented index (or unchanged), so ``csrr; bne attempted, actual`` detects
 # end-of-triggers.
 #
-# M-mode only: tselect / tdata1 are M-mode CSRs, so issuing csrw tselect from
-# an S-mode trap handler raises ILLEGAL_INSTRUCTION. Tests that consume this
-# plan must run with ``--deleg_excp_to=machine``.
+# M-mode only: mcause / tselect / tdata1 are M-mode CSRs, so running this body
+# from an S-mode trap handler raises ILLEGAL_INSTRUCTION. Each scenario therefore
+# starts by writing ``medeleg=0`` so BREAKPOINT (and other exceptions) trap to M.
+#
+# That covers the scenario body only. A generator that emits its own code around
+# the scenarios (Voyager2) can still fault outside that window, once medeleg has
+# been restored, and land in the S handler — those runs additionally need
+# ``--deleg_excp_to=machine``.
+UNDELEGATE_EXCEPTIONS_TO_M = CsrWrite(csr_name="medeleg", value=0, force_machine_mode=True)
+
+
+def prepend_undelegate_exceptions(register: Callable) -> Callable:
+    """Wrap a plan decorator so every registered scenario undelegate exceptions to M first."""
+
+    def decorator(func: Callable[[], TestScenario]) -> Callable[[], TestScenario]:
+        @wraps(func)
+        def factory() -> TestScenario:
+            scenario = func()
+            original_steps = [sir.step for sir in scenario.steps if sir.step is not None]
+            return TestScenario.from_steps(
+                id=scenario.id,
+                name=scenario.name,
+                description=scenario.description,
+                env=scenario.env,
+                steps=[UNDELEGATE_EXCEPTIONS_TO_M, *original_steps],
+            )
+
+        return register(factory)
+
+    return decorator
+
+
 SDTRIG_EXCP_HANDLER_POST = """
     csrr t1, mcause
     li t2, 3                                     # RISC-V BREAKPOINT cause
@@ -70,11 +105,13 @@ dtbe_skip_disable_triggers:
 """
 
 
-sdtrig_scenario = new_test_plan(
-    name="sdtrig",
-    description="Covers RISC-V Sdtrig (Debug Trigger Module) scenarios",
-    tags=["sdtrig", "debug", "trigger"],
-    excp_handler_post=SDTRIG_EXCP_HANDLER_POST,
+sdtrig_scenario = prepend_undelegate_exceptions(
+    new_test_plan(
+        name="sdtrig",
+        description="Covers RISC-V Sdtrig (Debug Trigger Module) scenarios",
+        tags=["sdtrig", "debug", "trigger"],
+        excp_handler_post=SDTRIG_EXCP_HANDLER_POST,
+    )
 )
 
-__all__ = ["sdtrig_scenario", "SDTRIG_EXCP_HANDLER_POST"]
+__all__ = ["sdtrig_scenario", "SDTRIG_EXCP_HANDLER_POST", "UNDELEGATE_EXCEPTIONS_TO_M", "prepend_undelegate_exceptions"]

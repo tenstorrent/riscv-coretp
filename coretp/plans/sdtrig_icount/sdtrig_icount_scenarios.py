@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from coretp import TestScenario, TestEnvCfg
-from coretp.rv_enums import PageFlags, PrivilegeMode, ExceptionCause, PagingMode
+from coretp.rv_enums import PageFlags, PrivilegeMode, ExceptionCause, ExceptionHandlerMode, PagingMode
 from coretp.step import (
     Label,
     Memory,
@@ -407,14 +407,30 @@ def SID_SDTRIG_I006():
     cfg_c1 = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT)
     assert_c1 = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_c1, Directive(directive="nop")])
 
-    # count = intermediate (16) -> fires after ~16 retires (skip_pc_check
-    # tolerates the exact PC since the count window straddles macro setup)
+    # count = intermediate (16) -> fires on the 17th matching instruction, so
+    # the block carries 16 nops to keep the fire inside it. A shorter block
+    # puts the fire in the assertion's failure trampoline, and the re-executed
+    # instruction then falls through to the failure jump.
     cfg_cmid = ConfigureIcountTrigger(index=8, count=16, action=TriggerAction.BREAKPOINT)
-    assert_cmid = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_cmid, Directive(directive="nop")])
+    assert_cmid = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        code=[cfg_cmid, *[Directive(directive="nop") for _ in range(16)]],
+    )
 
-    # count = max value (0x3FFF, 14-bit count field)
+    # count = max value (0x3FFF, 14-bit count field). A fire needs 16384
+    # matching retires, far more than any assertable block, so this case
+    # checks the other half of the WARL contract instead: the max count must
+    # be accepted and must NOT fire early. hit[24] clear after the filler
+    # proves it stayed armed without tripping.
     cfg_cmax = ConfigureIcountTrigger(index=8, count=0x3FFF, action=TriggerAction.BREAKPOINT)
-    assert_cmax = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_cmax, Directive(directive="nop")])
+    cmax_filler = [Directive(directive="nop") for _ in range(16)]
+    rd_cmax = ReadTriggerCsr(csr_name="tdata1", direct_read=False)
+    hit_mask = LoadImmediateStep(imm=(1 << 24))
+    cmax_hit = Arithmetic(op="and", src1=rd_cmax, src2=hit_mask)
+    zero = LoadImmediateStep(imm=0)
+    assert_cmax_no_fire = AssertEqual(src1=cmax_hit, src2=zero)
+    disarm = ConfigureIcountTrigger(index=8, count=0, action=TriggerAction.BREAKPOINT, priv_mode=())
 
     return TestScenario.from_steps(
         id="8",
@@ -427,7 +443,14 @@ def SID_SDTRIG_I006():
             call_c0,
             assert_c1,
             assert_cmid,
-            assert_cmax,
+            cfg_cmax,
+            *cmax_filler,
+            rd_cmax,
+            hit_mask,
+            cmax_hit,
+            zero,
+            assert_cmax_no_fire,
+            disarm,
         ],
     )
 
@@ -1045,11 +1068,12 @@ def SID_SDTRIG_I017():
     wfi_pend = Directive(directive="wfi")
     assert_wfi_pend = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_pend, wfi_pend])
 
-    # wfi + wrs sequence
+    # wfi + wrs sequence. Both wait ops live inside the block so the count=2
+    # countdown runs out on them rather than in the assertion's failure path.
     cfg_wrs = ConfigureIcountTrigger(index=8, count=2, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
     wrs = Directive(directive="wrs.nto")
     wfi_wrs = Directive(directive="wfi")
-    assert_wrs = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_wrs, wfi_wrs])
+    assert_wrs = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_wrs, wrs, wfi_wrs])
 
     return TestScenario.from_steps(
         id="22",
@@ -1063,7 +1087,6 @@ def SID_SDTRIG_I017():
             msip_bit,
             set_msip,
             assert_wfi_pend,
-            wrs,
             assert_wrs,
         ],
     )
@@ -1237,17 +1260,20 @@ def SID_SDTRIG_I022():
     """
     comment = Comment(comment="icount does not re-fire while inside its own handler (no re-entrancy)")
 
-    # cfg moved into AssertException.code (A2). Pinned to M-mode because the
-    # scenario writes medeleg (M-only CSR) in the second half, which would
-    # raise ILLEGAL_INSTRUCTION if the framework chose S/HS at random.
+    # The plan-wide setup clears medeleg so breakpoint exceptions are handled
+    # in M-mode, where the post-handler can access the trigger CSRs.
     cfg = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
     bp_bit = LoadImmediateStep(imm=(1 << 3))
     assert_bp = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg, bp_bit])
 
-    # medeleg[3] = 1 -> breakpoint delegated to S-mode (only legal in M-mode)
-    set_medeleg = CsrWrite(csr_name="medeleg", set_mask=bp_bit, direct_write=True)
-    cfg_s = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
-    assert_bp_s = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_s, Directive(directive="nop")])
+    cfg_m = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT, priv_mode=("m",))
+    assert_bp_m = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        expected_handler_mode=ExceptionHandlerMode.MACHINE,
+        re_execute=False,
+        code=[cfg_m, Directive(directive="nop")],
+    )
 
     return TestScenario.from_steps(
         id="26",
@@ -1257,8 +1283,7 @@ def SID_SDTRIG_I022():
         steps=[
             comment,
             assert_bp,
-            set_medeleg,
-            assert_bp_s,
+            assert_bp_m,
         ],
     )
 
@@ -1278,17 +1303,18 @@ def SID_SDTRIG_I023():
     """
     comment = Comment(comment="icount is precise even under multi-instruction retirement; fires after exactly K instrs")
 
-    cfg_k1 = ConfigureIcountTrigger(index=8, count=1, action=TriggerAction.BREAKPOINT)
-    assert_k1 = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_k1, Directive(directive="nop")])
+    # Each block carries K nops so the count=K countdown runs out inside the
+    # assertion. The trigger fires on the (K+1)-th matching instruction, and a
+    # block shorter than that puts the fire in the assertion's own failure
+    # trampoline, where re-execution then falls through to the failure jump.
+    def _assert_k(count: int) -> AssertException:
+        cfg = ConfigureIcountTrigger(index=8, count=count, action=TriggerAction.BREAKPOINT)
+        nops = [Directive(directive="nop") for _ in range(count)]
+        return AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg, *nops])
 
-    cfg_k2 = ConfigureIcountTrigger(index=8, count=2, action=TriggerAction.BREAKPOINT)
-    blank_nops_1 = Directive(directive="nop")
-    assert_k2 = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_k2, Directive(directive="nop")])
-
-    cfg_k3 = ConfigureIcountTrigger(index=8, count=3, action=TriggerAction.BREAKPOINT)
-    blank_nops_2 = Directive(directive="nop")
-    blank_nops_3 = Directive(directive="nop")
-    assert_k3 = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_k3, Directive(directive="nop")])
+    assert_k1 = _assert_k(1)
+    assert_k2 = _assert_k(2)
+    assert_k3 = _assert_k(3)
 
     return TestScenario.from_steps(
         id="27",
@@ -1298,10 +1324,7 @@ def SID_SDTRIG_I023():
         steps=[
             comment,
             assert_k1,
-            blank_nops_1,
             assert_k2,
-            blank_nops_2,
-            blank_nops_3,
             assert_k3,
         ],
     )
@@ -1320,16 +1343,22 @@ def SID_SDTRIG_I024():
     # covers M/S/U.
     cfg = ConfigureIcountTrigger(index=8, count=4, action=TriggerAction.BREAKPOINT)
 
-    # Mispredicted branch sequence
+    # The branch sequence lives inside AssertException.code so the count=4
+    # countdown is consumed by these instructions. Only br and tgt retire --
+    # spec1/spec2 sit on the flushed path -- so the fire lands on the trailing
+    # nops, which is the property under test. Padding to `count` matching
+    # instructions matters: the trigger fires on the (count+1)-th one, and if
+    # the block is shorter than that the fire lands in the assertion's own
+    # failure trampoline and re-execution walks straight into it.
     br = Directive(directive="beq x0, x0, 1f")
     spec1 = Directive(directive="nop")
     spec2 = Directive(directive="nop")
     tgt = Directive(directive="1: nop")
-
-    # After retiring only (br, tgt, + 2 committed nops) count should decrement by 4 -> fire.
-    # cfg moved into AssertException.code (A2).
-    nop4 = Directive(directive="nop")
-    assert_fire = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg, nop4])
+    assert_fire = AssertException(
+        cause=ExceptionCause.BREAKPOINT,
+        skip_pc_check=True,
+        code=[cfg, br, spec1, spec2, tgt, Directive(directive="nop"), Directive(directive="nop")],
+    )
 
     return TestScenario.from_steps(
         id="28",
@@ -1338,10 +1367,6 @@ def SID_SDTRIG_I024():
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M, PrivilegeMode.S, PrivilegeMode.U]),
         steps=[
             comment,
-            br,
-            spec1,
-            spec2,
-            tgt,
             assert_fire,
         ],
     )

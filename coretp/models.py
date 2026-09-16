@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Optional, Union
+from pathlib import Path
 from dataclasses import dataclass, field
 
 from .step import TestStep
@@ -83,6 +84,10 @@ class TestPlan:
         The generator wraps the body with the label and a trailing ``ret``. Tests
         that consume the plan must be run with ``--excp_hooks``.
     :type excp_handler_post: Optional[str]
+    :param directed_tests: RiescueD assembly sources (``.s`` files) associated
+        with this plan. These are directed tests that live alongside the plan
+        rather than being generated from scenarios.
+    :type directed_tests: tuple[Path, ...]
     """
 
     name: str
@@ -90,6 +95,7 @@ class TestPlan:
     scenarios: list[TestScenario] = field(default_factory=list)
     excp_handler_pre: Optional[str] = None
     excp_handler_post: Optional[str] = None
+    directed_tests: tuple[Path, ...] = field(default_factory=tuple)
 
     def __post_init__(self):
         """Check that scenarios were included"""

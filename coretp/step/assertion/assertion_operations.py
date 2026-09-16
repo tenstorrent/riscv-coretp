@@ -59,6 +59,18 @@ class AssertException(TestStep):
     # plan-wide ``excp_handler_post`` body, emitted when --excp_hooks is set,
     # handles the BP case).
     disable_triggers_after: bool = False
+    # Expected trap-entry privilege state, checked by the OS trap handler when the
+    # exception fires. These are CSR bit values, so the expectation is the bit
+    # itself -- 0 or 1 -- and ``None`` leaves the field unchecked. SPP is read from
+    # sstatus, which the hardware resolves to vsstatus when the handler runs at
+    # V=1, so it covers both the trap-into-HS and the trap-into-VS rule. SPV and
+    # SPVP live in hstatus and are only readable at V=0, so a scenario using them
+    # must land its trap in HS-mode -- pin
+    # ``expected_handler_mode=ExceptionHandlerMode.HS``, or the handler that does
+    # fire will fail the test rather than silently skip the check.
+    expected_spp: Optional[int] = None
+    expected_spv: Optional[int] = None
+    expected_spvp: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -81,6 +93,18 @@ class AssertFetchException(TestStep):
     htval: Optional[Union[int, "Memory", tuple["Memory", int]]] = None  # expected htval/mtval2 (0 or None = skip check)
     gva_check: bool = False  # when True, trap handler verifies mstatus/hstatus.GVA is set
     expected_handler_mode: ExceptionHandlerMode = ExceptionHandlerMode.ANY
+    # Expected trap-entry privilege state, checked by the OS trap handler when the
+    # exception fires. These are CSR bit values, so the expectation is the bit
+    # itself -- 0 or 1 -- and ``None`` leaves the field unchecked. SPP is read from
+    # sstatus, which the hardware resolves to vsstatus when the handler runs at
+    # V=1, so it covers both the trap-into-HS and the trap-into-VS rule. SPV and
+    # SPVP live in hstatus and are only readable at V=0, so a scenario using them
+    # must land its trap in HS-mode -- pin
+    # ``expected_handler_mode=ExceptionHandlerMode.HS``, or the handler that does
+    # fire will fail the test rather than silently skip the check.
+    expected_spp: Optional[int] = None
+    expected_spv: Optional[int] = None
+    expected_spvp: Optional[int] = None
 
 
 @dataclass(frozen=True)

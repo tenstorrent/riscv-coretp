@@ -71,13 +71,17 @@ class ConfigureInterruptMode(TestStep):
 @dataclass(frozen=True)
 class DelegateInterrupt(TestStep):
     """
-    Delegate or undelegate specific interrupt causes via mideleg or hideleg.
+    Delegate or undelegate specific interrupt causes via mideleg / hideleg.
 
-    ``handler_mode=HS`` sets the corresponding bits in mideleg (the listed
-    causes trap to HS-mode). ``handler_mode=VS`` uses hideleg instead, with
-    VS-mode bit mapping: SSI(cause 1) -> hideleg bit 2, STI(cause 5) ->
-    hideleg bit 6, SEI(cause 9) -> hideleg bit 10. ``handler_mode=MACHINE``
-    clears bits in mideleg (undelegate, listed causes trap to M-mode).
+    Delegation is programmed at every privilege level above ``handler_mode``
+    so the interrupt can actually reach it:
+
+    - ``handler_mode=VS``: set mideleg (M→HS) and hideleg (HS→VS). VS-mode
+      bit mapping: SSI(cause 1) -> bit 2, STI(cause 5) -> bit 6,
+      SEI(cause 9) -> bit 10; VSSI/VSTI/VSEI already sit at 2/6/10.
+    - ``handler_mode=HS``: set mideleg (M→HS) and clear the matching hideleg
+      bits so the interrupt stops in HS rather than continuing to VS.
+    - ``handler_mode=MACHINE``: clear mideleg (undelegate, trap to M-mode).
 
     Mideleg/hideleg is saved/restored automatically by the framework's CSR
     save/restore prologue/epilogue when this step appears in a test, so no
@@ -87,8 +91,8 @@ class DelegateInterrupt(TestStep):
                    means "undelegate everything" for the targeted CSR:
                    ``handler_mode=HS`` clears mideleg (``csrw mideleg, zero``),
                    ``handler_mode=VS`` clears hideleg (``csrw hideleg, zero``).
-    :param handler_mode: HS to delegate via mideleg, VS to delegate via
-                         hideleg, or MACHINE to undelegate (clear mideleg bits).
+    :param handler_mode: Target handler. VS also sets mideleg; HS also
+                         clears hideleg; MACHINE clears mideleg.
     """
 
     causes: tuple[InterruptCause, ...] = ()

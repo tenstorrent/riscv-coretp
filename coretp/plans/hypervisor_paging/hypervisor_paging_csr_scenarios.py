@@ -427,10 +427,13 @@ def SID_HPBVMS_033():
     When (Vsatp/Hgatp).Mode == Bare, program non-zero values in rest of the
     fields; ensure expected uArch behavior. Write each field (ASID, PPN for
     vsatp; VMID, PPN for hgatp) separately with Mode=Bare(0), then read back
-    and verify.
+    and verify. Runs from M-mode and HS-mode.
 
     RV64 vsatp: [63:60]=MODE, [59:44]=ASID(16b), [43:0]=PPN(44b)
     RV64 hgatp: [63:60]=MODE, [57:44]=VMID(14b), [43:0]=PPN(44b)
+
+    hgatp.PPN[1:0] are read-only zero (16 KiB root PT alignment); writes with
+    those bits set must read back cleared.
 
     Pseudocode:
     # --- vsatp: non-zero ASID only (Mode=Bare, PPN=0) ---
@@ -462,18 +465,21 @@ def SID_HPBVMS_033():
     AssertEqual(src1=hgatp_vmid_read, src2=hgatp_vmid_val)
 
     # --- hgatp: non-zero PPN only (Mode=Bare, VMID=0) ---
+    # PPN[1:0] are read-only zero, so expect them cleared on readback
     Comment("hgatp: write Bare mode with non-zero PPN")
-    LoadImmediateStep(imm=0x0000_000F_FFFF_FFFF)  # PPN=0xF_FFFF_FFFF, MODE=0, VMID=0
+    LoadImmediateStep(imm=0x0000_000F_FFFF_FFFF)  # write PPN with LSBs set
     CsrWrite(csr_name="hgatp", value=hgatp_ppn_val)
     CsrRead(csr_name="hgatp")
-    AssertEqual(src1=hgatp_ppn_read, src2=hgatp_ppn_val)
+    LoadImmediateStep(imm=0x0000_000F_FFFF_FFFC)  # expected: PPN[1:0]=0
+    AssertEqual(src1=hgatp_ppn_read, src2=hgatp_ppn_expected)
 
     # --- hgatp: non-zero VMID and PPN (Mode=Bare) ---
     Comment("hgatp: write Bare mode with non-zero VMID and PPN")
-    LoadImmediateStep(imm=0x003F_FFFF_FFFF_FFFF)  # VMID=0x3FFF, PPN=0xF_FFFF_FFFF
+    LoadImmediateStep(imm=0x003F_FFFF_FFFF_FFFF)  # VMID=0x3FFF, PPN with LSBs set
     CsrWrite(csr_name="hgatp", value=hgatp_both_val)
     CsrRead(csr_name="hgatp")
-    AssertEqual(src1=hgatp_both_read, src2=hgatp_both_val)
+    LoadImmediateStep(imm=0x003F_FFFF_FFFF_FFFC)  # expected: PPN[1:0]=0
+    AssertEqual(src1=hgatp_both_read, src2=hgatp_both_expected)
     """
     # ========== vsatp: non-zero ASID only (Mode=Bare, PPN=0) ==========
     comment_vsatp_asid = Comment(comment="vsatp: write Bare mode with non-zero ASID")
@@ -504,25 +510,29 @@ def SID_HPBVMS_033():
     assert_hgatp_vmid = AssertEqual(src1=hgatp_vmid_read, src2=hgatp_vmid_val)
 
     # ========== hgatp: non-zero PPN only (Mode=Bare, VMID=0) ==========
-    comment_hgatp_ppn = Comment(comment="hgatp: write Bare mode with non-zero PPN")
+    # PPN[1:0] are read-only zero (16 KiB root alignment); expect them cleared
+    comment_hgatp_ppn = Comment(comment="hgatp: write Bare mode with non-zero PPN (PPN[1:0] ROZ)")
     hgatp_ppn_val = LoadImmediateStep(imm=0x0000_000F_FFFF_FFFF)
     hgatp_ppn_write = CsrWrite(csr_name="hgatp", value=hgatp_ppn_val)
     hgatp_ppn_read = CsrRead(csr_name="hgatp")
-    assert_hgatp_ppn = AssertEqual(src1=hgatp_ppn_read, src2=hgatp_ppn_val)
+    hgatp_ppn_expected = LoadImmediateStep(imm=0x0000_000F_FFFF_FFFC)
+    assert_hgatp_ppn = AssertEqual(src1=hgatp_ppn_read, src2=hgatp_ppn_expected)
 
     # ========== hgatp: non-zero VMID and PPN (Mode=Bare) ==========
-    comment_hgatp_both = Comment(comment="hgatp: write Bare mode with non-zero VMID and PPN")
+    comment_hgatp_both = Comment(comment="hgatp: write Bare mode with non-zero VMID and PPN (PPN[1:0] ROZ)")
     hgatp_both_val = LoadImmediateStep(imm=0x003F_FFFF_FFFF_FFFF)
     hgatp_both_write = CsrWrite(csr_name="hgatp", value=hgatp_both_val)
     hgatp_both_read = CsrRead(csr_name="hgatp")
-    assert_hgatp_both = AssertEqual(src1=hgatp_both_read, src2=hgatp_both_val)
+    hgatp_both_expected = LoadImmediateStep(imm=0x003F_FFFF_FFFF_FFFC)
+    assert_hgatp_both = AssertEqual(src1=hgatp_both_read, src2=hgatp_both_expected)
 
     return TestScenario.from_steps(
         id="25",
         name="SID_HPBVMS_033",
-        description=("When vsatp/hgatp Mode=Bare, program non-zero values in ASID/PPN " "and VMID/PPN fields separately; ensure expected uArch behavior"),
+        description=("When vsatp/hgatp Mode=Bare from M/HS-mode, program non-zero " "ASID/PPN and VMID/PPN; hgatp.PPN[1:0] read-only zero"),
         env=TestEnvCfg(
-            priv_modes=[PrivilegeMode.M],
+            priv_modes=[PrivilegeMode.M, PrivilegeMode.S],
+            virtualized=[False],
         ),
         steps=[
             comment_vsatp_asid,
@@ -549,11 +559,13 @@ def SID_HPBVMS_033():
             hgatp_ppn_val,
             hgatp_ppn_write,
             hgatp_ppn_read,
+            hgatp_ppn_expected,
             assert_hgatp_ppn,
             comment_hgatp_both,
             hgatp_both_val,
             hgatp_both_write,
             hgatp_both_read,
+            hgatp_both_expected,
             assert_hgatp_both,
         ],
     )
@@ -1406,5 +1418,188 @@ def SID_HPBVMS_041():
             comment_write_trap,
             write_val,
             assert_write_trap,
+        ],
+    )
+
+
+@hypervisor_paging_csr_scenario
+def SID_HPBVMS_042():
+    """
+    norm:vsatp_mode_unsupported_v1 -- when V=1, a write to `satp` with an
+    unsupported MODE value is ignored and no write to `vsatp` is effected.
+
+    The written value changes both MODE (to a reserved encoding) and ASID, so a
+    partial write -- MODE masked back to legal while ASID lands -- is caught: the
+    read-back must equal the original register bit for bit, not just in MODE.
+    Reserved RV64 MODE encodings 2 and 11 are both exercised.
+
+    Only the V=1 case is asserted. The companion rule
+    norm:vsatp_mode_unsupported_v0 makes the V=0 case implementation-defined --
+    "a write to `vsatp` with an unsupported MODE value is either ignored as it is
+    for `satp`, or the fields of `vsatp` are treated as WARL in the normal way"
+    -- so a write from HS/M-mode has two legal outcomes and cannot be asserted
+    portably. SID_HPBVMS_034 already covers the V=0 MODE field.
+
+    Pseudocode:
+    orig = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)
+    keep = LoadImmediateStep(imm=~(MODE_MASK | ASID_MASK))
+    cleared = Arithmetic(op="and", src1=orig, src2=keep)
+    for mode in (2, 11):
+        fields = LoadImmediateStep(imm=(mode << 60) | (0x5A5A << 44))
+        bad = Arithmetic(op="or", src1=cleared, src2=fields)
+        CsrDirectAccess(op="csrrw", csr_name="satp", src1=bad, target_is_x0=True)
+        readback = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)
+        AssertEqual(src1=readback, src2=orig)
+    """
+    # RV64 satp/vsatp layout: MODE[63:60] | ASID[59:44] | PPN[43:0]
+    MODE_MASK = 0xF << 60
+    ASID_MASK = 0xFFFF << 44
+    KEEP_MASK = ~(MODE_MASK | ASID_MASK) & ((1 << 64) - 1)
+    TEST_ASID = 0x5A5A << 44
+    RESERVED_MODES = (0x2, 0xB)  # both reserved for RV64 satp/vsatp
+
+    steps: list = []
+
+    comment_orig = Comment(comment="V=1: read satp (accesses vsatp) as the reference value")
+    orig = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)
+    keep = LoadImmediateStep(imm=KEEP_MASK)
+    cleared = Arithmetic(op="and", src1=orig, src2=keep)
+    steps.extend([comment_orig, orig, keep, cleared])
+
+    for mode in RESERVED_MODES:
+        comment = Comment(comment=f"V=1: write satp with reserved MODE={mode:#x} and a new ASID - entire write must be ignored")
+        fields = LoadImmediateStep(imm=(mode << 60) | TEST_ASID)
+        bad = Arithmetic(op="or", src1=cleared, src2=fields)
+        write = CsrDirectAccess(op="csrrw", csr_name="satp", src1=bad, target_is_x0=True)
+        readback = CsrDirectAccess(op="csrrs", csr_name="satp", src1=0)
+        # Equality over the whole register: neither MODE nor ASID may have moved.
+        assert_ignored = AssertEqual(src1=readback, src2=orig)
+        steps.extend([comment, fields, bad, write, readback, assert_ignored])
+
+    return TestScenario.from_steps(
+        id="33",
+        name="SID_HPBVMS_042",
+        description="When V=1, a satp write with an unsupported MODE is ignored and no write to vsatp is effected",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            virtualized=[True],
+            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+            g_paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+        ),
+        steps=steps,
+    )
+
+
+@hypervisor_paging_csr_scenario
+def SID_HPBVMS_043():
+    """
+    norm:henvcfg_pbmte_op -- PBMTE controls whether Svpbmt is available for use
+    in VS-stage address translation. When PBMTE=1, Svpbmt is available for
+    VS-stage address translation; when PBMTE=0, the implementation behaves as
+    though Svpbmt were not implemented for VS-stage address translation.
+
+    Tested through the observable consequence: per norm:Sv39_pte_svpbmt_rsv, if
+    Svpbmt is not implemented, PTE bits 62:61 remain reserved and must be zeroed
+    by software "or else a page-fault exception is raised". So the same VS-stage
+    leaf PTE carrying PBMT=1 (NC) must translate with PBMTE=1 and fault with
+    PBMTE=0.
+
+    henvcfg.PBMTE is read-only zero while menvcfg.PBMTE is zero
+    (norm:menvcfg_pbmte_henvcfg_pbmte_rdonly0), so menvcfg.PBMTE is set first.
+
+    Both envcfg changes are followed by the fence the spec requires before the
+    new interpretation of PTE PBMT fields is architecturally visible: HFENCE.GVMA
+    rs1=x0,rs2=x0 after changing menvcfg.PBMTE, and HFENCE.VVMA rs1=x0,rs2=x0
+    after changing henvcfg.PBMTE. Both must issue from HS-mode, so they run in a
+    SupervisorCode block.
+
+    Pseudocode:
+    # --- PBMTE=1: non-zero PBMT in a VS-stage leaf PTE is honoured ---
+    CsrWrite(csr_name="menvcfg", set_mask=1<<62)
+    CsrWrite(csr_name="henvcfg", set_mask=1<<62)
+    SupervisorCode(code=[Arithmetic(op="hfence.gvma"), Arithmetic(op="hfence.vvma")])
+    mem_ok = Memory(size=0x1000, flags=..., leaf_gleaf_flags=..., modify=True)
+    pbmt_nc = LoadImmediateStep(imm=1<<61)
+    WritePTE(memory=mem_ok, level=PteLevel.LEAF,
+             src=Arithmetic(op="or", src1=ReadPTE(memory=mem_ok, level=PteLevel.LEAF), src2=pbmt_nc))
+    Load(memory=mem_ok)   # must not fault
+
+    # --- PBMTE=0: the same PTE now has reserved bits set -> page fault ---
+    CsrWrite(csr_name="henvcfg", clear_mask=1<<62)
+    SupervisorCode(code=[Arithmetic(op="hfence.vvma")])
+    mem_bad = Memory(size=0x1000, flags=..., leaf_gleaf_flags=..., modify=True)
+    WritePTE(memory=mem_bad, level=PteLevel.LEAF,
+             src=Arithmetic(op="or", src1=ReadPTE(memory=mem_bad, level=PteLevel.LEAF), src2=pbmt_nc))
+    AssertException(cause=LOAD_PAGE_FAULT, code=[Load(memory=mem_bad)])
+    """
+    PBMTE_BIT = 1 << 62
+    PBMT_NC = 1 << 61  # PTE[62:61] = 0b01 (non-cacheable)
+
+    rw_flags = PageFlags.VALID | PageFlags.READ | PageFlags.WRITE | PageFlags.ACCESSED | PageFlags.DIRTY
+
+    # ===== PBMTE=1: Svpbmt available for VS-stage translation =====
+    comment_on = Comment(comment="Enable henvcfg.PBMTE (read-only zero unless menvcfg.PBMTE is set) - Svpbmt available for VS-stage translation")
+    enable_menvcfg = CsrWrite(csr_name="menvcfg", set_mask=PBMTE_BIT)
+    enable_henvcfg = CsrWrite(csr_name="henvcfg", set_mask=PBMTE_BIT)
+    # menvcfg.PBMTE change needs HFENCE.GVMA rs1=x0,rs2=x0; henvcfg.PBMTE needs
+    # HFENCE.VVMA rs1=x0,rs2=x0. Both are HS-mode instructions.
+    comment_fence_on = Comment(comment="Synchronize the altered interpretation of PTE PBMT fields")
+    fence_on = SupervisorCode(code=[comment_fence_on, Arithmetic(op="hfence.gvma"), Arithmetic(op="hfence.vvma")])
+
+    mem_ok = Memory(size=0x1000, flags=rw_flags, leaf_gleaf_flags=rw_flags, modify=True)
+    pbmt_nc = LoadImmediateStep(imm=PBMT_NC)
+    read_ok = ReadPTE(memory=mem_ok, level=PteLevel.LEAF)
+    pte_ok = Arithmetic(op="or", src1=read_ok, src2=pbmt_nc)
+    write_ok = WritePTE(memory=mem_ok, src=pte_ok, level=PteLevel.LEAF)
+    comment_ld_ok = Comment(comment="PBMTE=1: load through a VS-stage leaf PTE with PBMT=NC must translate normally")
+    load_ok = Load(memory=mem_ok)
+
+    # ===== PBMTE=0: Svpbmt not available, PTE[62:61] are reserved =====
+    comment_off = Comment(comment="Clear henvcfg.PBMTE - VS-stage translation behaves as though Svpbmt were not implemented")
+    disable_henvcfg = CsrWrite(csr_name="henvcfg", clear_mask=PBMTE_BIT)
+    comment_fence_off = Comment(comment="Synchronize the altered interpretation of VS-stage PTE PBMT fields")
+    fence_off = SupervisorCode(code=[comment_fence_off, Arithmetic(op="hfence.vvma")])
+
+    mem_bad = Memory(size=0x1000, flags=rw_flags, leaf_gleaf_flags=rw_flags, modify=True)
+    read_bad = ReadPTE(memory=mem_bad, level=PteLevel.LEAF)
+    pte_bad = Arithmetic(op="or", src1=read_bad, src2=pbmt_nc)
+    write_bad = WritePTE(memory=mem_bad, src=pte_bad, level=PteLevel.LEAF)
+    comment_ld_bad = Comment(comment="PBMTE=0: the same PBMT bits are reserved - expect LOAD_PAGE_FAULT")
+    assert_ld_bad = AssertException(
+        cause=ExceptionCause.LOAD_PAGE_FAULT,
+        code=[Load(memory=mem_bad)],
+    )
+
+    return TestScenario.from_steps(
+        id="34",
+        name="SID_HPBVMS_043",
+        description="henvcfg.PBMTE gates Svpbmt for VS-stage address translation: PBMT=NC translates with PBMTE=1 and faults with PBMTE=0",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            virtualized=[True],
+            paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+            g_paging_modes=[PagingMode.SV39, PagingMode.SV48, PagingMode.SV57],
+        ),
+        steps=[
+            comment_on,
+            enable_menvcfg,
+            enable_henvcfg,
+            fence_on,
+            mem_ok,
+            pbmt_nc,
+            read_ok,
+            pte_ok,
+            write_ok,
+            comment_ld_ok,
+            load_ok,
+            comment_off,
+            disable_henvcfg,
+            fence_off,
+            mem_bad,
+            read_bad,
+            pte_bad,
+            write_bad,
+            comment_ld_bad,
+            assert_ld_bad,
         ],
     )
