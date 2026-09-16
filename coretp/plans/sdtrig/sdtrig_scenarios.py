@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Optional
+
 from coretp import TestPlan, TestScenario, TestEnvCfg
 from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
 from coretp.step import (
@@ -833,29 +835,29 @@ def SID_SDTRIG_017():
     Triggers on cache-maintenance operations (cbo.inval, cbo.flush, cbo.clean).
     addr = {aligned, unaligned, tail-end} to cache block.
     """
-    _lbl_cbo_target = Label(prefix="cbo_target_")
-
     comment = Comment(comment="CBO instructions trigger load/store watchpoints")
 
     # set up cbo permissions
     env_cfg_write = EnableEnvCfg(mask=0xF0)
 
-    mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+    mem = Memory(size=0x1000, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
-    cfg_ls = ConfigureLoadStoreTrigger(
-        index=LS_SLOT,
-        addr=_lbl_cbo_target.name,
-        action=TriggerAction.BREAKPOINT,
-    )
+    def _cfg():
+        # Re-armed per access: the BP handler disables the firing trigger on the way out.
+        return ConfigureLoadStoreTrigger(
+            index=LS_SLOT,
+            memory=mem,
+            action=TriggerAction.BREAKPOINT,
+        )
 
     cbo_inval = MemAccess(memory=mem, op="cbo.inval")
-    assert_inval = AssertException(cause=ExceptionCause.BREAKPOINT, code=[cbo_inval])
+    assert_inval = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[_cfg(), cbo_inval])
 
     cbo_flush = MemAccess(memory=mem, op="cbo.flush")
-    assert_flush = AssertException(cause=ExceptionCause.BREAKPOINT, code=[cbo_flush])
+    assert_flush = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[_cfg(), cbo_flush])
 
     cbo_clean = MemAccess(memory=mem, op="cbo.clean")
-    assert_clean = AssertException(cause=ExceptionCause.BREAKPOINT, code=[cbo_clean])
+    assert_clean = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[_cfg(), cbo_clean])
 
     return TestScenario.from_steps(
         id="17",
@@ -866,13 +868,9 @@ def SID_SDTRIG_017():
             comment,
             env_cfg_write,
             mem,
-            cfg_ls,
             assert_inval,
             assert_flush,
             assert_clean,
-            _lbl_cbo_target,
-            Directive(directive="nop"),
-            Directive(directive="nop"),
         ],
     )
 
@@ -882,22 +880,20 @@ def SID_SDTRIG_018():
     """
     Triggers on cbo.zero.
     """
-    _lbl_cbo_zero_target = Label(prefix="cbo_zero_target_")
-
     comment = Comment(comment="cbo.zero triggers a store-type trigger")
     # setup cbo zero permissions
     env_cfg_write = EnableEnvCfg(mask=0xF0)
 
-    mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+    mem = Memory(size=0x1000, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
     cfg_store = ConfigureStoreTrigger(
         index=LS_SLOT,
-        addr=_lbl_cbo_zero_target.name,
+        memory=mem,
         action=TriggerAction.BREAKPOINT,
     )
 
     cbo_zero = MemAccess(memory=mem, op="cbo.zero")
-    assert_fire = AssertException(cause=ExceptionCause.BREAKPOINT, code=[cbo_zero])
+    assert_fire = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_store, cbo_zero])
 
     return TestScenario.from_steps(
         id="18",
@@ -908,11 +904,7 @@ def SID_SDTRIG_018():
             comment,
             env_cfg_write,
             mem,
-            cfg_store,
             assert_fire,
-            _lbl_cbo_zero_target,
-            Directive(directive="nop"),
-            Directive(directive="nop"),
         ],
     )
 
@@ -1449,16 +1441,14 @@ def SID_SDTRIG_032():
       - Store access doesn't match when Load=1/Execute=1
       - Execute access doesn't match when Load=1/Store=1
     """
-    _lbl_access_type_target = Label(prefix="access_type_target_")
-
     comment = Comment(comment="Access-type filtering: store-only trigger must not fire on a load")
 
-    mem = Memory(size=0x100, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
+    mem = Memory(size=0x1000, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
     # Configure as store-only
     cfg_store = ConfigureStoreTrigger(
         index=LS_SLOT,
-        addr=_lbl_access_type_target.name,
+        memory=mem,
         action=TriggerAction.BREAKPOINT,
         size=4,
     )
@@ -1468,7 +1458,7 @@ def SID_SDTRIG_032():
 
     # Perform a STORE — must fire
     store = Store(memory=mem, value=0xDEAD)
-    assert_store_bp = AssertException(cause=ExceptionCause.BREAKPOINT, code=[store])
+    assert_store_bp = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[store])
 
     return TestScenario.from_steps(
         id="32",
@@ -1481,9 +1471,6 @@ def SID_SDTRIG_032():
             cfg_store,
             load,
             assert_store_bp,
-            _lbl_access_type_target,
-            Directive(directive="nop"),
-            Directive(directive="nop"),
         ],
     )
 
@@ -1608,16 +1595,14 @@ _SDTRIG_MATCH_PRIV_MODES = [PrivilegeMode.S, PrivilegeMode.U]
 
 
 def _sdtrig_035_positive_match_scenario(match: TriggerMatch, suffix: str, prefix: str, blurb: str):
-    """SID_SDTRIG_035_<suffix> for a positive match type (EQUAL, NAPOT, GE,
-    MASK_LOW, MASK_HIGH).
+    """SID_SDTRIG_035_<suffix> for a positive match type (EQUAL, NAPOT, GE).
 
     Trigger ``priv_mode`` defaults to ``("env",)`` — resolves to whichever
     of S/U the framework selects via ``env.priv_modes``. The arming syscall
     trampoline executes in M and so cannot fire it. After the cfg expansion
     mrets back to the test priv, the test reaches the target label ``_lbl``
-    whose address equals tdata2 — the BP fires there for all positive
-    matches (PC == _lbl trivially satisfies EQUAL, NAPOT, GE, MASK_LOW,
-    MASK_HIGH with default tdata2 encoding).
+    whose address equals tdata2 — PC == _lbl satisfies EQUAL, GE, and NAPOT
+    (a label has no trailing ones, so its NAPOT region is that one address).
     """
     _lbl = Label(prefix=prefix)
     comment = Comment(comment=f"match={match.directive_str}: {blurb}")
@@ -1725,26 +1710,12 @@ def SID_SDTRIG_035_lt():
     )
 
 
-@sdtrig_scenario
-def SID_SDTRIG_035_mask_low():
-    """match=MASK_LOW fires when PC[31:0] matches tdata2[31:0] under the encoded mask."""
-    return _sdtrig_035_positive_match_scenario(
-        TriggerMatch.MASK_LOW,
-        "mask_low",
-        "match_mask_low_",
-        "BP fires when PC[31:0] matches tdata2[31:0] under the encoded mask",
-    )
-
-
-@sdtrig_scenario
-def SID_SDTRIG_035_mask_high():
-    """match=MASK_HIGH fires when PC[63:32] matches tdata2[63:32] under the encoded mask."""
-    return _sdtrig_035_positive_match_scenario(
-        TriggerMatch.MASK_HIGH,
-        "mask_high",
-        "match_mask_high_",
-        "BP fires when PC[63:32] matches tdata2[63:32] under the encoded mask",
-    )
+# Disabled for the same reason as SID_SDTRIG_044_mask_low / _mask_high (see the
+# note there): a bare label leaves tdata2's mask half zero, so the trigger never
+# fires and the positive-match assertion passes vacuously.
+#
+# def SID_SDTRIG_035_mask_low(): ...
+# def SID_SDTRIG_035_mask_high(): ...
 
 
 @sdtrig_scenario
@@ -2044,25 +2015,26 @@ def SID_SDTRIG_042():
                idle/dispatch stall (wfi, hintpause, wrs, csr accesses),
                misc (vector loads, hint, nop, may-be ops) }
     """
-    _lbl_exotic_target = Label(prefix="exotic_target_")
+    comment = Comment(comment="Trigger fires on exotic instructions: wfi, csr access")
 
-    comment = Comment(comment="Trigger fires on exotic instructions: ecall, wfi, csr access, vector loads")
+    # The label has to be the first step of the AssertException body: the
+    # assertion's OS_SETUP_CHECK_EXCP preamble is emitted ahead of the body, so a
+    # label placed outside would resolve to that preamble and the trigger would
+    # fire before reaching the instruction under test. Each instruction gets its
+    # own label and its own cfg, since the plan-wide handler hook disables a
+    # trigger once it fires.
+    def _assert_fires_on(instr, prefix: str):
+        lbl = Label(prefix=prefix)
+        cfg = ConfigureExecuteTrigger(
+            index=EXEC_SLOT,
+            addr=lbl.name,
+            action=TriggerAction.BREAKPOINT,
+            priv_mode=("m",),
+        )
+        return cfg, AssertException(cause=ExceptionCause.BREAKPOINT, code=[lbl, instr])
 
-    cfg_exec = ConfigureExecuteTrigger(
-        index=0,
-        addr=_lbl_exotic_target.name,
-        action=TriggerAction.BREAKPOINT,
-        priv_mode=("m",),
-    )
-    wfi = Directive(directive="wfi")
-    assert_wfi = AssertException(cause=ExceptionCause.BREAKPOINT, code=[wfi])
-
-    # csr access variant
-    assert_fire = AssertException(cause=ExceptionCause.BREAKPOINT, code=[_lbl_exotic_target, assert_wfi])
-
-    # wfi variant
-    csr_access = CsrRead(csr_name="mstatus", direct_read=True)
-    assert_csr = AssertException(cause=ExceptionCause.BREAKPOINT, code=[csr_access])
+    cfg_wfi, assert_wfi = _assert_fires_on(Directive(directive="wfi"), "exotic_wfi_")
+    cfg_csr, assert_csr = _assert_fires_on(CsrRead(csr_name="mstatus", direct_read=True), "exotic_csr_")
 
     return TestScenario.from_steps(
         id="42",
@@ -2071,8 +2043,9 @@ def SID_SDTRIG_042():
         env=TestEnvCfg(priv_modes=[PrivilegeMode.M], deleg_excp_to=[PrivilegeMode.M]),
         steps=[
             comment,
-            cfg_exec,
-            assert_fire,
+            cfg_wfi,
+            assert_wfi,
+            cfg_csr,
             assert_csr,
         ],
     )
@@ -2136,25 +2109,26 @@ def SID_SDTRIG_042():
 # =============================================================================
 
 
-_SID044_DATA_VA = 0x800B_0000
+# tdata2 values for the negation / inequality match types. These predicates fire
+# on any address that *differs* from tdata2, so a fixed guard VA works: the
+# access lands at whatever VA the allocator gave the page, which is not this.
+_SID044_LT_BOUND_VA = 0xFFFF_FFFF_FFFF_F000  # LT: above every allocatable VA, so access < tdata2
+_SID044_NE_GUARD_VA = 0xA000_0000  # NE/NOT_NAPOT: access != tdata2 / outside region
+_SID044_NOT_MASK_LOW_GUARD_VA = 0x800B_8000  # NOT_MASK_LOW:  access[31:0] != tdata2[31:0]
+_SID044_NOT_MASK_HIGH_GUARD_VA = 0x1_800B_0000  # NOT_MASK_HIGH: access[63:32] != tdata2[63:32]
 
-# Distinct tdata2 values for negation / inequality match types — each chosen so
-# the load/store address (= _SID044_DATA_VA) makes the predicate fire.
-_SID044_LT_BOUND_VA = 0x900B_0000  # LT:           DATA_VA < tdata2
-_SID044_NE_GUARD_VA = 0xA000_0000  # NE/NOT_NAPOT: DATA_VA != tdata2 / outside region
-_SID044_NOT_MASK_LOW_GUARD_VA = 0x800B_8000  # NOT_MASK_LOW:  DATA_VA[31:0] != tdata2[31:0]
-_SID044_NOT_MASK_HIGH_GUARD_VA = 0x1_800B_0000  # NOT_MASK_HIGH: DATA_VA[63:32] != tdata2[63:32]
 
-
-def _sdtrig_044_match_scenario(match: TriggerMatch, suffix: str, tdata2_va: int, blurb: str):
+def _sdtrig_044_match_scenario(match: TriggerMatch, suffix: str, tdata2_va: Optional[int], blurb: str):
     """SID_SDTRIG_044_<suffix> for one match type.
+
+    ``tdata2_va=None`` watches the accessed page itself, for the predicates that
+    hold when tdata2 equals the access address. The rest pass a guard VA.
 
     Mirrors the cfg-inside-AssertException pattern used by the icount
     scenarios. Trigger ``priv_mode`` defaults to ``("env",)`` so it follows
     the test's running priv (S/U via ``_SDTRIG_MATCH_PRIV_MODES``); the
     M-mode syscall trampoline (and any M-mode page-walks / trap-handler
-    accesses) cannot fire it — only the U/S Load/Store/AMO/LR access at
-    ``_SID044_DATA_VA`` does.
+    accesses) cannot fire it — only the U/S Load/Store/AMO/LR access does.
 
     A separate cfg_ls is placed inside each AssertException because the BP
     handler clears the trigger via re-execute, so it must be re-armed for
@@ -2165,13 +2139,13 @@ def _sdtrig_044_match_scenario(match: TriggerMatch, suffix: str, tdata2_va: int,
     mem = Memory(
         size=0x1000,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        base_va=_SID044_DATA_VA,
     )
 
     def _cfg():
         return ConfigureLoadStoreTrigger(
             index=LS_SLOT,
-            addr=hex(tdata2_va),
+            addr="" if tdata2_va is None else hex(tdata2_va),
+            memory=mem if tdata2_va is None else None,
             action=TriggerAction.BREAKPOINT,
             match=match,
         )
@@ -2226,18 +2200,23 @@ def SID_SDTRIG_044_equal():
     return _sdtrig_044_match_scenario(
         TriggerMatch.EQUAL,
         "equal",
-        _SID044_DATA_VA,
+        None,
         "BP fires when access addr == tdata2 (exact match)",
     )
 
 
 @sdtrig_scenario
 def SID_SDTRIG_044_napot():
-    """match=NAPOT: BP fires when data access addr is in the NAPOT region encoded by tdata2."""
+    """match=NAPOT: BP fires when data access addr is in the NAPOT region encoded by tdata2.
+
+    The page base has no trailing ones, so the NAPOT region it encodes is a
+    single address and this degenerates to EQUAL. Sizing the region up would
+    need tdata2 = base | (size/2 - 1), which the directive cannot express.
+    """
     return _sdtrig_044_match_scenario(
         TriggerMatch.NAPOT,
         "napot",
-        _SID044_DATA_VA,
+        None,
         "BP fires when access addr lies within the NAPOT region encoded by tdata2",
     )
 
@@ -2248,7 +2227,7 @@ def SID_SDTRIG_044_ge():
     return _sdtrig_044_match_scenario(
         TriggerMatch.GE,
         "ge",
-        _SID044_DATA_VA,
+        None,
         "BP fires when access addr >= tdata2",
     )
 
@@ -2264,26 +2243,25 @@ def SID_SDTRIG_044_lt():
     )
 
 
-@sdtrig_scenario
-def SID_SDTRIG_044_mask_low():
-    """match=MASK_LOW: BP fires when data access addr[31:0] matches tdata2[31:0] under mask."""
-    return _sdtrig_044_match_scenario(
-        TriggerMatch.MASK_LOW,
-        "mask_low",
-        _SID044_DATA_VA,
-        "BP fires when access addr[31:0] matches tdata2[31:0] under the encoded mask",
-    )
-
-
-@sdtrig_scenario
-def SID_SDTRIG_044_mask_high():
-    """match=MASK_HIGH: BP fires when data access addr[63:32] matches tdata2[63:32] under mask."""
-    return _sdtrig_044_match_scenario(
-        TriggerMatch.MASK_HIGH,
-        "mask_high",
-        _SID044_DATA_VA,
-        "BP fires when access addr[63:32] matches tdata2[63:32] under the encoded mask",
-    )
+# Disabled: MASK_LOW / MASK_HIGH split tdata2 into a mask half and a compare half
+# (whisper Trigger::doMatch, cases MaskHighEqualLow / MaskLowEqualHigh):
+#
+#   MASK_LOW   fires when (access[31:0]  & tdata2[63:32]) == tdata2[31:0]
+#   MASK_HIGH  fires when (access[63:32] & tdata2[63:32]) == tdata2[31:0]
+#
+# Handing the directive a single address leaves the mask half zero, so the
+# comparison reduces to 0 == <non-zero compare half> and the trigger can never
+# fire -- a positive-match scenario that never fires is a vacuous pass, which is
+# why these are disabled rather than left in. Firing on the accessed page needs
+# tdata2 = 0xffffffff_00000000 | (addr & 0xffffffff), and neither `addr` (one
+# value, and `li` rejects symbol arithmetic) nor `memory=` can express it.
+#
+# The enabling change is a `mask=` on the trigger steps that `;#trigger_config`
+# folds into tdata2 alongside the address, rather than the single value load
+# `_expand_csr_rw` does today.
+#
+# def SID_SDTRIG_044_mask_low(): ...
+# def SID_SDTRIG_044_mask_high(): ...
 
 
 @sdtrig_scenario
@@ -2420,11 +2398,6 @@ def SID_SDTRIG_045():
 # =============================================================================
 
 
-# Fixed VA so tdata2 and the access base register hold the same value. The width coverpoints compare
-# tdata2 against the *base register* value (not the effective address), so the access must use offset 0
-# against a base register holding exactly the watched address.
-_SID046_BASE_VA = 0x800C_0000
-
 # Every load/store opcode the width coverpoints bin, including the unsigned loads (same width, and
 # a distinct opcode from the signed form).
 _SID046_LOAD_OPS = ["ld", "lw", "lwu", "lh", "lhu", "lb", "lbu"]
@@ -2438,20 +2411,21 @@ def SID_SDTRIG_046():
 
     size=0 (match any width) throughout, because the mcontrol6 size field is read-only 0 on this
     core -- requesting a specific width would read back as "any" regardless.
+
+    Every access uses offset 0 so the effective address is the page base, which is what tdata2 watches.
     """
     comment = Comment(comment="Load/store watchpoint fires across 8B/4B/2B/1B access widths at the watched base address")
 
     mem = Memory(
         size=0x1000,
         flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE,
-        base_va=_SID046_BASE_VA,
     )
 
     def _cfg():
         # Re-armed per access: the BP handler disables the firing trigger on the way out.
         return ConfigureLoadStoreTrigger(
             index=LS_SLOT,
-            addr=hex(_SID046_BASE_VA),
+            memory=mem,
             action=TriggerAction.BREAKPOINT,
             match=TriggerMatch.EQUAL,
         )
@@ -2558,11 +2532,11 @@ def SID_SDTRIG_048():
 
     mem = Memory(size=0x1000, flags=PageFlags.VALID | PageFlags.READ | PageFlags.WRITE)
 
-    cfg_hlv = ConfigureLoadStoreTrigger(index=LS_SLOT, addr=hex(_SID046_BASE_VA), action=TriggerAction.BREAKPOINT)
+    cfg_hlv = ConfigureLoadStoreTrigger(index=LS_SLOT, memory=mem, action=TriggerAction.BREAKPOINT)
     hlv = HLoad(memory=mem, op="hlv.d")
     assert_hlv = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_hlv, hlv])
 
-    cfg_hsv = ConfigureLoadStoreTrigger(index=LS_SLOT, addr=hex(_SID046_BASE_VA), action=TriggerAction.BREAKPOINT)
+    cfg_hsv = ConfigureLoadStoreTrigger(index=LS_SLOT, memory=mem, action=TriggerAction.BREAKPOINT)
     hsv = HStore(memory=mem, op="hsv.d", value=0x5A)
     assert_hsv = AssertException(cause=ExceptionCause.BREAKPOINT, skip_pc_check=True, code=[cfg_hsv, hsv])
 

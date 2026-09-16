@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from coretp import TestPlan, TestScenario, TestEnvCfg
-from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause
-from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, LoadImmediateStep, AssertEqual, CsrRead
+from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension
+from coretp.step import TestStep, Memory, Load, Store, CodePage, Arithmetic, CsrWrite, AssertException, Call, LoadImmediateStep, AssertEqual, CsrRead, ConditionalBlock
 import random  # FIXME: use the random seed from the test plan runner if possible
 
 from . import zkt_scenario
@@ -826,7 +826,7 @@ def SID_ZKT_08_CLMUL():
     ZKT: clmul bitmanip RR dependent chains; check equal cycles/instret across two loops (plus one warm-up)
     """
 
-    steps: list[TestStep] = _build_arithmetic_test_steps(_ar_chain, "clmul")
+    steps: list[TestStep] = [ConditionalBlock(enabled_features=[Extension.ZBC], code=_build_arithmetic_test_steps(_ar_chain, "clmul"))]
 
     return TestScenario.from_steps(
         id="8_CLMUL",
@@ -843,7 +843,7 @@ def SID_ZKT_08_CLMULH():
     ZKT: clmulh bitmanip RR dependent chains; check equal cycles/instret across two loops (plus one warm-up)
     """
 
-    steps: list[TestStep] = _build_arithmetic_test_steps(_ar_chain, "clmulh")
+    steps: list[TestStep] = [ConditionalBlock(enabled_features=[Extension.ZBC], code=_build_arithmetic_test_steps(_ar_chain, "clmulh"))]
 
     return TestScenario.from_steps(
         id="8_CLMULH",

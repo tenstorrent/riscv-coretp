@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Optional
+
 from coretp import TestPlan, TestScenario, TestEnvCfg
-from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, Extension, PmpAttribute
+from coretp.rv_enums import PagingMode, PageSize, PageFlags, PrivilegeMode, ExceptionCause, ExceptionHandlerMode, Extension, PmpAttribute
 from coretp.step import (
     TestStep,
     Memory,
@@ -2016,4 +2018,529 @@ def SID_HEXCEP_19_misaligned_sc_delegated():
             virtualized=[True],
         ),
         steps=steps,
+    )
+
+
+# ============================================================================
+# SID_HEXCEP_20: VS-mode shadow CSR substitution
+# ============================================================================
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_20():
+    """
+    Each vsX register is VS-mode's version of supervisor register sX, and when
+    V=1, vsX substitutes for the usual sX -- so instructions that normally read
+    or modify sX actually access vsX instead. Covers norm:vsstatus_sz_acc_op,
+    norm:vstvec_sz_acc_op, norm:vsscratch_sz_acc_op and norm:vstval_sz_acc_op,
+    which were previously only touched indirectly.
+
+    For each CSR the scenario writes sX from VS-mode, reads sX back from
+    VS-mode, then drops to HS-mode (V=0) and reads vsX under its own name. The
+    two reads must match.
+
+    The comparison is between the two *read-backs*, never against the value
+    written. Every one of these registers is WARL (vstval "must be able to hold
+    the same set of values that stval can hold"; vstvec has alignment
+    constraints; vsstatus has WPRI and derived fields), so an implementation is
+    free to modify the written value -- but whatever it keeps must be visible
+    under both names.
+
+    No CSR is restored: RiescueD snapshots and restores every CSR a discrete
+    test touches. That matters here, because vstvec is the VS trap vector and
+    vsscratch is the per-hart-context pointer.
+
+    Pseudocode:
+    for (vs_csr, s_csr, op, operand) in shadow_csrs:
+        # V=1: write and read back through the substituting supervisor name
+        CsrDirectAccess(op=op, csr_name=s_csr, src1=operand, target_is_x0=True)
+        vs_side = CsrDirectAccess(op="csrrs", csr_name=s_csr, src1=0)
+        # V=0: the value must be visible in vs_csr under its own name
+        SupervisorCode(code=[
+            hs_side = CsrDirectAccess(op="csrrs", csr_name=vs_csr, src1=0)
+            AssertEqual(src1=hs_side, src2=vs_side)
+        ])
+    """
+    # vsstatus uses csrrs with a set-mask rather than csrrw: it is a field
+    # register and a whole-value write would disturb SIE/SPP (rewritten by traps
+    # anyway) or UBE (would flip VS-mode explicit accesses to big-endian). FS
+    # bits 14:13 are set to Dirty, which is inert; FS=Off is never programmed so
+    # floating point stays usable. The other three take a whole-register write
+    # with a distinctive value. vstvec's value is 4-byte aligned with MODE=0
+    # (direct), a legal trap vector.
+    shadow_csrs = [
+        # (vs_csr, s_csr, op, operand)
+        ("vsstatus", "sstatus", "csrrs", 0x3 << 13),
+        ("vstvec", "stvec", "csrrw", 0x12345670),
+        ("vsscratch", "sscratch", "csrrw", 0x0F1E2D3C4B5A6978),
+        ("vstval", "stval", "csrrw", 0x0123456789ABCDEF),
+    ]
+
+    steps: list = []
+
+    for vs_csr, s_csr, op, operand in shadow_csrs:
+        comment_write = Comment(comment=f"VS-mode: {op} {s_csr}, which substitutes for {vs_csr} when V=1")
+        write = CsrDirectAccess(op=op, csr_name=s_csr, src1=operand, target_is_x0=True)
+        # Read back at V=1 rather than reusing the written value: these are all
+        # WARL, so the register may hold something else.
+        vs_side = CsrDirectAccess(op="csrrs", csr_name=s_csr, src1=0)
+
+        comment_check = Comment(comment=f"HS-mode: {vs_csr} read under its own name must match what {s_csr} read at V=1")
+        hs_side = CsrDirectAccess(op="csrrs", csr_name=vs_csr, src1=0)
+        assert_same = AssertEqual(src1=hs_side, src2=vs_side)
+
+        steps.extend(
+            [
+                comment_write,
+                write,
+                vs_side,
+                SupervisorCode(code=[comment_check, hs_side, assert_same]),
+            ]
+        )
+
+    return TestScenario.from_steps(
+        id="15",
+        name="SID_HEXCEP_20",
+        description="When V=1, each supervisor CSR access substitutes for its VS shadow: vsstatus, vstvec, vsscratch, vstval",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            virtualized=[True],
+        ),
+        steps=steps,
+    )
+
+
+# ============================================================================
+# SID_HEXCEP_21: hedelegh does not exist on RV64
+# ============================================================================
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_21():
+    """
+    norm:hedelegh_sz_acc_op -- "When XLEN=32, hedelegh is a 32-bit read/write
+    register that aliases bits 63:32 of hedeleg. Register hedelegh does not exist
+    when XLEN=64."
+
+    On RV64 there is no hedelegh, so any access to it raises an illegal
+    instruction exception. Both a csrrs and a csrrw access are attempted from
+    HS-mode.
+
+    hedeleg is read first as a positive control, so a trap on hedelegh cannot be
+    explained away by the delegation CSRs being unreachable from HS-mode -- the
+    64-bit register is right there, only its RV32 high half is not.
+
+    Pseudocode:
+    # positive control: the 64-bit hedeleg is reachable from HS-mode
+    CsrDirectAccess(op="csrrs", csr_name="hedeleg", src1=0)
+    # the RV32 high half does not exist on RV64
+    AssertException(cause=ILLEGAL_INSTRUCTION, code=[
+        CsrDirectAccess(op="csrrs", csr_name="hedelegh", src1=0, target_is_x0=True)
+    ])
+    zero = LoadImmediateStep(imm=0)
+    AssertException(cause=ILLEGAL_INSTRUCTION, code=[
+        CsrDirectAccess(op="csrrw", csr_name="hedelegh", src1=zero)
+    ])
+    """
+    comment_control = Comment(comment="Positive control: the 64-bit hedeleg is reachable from HS-mode and must not trap")
+    read_hedeleg = CsrDirectAccess(op="csrrs", csr_name="hedeleg", src1=0)
+
+    comment_read = Comment(comment="RV64: hedelegh does not exist - csrrs access must raise ILLEGAL_INSTRUCTION")
+    assert_read = AssertException(
+        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        code=[CsrDirectAccess(op="csrrs", csr_name="hedelegh", src1=0, target_is_x0=True)],
+    )
+
+    comment_write = Comment(comment="RV64: hedelegh does not exist - csrrw access must raise ILLEGAL_INSTRUCTION")
+    zero = LoadImmediateStep(imm=0)
+    assert_write = AssertException(
+        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        code=[CsrDirectAccess(op="csrrw", csr_name="hedelegh", src1=zero)],
+    )
+
+    return TestScenario.from_steps(
+        id="16",
+        name="SID_HEXCEP_21",
+        description="On RV64 the RV32 high half hedelegh does not exist: accessing it raises ILLEGAL_INSTRUCTION",
+        env=test_env("S", virtualized=False),
+        steps=[
+            comment_control,
+            read_hedeleg,
+            comment_read,
+            assert_read,
+            comment_write,
+            zero,
+            assert_write,
+        ],
+    )
+
+
+# ============================================================================
+# SID_HEXCEP_22: hstatus.VSXL selects VSXLEN=64 on an HSXLEN=64 machine
+# ============================================================================
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_22():
+    """
+    norm:hstatus_vsxl_64 -- when HSXLEN=64, VSXL is a WARL field encoded the same
+    as the MXL field of misa (norm:misa_mxl_enc: 1=32, 2=64, 3=128).
+
+    Writes VSXL=64 (encoding 2) and reads it back. That is the whole assertion:
+    the implementation may or may not support VSXLEN=32, so nothing is claimed
+    about what happens when a different encoding is written -- a WARL field is
+    free to accept 1, and it is equally free to hardwire VSXL to 2. Either way,
+    writing 64 must read back 64 on an HSXLEN=64 machine.
+
+    The write is a read-modify-write of the whole register rather than a
+    clear-then-set pair: csrrc-ing VSXL to 0 would momentarily write a reserved
+    MXL encoding, and if the WARL field declined that clear, the following csrrs
+    would OR 2 into a stale 1 and leave VSXL=3 (128).
+
+    Pseudocode:
+    orig = CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=0)
+    keep = LoadImmediateStep(imm=~VSXL_MASK)
+    cleared = Arithmetic(op="and", src1=orig, src2=keep)
+    vsxl_64 = LoadImmediateStep(imm=2 << 32)
+    newval = Arithmetic(op="or", src1=cleared, src2=vsxl_64)
+    CsrDirectAccess(op="csrrw", csr_name="hstatus", src1=newval, target_is_x0=True)
+    readback = CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=0)
+    mask = LoadImmediateStep(imm=VSXL_MASK)
+    AssertEqual(src1=Arithmetic(op="and", src1=readback, src2=mask), src2=vsxl_64)
+    """
+    # hstatus.VSXL is bits 33:32, encoded like misa.MXL: 1=32, 2=64, 3=128.
+    VSXL_SHIFT = 32
+    VSXL_MASK = 0x3 << VSXL_SHIFT
+    VSXL_64 = 0x2 << VSXL_SHIFT
+
+    comment_rmw = Comment(comment="HS-mode: read-modify-write hstatus so only VSXL changes, to 64 (misa.MXL encoding 2)")
+    orig = CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=0)
+    keep = LoadImmediateStep(imm=~VSXL_MASK & ((1 << 64) - 1))
+    cleared = Arithmetic(op="and", src1=orig, src2=keep)
+    vsxl_64 = LoadImmediateStep(imm=VSXL_64)
+    newval = Arithmetic(op="or", src1=cleared, src2=vsxl_64)
+    write = CsrDirectAccess(op="csrrw", csr_name="hstatus", src1=newval, target_is_x0=True)
+
+    comment_check = Comment(comment="hstatus.VSXL must read back as 64")
+    readback = CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=0)
+    mask = LoadImmediateStep(imm=VSXL_MASK)
+    got = Arithmetic(op="and", src1=readback, src2=mask)
+    assert_vsxl = AssertEqual(src1=got, src2=vsxl_64)
+
+    return TestScenario.from_steps(
+        id="17",
+        name="SID_HEXCEP_22",
+        description="hstatus.VSXL written to 64 (misa.MXL encoding 2) reads back as 64 on an HSXLEN=64 machine",
+        env=test_env("S", virtualized=False),
+        steps=[
+            comment_rmw,
+            orig,
+            keep,
+            cleared,
+            vsxl_64,
+            newval,
+            write,
+            comment_check,
+            readback,
+            mask,
+            got,
+            assert_vsxl,
+        ],
+    )
+
+
+# ============================================================================
+# SID_HEXCEP_23: privilege state written by a trap into HS-mode
+#
+# norm:H_trap_hs_csrwrites and norm:hstatus_spv_op. Per <<h-spp>>, a trap into
+# HS-mode leaves:
+#
+#     previous mode   hstatus.SPV   sstatus.SPP
+#     U-mode                    0             0
+#     HS-mode                   0             1
+#     VU-mode                   1             0
+#     VS-mode                   1             1
+#
+# and, when V was 1 before the trap, hstatus.SPVP takes the same value as the
+# sstatus.SPP written above; when V was 0, SPVP is left unchanged and so is not
+# asserted here.
+#
+# SPV/SPP/SPVP are checked inside the trap handler, which is the only place the
+# post-trap state is observable before sret unwinds it. Every variant pins
+# expected_handler_mode=HS: hstatus is unreadable at V=1, so a trap that landed
+# in VS-mode could not perform the check.
+#
+# One variant per previous mode, because the expected values are a function of
+# the env the scenario runs in and a scenario cannot vary its expectations with
+# the solver's choice.
+# ============================================================================
+
+
+def _cause_bit(cause: ExceptionCause) -> int:
+    """Exception cause number, unwrapping the tuple-valued causes."""
+    return int(cause.value[0]) if isinstance(cause.value, tuple) else int(cause.value)
+
+
+def _trap_into_hs_steps(fault_csr: str, cause: ExceptionCause, spv: int, spp: int, spvp: Optional[int] = None) -> list:
+    """
+    Take one exception into HS-mode and have the trap handler check the
+    privilege state the trap entry was required to write.
+
+    The scenario sets ``medeleg`` for its own cause rather than relying on the
+    env: ``TestEnvCfg.deleg_excp_to`` is not one of the predicates RiescueC's tp
+    mode solves on, so delegation would otherwise be whatever the run randomized
+    and the trap would land in M-mode on some seeds.
+
+    :param fault_csr: CSR whose access from the current mode raises ``cause``
+    :param cause: expected exception cause
+    :param spv: expected hstatus.SPV bit, 0 or 1
+    :param spp: expected sstatus.SPP bit, 0 or 1
+    :param spvp: expected hstatus.SPVP bit, or None when V was 0 before the trap
+        (the spec leaves SPVP unchanged in that case, so there is nothing to assert)
+    """
+    comment_deleg = Comment(comment=f"Delegate {cause.name} past M-mode so the trap is taken into HS-mode")
+    delegate = CsrWrite(csr_name="medeleg", set_mask=1 << _cause_bit(cause))
+
+    spvp_text = f", SPVP={spvp}" if spvp is not None else ", SPVP left unchanged (V was 0)"
+    comment = Comment(comment=f"Trap into HS-mode via {cause.name} on {fault_csr}: expect SPV={spv}, SPP={spp}{spvp_text}")
+    assert_trap = AssertException(
+        cause=cause,
+        code=[CsrDirectAccess(op="csrrs", csr_name=fault_csr, src1=0, target_is_x0=True)],
+        expected_handler_mode=ExceptionHandlerMode.HS,
+        expected_spv=spv,
+        expected_spp=spp,
+        expected_spvp=spvp,
+    )
+    return [comment_deleg, delegate, comment, assert_trap]
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_23_from_vs():
+    """
+    Trap into HS-mode from VS-mode: hstatus.SPV=1, sstatus.SPP=1, and because V
+    was 1 before the trap, hstatus.SPVP=1 as well.
+
+    The fault is a VS-mode access to hstatus, which raises a virtual instruction
+    exception. hedeleg bit 22 is read-only zero, so a virtual instruction
+    exception can never be delegated to VS-mode -- it always lands in HS.
+
+    Pseudocode:
+    CsrWrite(csr_name="medeleg", set_mask=1 << 22)   # VIRTUAL_INSTRUCTION past M-mode
+    AssertException(cause=VIRTUAL_INSTRUCTION,
+                    code=[CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=0, target_is_x0=True)],
+                    expected_handler_mode=HS, expected_spv=1, expected_spp=1, expected_spvp=1)
+    """
+    return TestScenario.from_steps(
+        id="18",
+        name="SID_HEXCEP_23_from_vs",
+        description="Trap into HS-mode from VS-mode writes hstatus.SPV=1, sstatus.SPP=1, hstatus.SPVP=1",
+        env=test_env("S", virtualized=True),
+        steps=_trap_into_hs_steps("hstatus", ExceptionCause.VIRTUAL_INSTRUCTION, spv=1, spp=1, spvp=1),
+    )
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_23_from_vu():
+    """
+    Trap into HS-mode from VU-mode: hstatus.SPV=1, sstatus.SPP=0, and because V
+    was 1 before the trap, hstatus.SPVP=0 to match SPP.
+
+    Same fault as the VS variant -- a V=1 access to hstatus raises a virtual
+    instruction exception, which cannot be delegated to VS-mode.
+
+    Pseudocode:
+    CsrWrite(csr_name="medeleg", set_mask=1 << 22)   # VIRTUAL_INSTRUCTION past M-mode
+    AssertException(cause=VIRTUAL_INSTRUCTION,
+                    code=[CsrDirectAccess(op="csrrs", csr_name="hstatus", src1=0, target_is_x0=True)],
+                    expected_handler_mode=HS, expected_spv=1, expected_spp=0, expected_spvp=0)
+    """
+    return TestScenario.from_steps(
+        id="18",
+        name="SID_HEXCEP_23_from_vu",
+        description="Trap into HS-mode from VU-mode writes hstatus.SPV=1, sstatus.SPP=0, hstatus.SPVP=0",
+        env=test_env("U", virtualized=True),
+        steps=_trap_into_hs_steps("hstatus", ExceptionCause.VIRTUAL_INSTRUCTION, spv=1, spp=0, spvp=0),
+    )
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_23_from_hs():
+    """
+    Trap into HS-mode from HS-mode: hstatus.SPV=0 and sstatus.SPP=1. V was 0
+    before the trap, so hstatus.SPVP is left unchanged and is not asserted.
+
+    The fault is an HS-mode access to an M-mode CSR, which raises an illegal
+    instruction exception; the env delegates it to HS.
+
+    Pseudocode:
+    CsrWrite(csr_name="medeleg", set_mask=1 << 2)    # ILLEGAL_INSTRUCTION past M-mode
+    AssertException(cause=ILLEGAL_INSTRUCTION,
+                    code=[CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=0, target_is_x0=True)],
+                    expected_handler_mode=HS, expected_spv=0, expected_spp=1)
+    """
+    return TestScenario.from_steps(
+        id="18",
+        name="SID_HEXCEP_23_from_hs",
+        description="Trap into HS-mode from HS-mode writes hstatus.SPV=0, sstatus.SPP=1",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            virtualized=[False],
+        ),
+        steps=_trap_into_hs_steps("mstatus", ExceptionCause.ILLEGAL_INSTRUCTION, spv=0, spp=1),
+    )
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_23_from_hu():
+    """
+    Trap into HS-mode from HU-mode: hstatus.SPV=0 and sstatus.SPP=0. V was 0
+    before the trap, so hstatus.SPVP is left unchanged and is not asserted.
+
+    The fault is a U-mode access to a supervisor CSR, which raises an illegal
+    instruction exception; the env delegates it to HS.
+
+    Pseudocode:
+    CsrWrite(csr_name="medeleg", set_mask=1 << 2)    # ILLEGAL_INSTRUCTION past M-mode
+    AssertException(cause=ILLEGAL_INSTRUCTION,
+                    code=[CsrDirectAccess(op="csrrs", csr_name="sstatus", src1=0, target_is_x0=True)],
+                    expected_handler_mode=HS, expected_spv=0, expected_spp=0)
+    """
+    return TestScenario.from_steps(
+        id="18",
+        name="SID_HEXCEP_23_from_hu",
+        description="Trap into HS-mode from HU-mode writes hstatus.SPV=0, sstatus.SPP=0",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.U],
+            virtualized=[False],
+        ),
+        steps=_trap_into_hs_steps("sstatus", ExceptionCause.ILLEGAL_INSTRUCTION, spv=0, spp=0),
+    )
+
+
+# ============================================================================
+# SID_HEXCEP_24: privilege state written by a trap into VS-mode
+#
+# norm:H_trap_vs_csrwrites. Per <<h-vspp>>, a trap into VS-mode sets
+# vsstatus.SPP to 0 from VU-mode and 1 from VS-mode. Register hstatus and the
+# HS-level sstatus are not modified, and V remains 1.
+#
+# The SPP check reads sstatus inside the handler, which the hardware resolves to
+# vsstatus because the handler runs at V=1 -- so it is vsstatus.SPP that is being
+# asserted. "V remains 1" is covered by pinning expected_handler_mode=VS: the
+# handler-mode check only passes in the VS handler, which cannot run at V=0.
+#
+# "hstatus and the HS-level sstatus are not modified" is a before/after property
+# rather than trap-time state, so it is checked in the scenario body: both are
+# snapshotted from M-mode (V=0, where the HS-level registers are the ones the
+# names resolve to) either side of the trap and compared.
+# ============================================================================
+
+
+def _trap_into_vs_steps(spp: int) -> list:
+    """
+    Take one exception into VS-mode and check the privilege state the trap entry
+    was required to write, plus the registers it must have left alone.
+
+    The fault is an access to an M-mode CSR, which raises an illegal instruction
+    exception at V=1; the scenario programs medeleg and hedeleg so it is delegated
+    all the way to VS-mode. Delegation is set here rather than via the env because
+    ``TestEnvCfg.deleg_excp_to`` is not one of the predicates RiescueC's tp mode
+    solves on.
+
+    :param spp: expected vsstatus.SPP bit (1 from VS-mode, 0 from VU-mode)
+    """
+    comment_deleg = Comment(comment="Delegate ILLEGAL_INSTRUCTION past M-mode (medeleg) and past HS-mode (hedeleg) so the trap is taken into VS-mode")
+    delegate_m = CsrWrite(csr_name="medeleg", set_mask=1 << _cause_bit(ExceptionCause.ILLEGAL_INSTRUCTION))
+    delegate_h = CsrWrite(csr_name="hedeleg", set_mask=1 << _cause_bit(ExceptionCause.ILLEGAL_INSTRUCTION))
+
+    comment_before = Comment(comment="Snapshot hstatus and the HS-level sstatus from M-mode before the trap")
+    hstatus_before = CsrRead(csr_name="hstatus", force_machine_mode=True)
+    sstatus_before = CsrRead(csr_name="sstatus", force_machine_mode=True)
+
+    comment_trap = Comment(comment=f"Trap into VS-mode via ILLEGAL_INSTRUCTION on mstatus: expect vsstatus.SPP={spp}")
+    assert_trap = AssertException(
+        cause=ExceptionCause.ILLEGAL_INSTRUCTION,
+        code=[CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=0, target_is_x0=True)],
+        expected_handler_mode=ExceptionHandlerMode.VS,
+        expected_spp=spp,
+    )
+
+    comment_after = Comment(comment="hstatus and the HS-level sstatus must be untouched by a trap into VS-mode")
+    hstatus_after = CsrRead(csr_name="hstatus", force_machine_mode=True)
+    assert_hstatus = AssertEqual(src1=hstatus_after, src2=hstatus_before)
+    sstatus_after = CsrRead(csr_name="sstatus", force_machine_mode=True)
+    assert_sstatus = AssertEqual(src1=sstatus_after, src2=sstatus_before)
+
+    return [
+        comment_deleg,
+        delegate_m,
+        delegate_h,
+        comment_before,
+        hstatus_before,
+        sstatus_before,
+        comment_trap,
+        assert_trap,
+        comment_after,
+        hstatus_after,
+        assert_hstatus,
+        sstatus_after,
+        assert_sstatus,
+    ]
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_24_from_vs():
+    """
+    Trap into VS-mode from VS-mode: vsstatus.SPP=1, hstatus and the HS-level
+    sstatus unmodified, V still 1.
+
+    Pseudocode:
+    CsrWrite(csr_name="medeleg", set_mask=1 << 2)    # ILLEGAL_INSTRUCTION past M-mode
+    CsrWrite(csr_name="hedeleg", set_mask=1 << 2)    # ... and past HS-mode, into VS
+    hstatus_before = CsrRead(csr_name="hstatus", force_machine_mode=True)
+    sstatus_before = CsrRead(csr_name="sstatus", force_machine_mode=True)
+    AssertException(cause=ILLEGAL_INSTRUCTION,
+                    code=[CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=0, target_is_x0=True)],
+                    expected_handler_mode=VS, expected_spp=1)
+    AssertEqual(src1=CsrRead(csr_name="hstatus", force_machine_mode=True), src2=hstatus_before)
+    AssertEqual(src1=CsrRead(csr_name="sstatus", force_machine_mode=True), src2=sstatus_before)
+    """
+    return TestScenario.from_steps(
+        id="19",
+        name="SID_HEXCEP_24_from_vs",
+        description="Trap into VS-mode from VS-mode writes vsstatus.SPP=1 and leaves hstatus and HS sstatus unmodified",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.S],
+            virtualized=[True],
+        ),
+        steps=_trap_into_vs_steps(spp=1),
+    )
+
+
+@hypervisor_exceptions_scenario
+def SID_HEXCEP_24_from_vu():
+    """
+    Trap into VS-mode from VU-mode: vsstatus.SPP=0, hstatus and the HS-level
+    sstatus unmodified, V still 1.
+
+    Pseudocode:
+    CsrWrite(csr_name="medeleg", set_mask=1 << 2)    # ILLEGAL_INSTRUCTION past M-mode
+    CsrWrite(csr_name="hedeleg", set_mask=1 << 2)    # ... and past HS-mode, into VS
+    hstatus_before = CsrRead(csr_name="hstatus", force_machine_mode=True)
+    sstatus_before = CsrRead(csr_name="sstatus", force_machine_mode=True)
+    AssertException(cause=ILLEGAL_INSTRUCTION,
+                    code=[CsrDirectAccess(op="csrrs", csr_name="mstatus", src1=0, target_is_x0=True)],
+                    expected_handler_mode=VS, expected_spp=0)
+    AssertEqual(src1=CsrRead(csr_name="hstatus", force_machine_mode=True), src2=hstatus_before)
+    AssertEqual(src1=CsrRead(csr_name="sstatus", force_machine_mode=True), src2=sstatus_before)
+    """
+    return TestScenario.from_steps(
+        id="19",
+        name="SID_HEXCEP_24_from_vu",
+        description="Trap into VS-mode from VU-mode writes vsstatus.SPP=0 and leaves hstatus and HS sstatus unmodified",
+        env=TestEnvCfg(
+            priv_modes=[PrivilegeMode.U],
+            virtualized=[True],
+        ),
+        steps=_trap_into_vs_steps(spp=0),
     )

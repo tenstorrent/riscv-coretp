@@ -189,11 +189,14 @@ class ConfigureExecuteTrigger(TestStep):
 class ConfigureLoadTrigger(TestStep):
     """Configure an mcontrol6 load watchpoint.
 
+    :param memory: ``Memory`` step whose allocated address tdata2 watches.
+        See :class:`ConfigureLoadStoreTrigger`.
     :param size: Access width in bytes: 1, 2, 4 (default), or 8.
     """
 
     index: int = 0
     addr: str = ""
+    memory: Optional[TestStep] = None
     action: TriggerAction = TriggerAction.BREAKPOINT
     size: int = 4
     priv_mode: tuple = _DEFAULT_PRIV_MODE
@@ -202,10 +205,15 @@ class ConfigureLoadTrigger(TestStep):
 
 @dataclass(frozen=True)
 class ConfigureStoreTrigger(TestStep):
-    """Configure an mcontrol6 store watchpoint."""
+    """Configure an mcontrol6 store watchpoint.
+
+    :param memory: ``Memory`` step whose allocated address tdata2 should watch.
+        Prefer this over ``addr`` -- see :class:`ConfigureLoadStoreTrigger`.
+    """
 
     index: int = 0
     addr: str = ""
+    memory: Optional[TestStep] = None
     action: TriggerAction = TriggerAction.BREAKPOINT
     size: int = 4
     priv_mode: tuple = _DEFAULT_PRIV_MODE
@@ -214,10 +222,17 @@ class ConfigureStoreTrigger(TestStep):
 
 @dataclass(frozen=True)
 class ConfigureLoadStoreTrigger(TestStep):
-    """Configure a combined mcontrol6 load/store watchpoint."""
+    """Configure a combined mcontrol6 load/store watchpoint.
+
+    :param memory: ``Memory`` step whose allocated address tdata2 watches.
+        Takes precedence over ``addr``. Prefer this for data watchpoints: the
+        allocator picks the page's address (``Memory.base_va`` is only a hint),
+        so an ``addr`` naming a fixed address or label will not match.
+    """
 
     index: int = 0
     addr: str = ""
+    memory: Optional[TestStep] = None
     action: TriggerAction = TriggerAction.BREAKPOINT
     priv_mode: tuple = _DEFAULT_PRIV_MODE
     match: TriggerMatch = TriggerMatch.EQUAL

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: © 2025 Tenstorrent AI ULC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Sequence, Union
 from pathlib import Path
 import inspect
 from functools import wraps
@@ -51,6 +51,7 @@ class _TestPlanInfo:
     :param description: description of the test plan
     :param tags: Optional tags for the test plan, e.g. "security", "memory"
     :param features: Optional features for the test plan. unused for now, but can be used later to track dependencies or required features
+    :param directed_tests: RiescueD assembly sources associated with the plan
     :param scenarios: scenarios of the test plan.
 
     :raises RuntimeError: if scenarios are added to an already-built plan
@@ -62,6 +63,7 @@ class _TestPlanInfo:
     features: list[str] = field(default_factory=list)
     excp_handler_pre: Optional[str] = None
     excp_handler_post: Optional[str] = None
+    directed_tests: tuple[Path, ...] = field(default_factory=tuple)
     _scenarios: list[Callable[[], TestScenario]] = field(default_factory=list)
     _frozen: bool = field(default=False, init=False)
 
@@ -78,12 +80,16 @@ class _TestPlanInfo:
         # whenever the same scenario was picked more than once, producing
         # duplicate-symbol assembler errors.
         self._frozen = True
+        missing = [path for path in self.directed_tests if not path.exists()]
+        if missing:
+            raise FileNotFoundError(f"directed_tests for plan '{self.name}' do not exist: {missing}")
         return TestPlan(
             name=self.name,
             description=self.description,
             scenarios=[func() for func in self._scenarios],
             excp_handler_pre=self.excp_handler_pre,
             excp_handler_post=self.excp_handler_post,
+            directed_tests=self.directed_tests,
         )
 
 
@@ -106,6 +112,7 @@ class _TestPlanRegistry:
         features: Optional[list[str]] = None,
         excp_handler_pre: Optional[str] = None,
         excp_handler_post: Optional[str] = None,
+        directed_tests: Optional[tuple[Path, ...]] = None,
     ) -> None:
         """Register a new test plan"""
         if name not in self._plans:
@@ -116,7 +123,10 @@ class _TestPlanRegistry:
                 features=features or [],
                 excp_handler_pre=excp_handler_pre,
                 excp_handler_post=excp_handler_post,
+                directed_tests=directed_tests or (),
             )
+        elif not self._plans[name].directed_tests and directed_tests:
+            self._plans[name].directed_tests = directed_tests
 
     def add_scenario(self, plan_name: str, scenario_func: Callable[[], TestScenario]) -> None:
         """Add scenario to existing plan"""
@@ -164,6 +174,12 @@ class _TestPlanRegistry:
 _registry = _TestPlanRegistry()
 
 
+def _normalize_directed_tests(directed_tests: Optional[Sequence[Union[Path, str]]]) -> tuple[Path, ...]:
+    if not directed_tests:
+        return ()
+    return tuple(Path(p) for p in directed_tests)
+
+
 def new_test_plan(
     name: str,
     description: str = "",
@@ -171,6 +187,7 @@ def new_test_plan(
     features: Optional[list[str]] = None,
     excp_handler_pre: Optional[str] = None,
     excp_handler_post: Optional[str] = None,
+    directed_tests: Optional[Sequence[Union[Path, str]]] = None,
 ) -> Callable[[Callable[[], TestScenario]], Callable[[], TestScenario]]:
     """
     Create decorator for test plan scenarios
@@ -187,8 +204,20 @@ def new_test_plan(
     :param excp_handler_post: Optional plan-wide assembly body emitted into the
         test-side ``excp_handler_post:`` label by downstream generators. Tests
         that consume the plan must be run with ``--excp_hooks``.
+    :param directed_tests: Optional RiescueD assembly sources associated with
+        the plan. Paths may be ``Path`` or ``str``; they are stored as
+        ``tuple[Path, ...]``. Must be passed on the first ``new_test_plan``
+        call for a given name (typically the package ``__init__.py``).
     """
-    _registry.register_plan(name, description, tags, features, excp_handler_pre=excp_handler_pre, excp_handler_post=excp_handler_post)
+    _registry.register_plan(
+        name,
+        description,
+        tags,
+        features,
+        excp_handler_pre=excp_handler_pre,
+        excp_handler_post=excp_handler_post,
+        directed_tests=_normalize_directed_tests(directed_tests),
+    )
 
     def scenario_decorator(func: Callable[[], TestScenario]) -> Callable[[], TestScenario]:
         _registry.add_scenario(name, func)

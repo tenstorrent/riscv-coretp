@@ -4,6 +4,8 @@
 py_library(
     name = "coretp",
     srcs = glob(["coretp/**/*.py"]),
+    # Hand-written directed tests that ship with a plan, opened by path at runtime
+    data = glob(["coretp/**/*.s"]),
     visibility = ["//visibility:public"],
     imports = ["."],
 )
